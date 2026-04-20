@@ -12,8 +12,8 @@ app.get("/api/v1/health", (c) => {
   return c.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-app.route("/api/v1/cv", cvRoutes);
 app.route("/api/v1/cv/import", cvImportRoutes);
+app.route("/api/v1/cv", cvRoutes);
 app.route("/api/v1/avatar", avatarRoutes);
 
 // Serve the built SPA's static assets from the client workspace

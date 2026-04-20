@@ -49,6 +49,11 @@ cvImportRoutes.post("/", async (c) => {
 
   const buffer = Buffer.from(await file.arrayBuffer());
 
+  // Verify PDF magic bytes (%PDF-)
+  if (!buffer.subarray(0, 5).equals(Buffer.from("%PDF-"))) {
+    return c.json({ error: "Le fichier n'est pas un PDF valide.", code: "INVALID_TYPE" }, 400);
+  }
+
   try {
     const cvData = await extractCvFromPdf(buffer);
     return c.json({ data: cvData });

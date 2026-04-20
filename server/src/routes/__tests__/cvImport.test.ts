@@ -21,7 +21,10 @@ import { cvImportRoutes } from "../cvImport";
 const app = new Hono();
 app.route("/import", cvImportRoutes);
 
-function makePdfForm(bytes: Uint8Array = new Uint8Array([1, 2, 3])) {
+// Default bytes start with %PDF- magic signature so they pass the magic byte check
+const PDF_MAGIC = new TextEncoder().encode("%PDF-1.4 dummy content");
+
+function makePdfForm(bytes: Uint8Array = PDF_MAGIC) {
   const fd = new FormData();
   fd.append("file", new Blob([bytes], { type: "application/pdf" }), "cv.pdf");
   return fd;
@@ -62,6 +65,18 @@ describe("POST /import", () => {
     const fd = new FormData();
     fd.append("file", new Blob([new Uint8Array([1])], { type: "image/png" }), "photo.png");
     const res = await app.request("/import", { method: "POST", body: fd });
+    expect(res.status).toBe(400);
+    const body = await res.json() as { code: string };
+    expect(body.code).toBe("INVALID_TYPE");
+  });
+
+  it("returns 400 when file has PDF MIME type but wrong magic bytes", async () => {
+    // File claims to be PDF (MIME type) but content doesn't start with %PDF-
+    const spoofedBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d]); // PNG magic bytes
+    const res = await app.request("/import", {
+      method: "POST",
+      body: makePdfForm(spoofedBytes),
+    });
     expect(res.status).toBe(400);
     const body = await res.json() as { code: string };
     expect(body.code).toBe("INVALID_TYPE");
