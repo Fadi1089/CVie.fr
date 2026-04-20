@@ -16,7 +16,10 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.71",
+    "@ai-sdk/openai": "^3.0.53",
     "@cvie/shared": "workspace:*",
+    "ai": "^6.0.168",
     "hono": "^4.10.8",
     "playwright": "^1.59.1"
   },
