@@ -13,16 +13,19 @@
     "build": "tsc",
     "dev": "bun --watch run src/index.ts",
     "type-check": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test --preload ./test-setup.ts src/middleware src/services/__tests__ && bun test --preload ./test-setup.ts src/routes/__tests__"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.71",
+    "@ai-sdk/openai": "^3.0.53",
     "@cvie/shared": "workspace:*",
+    "ai": "^6.0.168",
     "hono": "^4.10.8",
+    "pdf-parse": "^2.4.5",
     "playwright": "^1.59.1"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/pdf-parse": "^1.1.5",
-    "pdf-parse": "^2.4.5"
+    "@types/pdf-parse": "^1.1.5"
   }
 }
