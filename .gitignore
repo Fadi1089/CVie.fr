@@ -45,3 +45,6 @@ bun.lockb
 
 # Prisma
 prisma/generated
+
+# Git worktrees
+.worktrees
