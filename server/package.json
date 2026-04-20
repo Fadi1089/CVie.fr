@@ -13,7 +13,7 @@
     "build": "tsc",
     "dev": "bun --watch run src/index.ts",
     "type-check": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test --preload ./test-setup.ts src/middleware src/services/__tests__ && bun test --preload ./test-setup.ts src/routes/__tests__"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.71",
