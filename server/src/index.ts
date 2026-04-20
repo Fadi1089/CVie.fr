@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import { cvRoutes } from "./routes/cv";
 import { avatarRoutes } from "./routes/avatar";
+import { cvImportRoutes } from "./routes/cvImport";
 import { shutdownPdfService } from "./services/pdfService";
 
 const app = new Hono();
@@ -12,6 +13,7 @@ app.get("/api/v1/health", (c) => {
 });
 
 app.route("/api/v1/cv", cvRoutes);
+app.route("/api/v1/cv/import", cvImportRoutes);
 app.route("/api/v1/avatar", avatarRoutes);
 
 // Serve the built SPA's static assets from the client workspace
