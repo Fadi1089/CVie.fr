@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useCvImport } from "../hooks/useCvImport";
@@ -8,9 +8,7 @@ export function CvImportButton() {
   const inputRef = useRef<HTMLInputElement>(null);
   const isLoading = status === "loading";
 
-  const prevStatus = useRef(status);
-  if (prevStatus.current !== status) {
-    prevStatus.current = status;
+  useEffect(() => {
     if (status === "success") {
       toast.success("CV importé ! Les champs ont été remplis automatiquement.", {
         id: "cv-import",
@@ -19,7 +17,7 @@ export function CvImportButton() {
     if (status === "error") {
       toast.error(error ?? "Impossible d'analyser ce PDF.", { id: "cv-import" });
     }
-  }
+  }, [status, error]);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -42,6 +40,7 @@ export function CvImportButton() {
       <button
         type="button"
         disabled={isLoading}
+        aria-busy={isLoading}
         onClick={() => inputRef.current?.click()}
         className="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground shadow-xs transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
         title="Importer un CV existant (PDF)"
