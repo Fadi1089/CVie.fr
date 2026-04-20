@@ -22,5 +22,6 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: [],
+    passWithNoTests: true,
   },
 })
