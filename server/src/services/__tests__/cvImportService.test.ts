@@ -59,11 +59,14 @@ mock.module("@ai-sdk/openai", () => ({
   openai: (modelId: string) => ({ provider: "openai", modelId }),
 }));
 
-// Mock pdf-parse
+// Mock pdf-parse v2 class-based API
 mock.module("pdf-parse", () => ({
-  default: async (_buf: Buffer) => ({
-    text: "Jean Dupont\nDéveloppeur\nParis\njean@example.com\n0612345678",
-  }),
+  PDFParse: class {
+    constructor(_opts: unknown) {}
+    async getText() {
+      return { text: "Jean Dupont\nDéveloppeur\nParis\njean@example.com\n0612345678" };
+    }
+  },
 }));
 
 import { extractCvFromPdf } from "../cvImportService";
@@ -102,12 +105,17 @@ describe("extractCvFromPdf", () => {
   });
 
   it("throws when PDF has no extractable text", async () => {
+    // Override the mock for this test by re-registering before import
     mock.module("pdf-parse", () => ({
-      default: async (_buf: Buffer) => ({ text: "   " }),
+      PDFParse: class {
+        constructor(_opts: unknown) {}
+        async getText() {
+          return { text: "   " };
+        }
+      },
     }));
-
-    await expect(extractCvFromPdf(Buffer.from("fake"))).rejects.toThrow(
-      "Aucun texte trouvé",
-    );
+    // Re-import to pick up the new mock (Bun hoists mock.module calls)
+    const { extractCvFromPdf: extract } = await import("../cvImportService");
+    await expect(extract(Buffer.from("fake"))).rejects.toThrow("Aucun texte trouvé");
   });
 });

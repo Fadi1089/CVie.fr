@@ -1,6 +1,7 @@
 import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { openai } from "@ai-sdk/openai";
+import { PDFParse } from "pdf-parse";
 import { cvDataSchema, type CvData } from "@cvie/shared";
 
 const EXTRACTION_SYSTEM_PROMPT = `Tu es un assistant expert en extraction de données de CV.
@@ -42,8 +43,8 @@ function resolveModel() {
 }
 
 export async function extractCvFromPdf(pdfBuffer: Buffer): Promise<CvData> {
-  const { default: pdfParse } = await import("pdf-parse");
-  const parsed = await pdfParse(pdfBuffer);
+  const parser = new PDFParse({ data: pdfBuffer });
+  const parsed = await parser.getText();
   const cvText = parsed.text.trim();
 
   if (!cvText) {
@@ -54,7 +55,7 @@ export async function extractCvFromPdf(pdfBuffer: Buffer): Promise<CvData> {
     model: resolveModel(),
     system: EXTRACTION_SYSTEM_PROMPT,
     prompt: EXTRACTION_USER_TEMPLATE.replace("{CV_TEXT}", cvText.slice(0, 12_000)),
-    maxTokens: 4096,
+    maxOutputTokens: 4096,
   });
 
   let rawJson: unknown;
