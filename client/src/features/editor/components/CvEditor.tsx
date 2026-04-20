@@ -10,6 +10,7 @@ import { ExperiencesSection } from "./ExperiencesSection";
 import { FormationsSection } from "./FormationsSection";
 import { InterestsSection } from "./InterestsSection";
 import { LanguagesSection } from "./LanguagesSection";
+import { CvImportButton } from "./CvImportButton";
 import { MobileTabBar, type EditorTab } from "./MobileTabBar";
 import { PersonalInfoForm } from "./PersonalInfoForm";
 import { SkillsSection } from "./SkillsSection";
@@ -265,6 +266,7 @@ function EditorHeader({
         >
           {persistText}
         </span>
+        <CvImportButton />
         <ExportPdfButton />
       </div>
     </header>
