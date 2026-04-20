@@ -1,0 +1,38 @@
+{
+	"name": "cvie-fr",
+	"version": "0.1.0",
+	"description": "CVie.fr — Free ATS-compatible CV platform with portfolio links",
+	"author": "Fadi",
+	"license": "MIT",
+	"private": true,
+	"packageManager": "bun@1.2.4",
+	"workspaces": [
+		"./server",
+		"./client",
+		"./shared"
+	],
+	"scripts": {
+		"dev": "turbo dev",
+		"dev:client": "turbo dev --filter=@cvie/client",
+		"dev:server": "turbo dev --filter=@cvie/server",
+		"build": "turbo build",
+		"build:client": "turbo build --filter=@cvie/client",
+		"build:server": "turbo build --filter=@cvie/server",
+		"lint": "turbo lint",
+		"type-check": "turbo type-check",
+		"test": "turbo test",
+		"postinstall": "turbo build --filter=@cvie/shared && bunx playwright install chromium"
+	},
+	"devDependencies": {
+		"bun-types": "latest",
+		"dotenv": "^17.4.2",
+		"prisma": "^7.7.0",
+		"turbo": "^2.6.3"
+	},
+	"peerDependencies": {
+		"typescript": "^5.8.3"
+	},
+	"dependencies": {
+		"@prisma/adapter-neon": "^7.7.0"
+	}
+}

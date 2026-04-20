@@ -1,0 +1,32 @@
+import { Hono } from "hono";
+import { serveStatic } from "hono/bun";
+import { cvRoutes } from "./routes/cv";
+import { shutdownPdfService } from "./services/pdfService";
+
+const app = new Hono();
+
+// API routes
+app.get("/api/v1/health", (c) => {
+  return c.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+app.route("/api/v1/cv", cvRoutes);
+
+// Serve the built SPA's static assets from the client workspace
+app.use("/*", serveStatic({ root: "../client/dist" }));
+
+// SPA fallback — serve index.html for all unmatched non-API routes
+app.get("*", serveStatic({ root: "../client/dist", path: "index.html" }));
+
+// Release Chromium on shutdown so it doesn't leak on deploy restarts.
+for (const sig of ["SIGTERM", "SIGINT"] as const) {
+  process.on(sig, async () => {
+    await shutdownPdfService();
+    process.exit(0);
+  });
+}
+
+export default {
+  port: Number.parseInt(process.env.PORT ?? "3001"),
+  fetch: app.fetch,
+};
