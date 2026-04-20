@@ -1,0 +1,122 @@
+import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
+import type { CvData } from "@cvie/shared";
+import { newId } from "@/lib/newId";
+import { FormField } from "./FormField";
+import { MonthYearPicker } from "./MonthYearPicker";
+import { SectionCard } from "./SectionCard";
+import { SectionShell } from "./SectionShell";
+import { useFocusAfterRemove } from "../hooks/useFocusAfterRemove";
+
+const MAX_FORMATIONS = 50;
+
+export function FormationsSection() {
+  const { control } = useFormContext<CvData>();
+  const { fields, append, remove } = useFieldArray<CvData, "formations", "rhfId">({
+    control,
+    name: "formations",
+    keyName: "rhfId",
+  });
+  const atCap = fields.length >= MAX_FORMATIONS;
+  const { containerRef, fallbackRef, focusAfterRemove } = useFocusAfterRemove();
+
+  return (
+    <div ref={containerRef}>
+      <SectionShell
+        ref={fallbackRef}
+        title="Formations"
+        description="Diplômes et études. L'ordre est libre — la plus récente en premier est la convention française."
+        count={fields.length}
+        addLabel="Ajouter une formation"
+        disabled={atCap}
+        disabledReason={atCap ? `Maximum ${MAX_FORMATIONS} entrées atteint` : undefined}
+        onAdd={() =>
+          append({
+            id: newId(),
+            degree: "",
+            school: "",
+            startDate: "",
+          })
+        }
+      >
+        {fields.map((field, index) => (
+          <FormationCard
+            key={field.rhfId}
+            index={index}
+            onRemove={() => {
+              remove(index);
+              focusAfterRemove(index);
+            }}
+          />
+        ))}
+      </SectionShell>
+    </div>
+  );
+}
+
+function FormationCard({
+  index,
+  onRemove,
+}: {
+  index: number;
+  onRemove: () => void;
+}) {
+  const {
+    register,
+    control,
+    formState: { errors },
+  } = useFormContext<CvData>();
+
+  const degree = useWatch({ control, name: `formations.${index}.degree` });
+  const school = useWatch({ control, name: `formations.${index}.school` });
+
+  return (
+    <SectionCard
+      title={degree?.trim() || "Nouvelle formation"}
+      subtitle={school?.trim() || undefined}
+      index={index}
+      onRemove={onRemove}
+    >
+      <FormField<CvData>
+        name={`formations.${index}.degree`}
+        label="Diplôme"
+        register={register}
+        errors={errors}
+        placeholder="ex. Master en Informatique"
+      />
+      <FormField<CvData>
+        name={`formations.${index}.school`}
+        label="Établissement"
+        register={register}
+        errors={errors}
+        placeholder="ex. Université Lyon 1"
+      />
+      <FormField<CvData>
+        name={`formations.${index}.city`}
+        label="Ville"
+        register={register}
+        errors={errors}
+      />
+      <div className="hidden sm:block" aria-hidden="true" />
+      <MonthYearPicker<CvData>
+        name={`formations.${index}.startDate`}
+        label="Début"
+        required
+      />
+      <MonthYearPicker<CvData>
+        name={`formations.${index}.endDate`}
+        label="Fin"
+        allowPresent
+      />
+      <FormField<CvData>
+        as="textarea"
+        name={`formations.${index}.description`}
+        label="Description"
+        register={register}
+        errors={errors}
+        rows={3}
+        hint="Spécialités, matières clés, mention…"
+        className="sm:col-span-2"
+      />
+    </SectionCard>
+  );
+}

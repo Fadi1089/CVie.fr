@@ -1,0 +1,117 @@
+import { useMemo } from "react";
+import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
+import type { CvData } from "@cvie/shared";
+import { newId } from "@/lib/newId";
+import { FormField } from "./FormField";
+import { SectionCard } from "./SectionCard";
+import { SectionShell } from "./SectionShell";
+import { useFocusAfterRemove } from "../hooks/useFocusAfterRemove";
+
+const LANGUAGE_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2", "natif"] as const;
+const DEFAULT_LEVEL: (typeof LANGUAGE_LEVELS)[number] = "B1";
+const MAX_LANGUAGES = 50;
+
+export function LanguagesSection() {
+  const { control } = useFormContext<CvData>();
+  const { fields, append, remove } = useFieldArray<CvData, "languages", "rhfId">({
+    control,
+    name: "languages",
+    keyName: "rhfId",
+  });
+  const atCap = fields.length >= MAX_LANGUAGES;
+  const { containerRef, fallbackRef, focusAfterRemove } = useFocusAfterRemove();
+
+  return (
+    <div ref={containerRef}>
+      <SectionShell
+        ref={fallbackRef}
+        title="Langues"
+        description="Niveau CECRL (A1–C2) ou natif. Vérifiez le niveau à chaque ajout."
+        count={fields.length}
+        addLabel="Ajouter une langue"
+        disabled={atCap}
+        disabledReason={atCap ? `Maximum ${MAX_LANGUAGES} entrées atteint` : undefined}
+        onAdd={() =>
+          append({
+            id: newId(),
+            name: "",
+            level: DEFAULT_LEVEL,
+          })
+        }
+      >
+        {fields.map((field, index) => (
+          <LanguageCard
+            key={field.rhfId}
+            index={index}
+            onRemove={() => {
+              remove(index);
+              focusAfterRemove(index);
+            }}
+          />
+        ))}
+      </SectionShell>
+    </div>
+  );
+}
+
+function LanguageCard({
+  index,
+  onRemove,
+}: {
+  index: number;
+  onRemove: () => void;
+}) {
+  const {
+    register,
+    control,
+    formState: { errors, dirtyFields },
+  } = useFormContext<CvData>();
+  const name = useWatch({ control, name: `languages.${index}.name` });
+
+  // Nudge the user to confirm the seeded "B1" default until they've touched
+  // the level select at least once. RHF's `dirtyFields.languages[i].level`
+  // flips true on first user change and stays true for the rest of the
+  // session.
+  const levelConfirmed = useMemo(() => {
+    const langs = dirtyFields.languages as
+      | Array<Record<string, unknown>>
+      | undefined;
+    return Boolean(langs?.[index]?.level);
+  }, [dirtyFields.languages, index]);
+
+  return (
+    <SectionCard
+      title={name?.trim() || "Nouvelle langue"}
+      index={index}
+      onRemove={onRemove}
+    >
+      <FormField<CvData>
+        name={`languages.${index}.name`}
+        label="Langue"
+        register={register}
+        errors={errors}
+        placeholder="ex. Anglais"
+      />
+      <div className="flex flex-col gap-1">
+        <FormField<CvData>
+          as="select"
+          name={`languages.${index}.level`}
+          label="Niveau"
+          register={register}
+          errors={errors}
+        >
+          {LANGUAGE_LEVELS.map((lvl) => (
+            <option key={lvl} value={lvl}>
+              {lvl}
+            </option>
+          ))}
+        </FormField>
+        {!levelConfirmed ? (
+          <p className="text-[11px] text-amber-700" aria-live="polite">
+            ⚠ Niveau à vérifier
+          </p>
+        ) : null}
+      </div>
+    </SectionCard>
+  );
+}
