@@ -195,7 +195,7 @@ export const minimalisteCss = `
   font-weight: 400;
   color: #555555;
   text-transform: uppercase;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.02em;
 }
 
 .cv header .contact {
@@ -211,13 +211,11 @@ export const minimalisteCss = `
 
 .cv header .contact li {
   display: inline-block;
-  margin: 0;
+  margin: 0 ${s(2, "mm")} 0 0;
 }
 
 .cv header .contact li + li::before {
-  content: "/";
-  margin: 0 0.5em;
-  color: #a0a0a0;
+  content: none;
 }
 
 .cv header .summary {

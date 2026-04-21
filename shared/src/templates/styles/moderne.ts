@@ -214,7 +214,7 @@ export const moderneCss = `
   font-weight: 400;
   color: #3a3a3a;
   text-transform: uppercase;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.02em;
 }
 
 .cv header .contact {
@@ -229,14 +229,11 @@ export const moderneCss = `
 
 .cv header .contact li {
   display: inline-block;
-  margin: 0;
+  margin: 0 ${s(2, "mm")} 0 0;
 }
 
 .cv header .contact li + li::before {
-  content: "|";
-  margin: 0 0.55em;
-  color: #A8421E;
-  font-weight: 400;
+  content: none;
 }
 
 .cv header .summary {
@@ -422,10 +419,8 @@ export const moderneCss = `
 }
 
 .cv .interests-list li + li::before {
-  content: "|";
-  margin: 0 0.55em;
+  content: " , ";
   color: #A8421E;
-  font-weight: 400;
 }
 
 @media print {

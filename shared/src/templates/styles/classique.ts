@@ -229,7 +229,7 @@ export const classiqueCss = `
   font-weight: 500;
   color: #1B365D;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.02em;
 }
 
 .cv header .contact {
@@ -244,13 +244,11 @@ export const classiqueCss = `
 
 .cv header .contact li {
   display: inline-block;
-  margin: 0;
+  margin: 0 ${s(2, "mm")} 0 0;
 }
 
 .cv header .contact li + li::before {
-  content: "·";
-  margin: 0 0.45em;
-  color: #b0aea5;
+  content: none;
 }
 
 .cv header .contact a {
@@ -429,8 +427,7 @@ export const classiqueCss = `
 }
 
 .cv .interests-list li + li::before {
-  content: "·";
-  margin: 0 0.55em;
+  content: " , ";
   color: #b0aea5;
 }
 
