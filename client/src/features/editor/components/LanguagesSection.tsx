@@ -11,7 +11,13 @@ const LANGUAGE_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2", "natif"] as const;
 const DEFAULT_LEVEL: (typeof LANGUAGE_LEVELS)[number] = "B1";
 const MAX_LANGUAGES = 50;
 
-export function LanguagesSection() {
+export function LanguagesSection({
+  highlightedItemId,
+  setItemRef,
+}: {
+  highlightedItemId?: string | null;
+  setItemRef?: (itemId: string) => (node: HTMLElement | null) => void;
+}) {
   const { control } = useFormContext<CvData>();
   const { fields, append, remove } = useFieldArray<CvData, "languages", "rhfId">({
     control,
@@ -40,14 +46,24 @@ export function LanguagesSection() {
         }
       >
         {fields.map((field, index) => (
-          <LanguageCard
+          <div
             key={field.rhfId}
-            index={index}
-            onRemove={() => {
-              remove(index);
-              focusAfterRemove(index);
-            }}
-          />
+            ref={setItemRef ? setItemRef(field.id) : undefined}
+            data-editor-item-id={field.id}
+            className={
+              highlightedItemId === field.id
+                ? "editor-jump-highlight-item scroll-mt-24 rounded-xl"
+                : "scroll-mt-24 rounded-xl"
+            }
+          >
+            <LanguageCard
+              index={index}
+              onRemove={() => {
+                remove(index);
+                focusAfterRemove(index);
+              }}
+            />
+          </div>
         ))}
       </SectionShell>
     </div>

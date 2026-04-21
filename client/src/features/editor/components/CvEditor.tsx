@@ -34,6 +34,15 @@ import { SkillsSection } from "./SkillsSection";
 const TEMPLATE_SELECTION_KEY = "cvie.template.selected";
 const DEFAULT_TEMPLATE: TemplateId = "classique";
 const SAFE_FALLBACK_META = { id: DEFAULT_TEMPLATE, name: "Classique" } as const;
+const EDITOR_SECTION_IDS = [
+  "personalInfo",
+  "formations",
+  "experiences",
+  "skills",
+  "languages",
+  "interests",
+] as const;
+type EditorSectionId = (typeof EDITOR_SECTION_IDS)[number];
 
 function Spinner({
   className,
@@ -194,6 +203,101 @@ function EditorShell({
   resetNonce,
 }: EditorShellProps) {
   const autofillSync = useAutofillSync<CvData>();
+  const sectionRefs = useRef<Record<EditorSectionId, HTMLElement | null>>({
+    personalInfo: null,
+    formations: null,
+    experiences: null,
+    skills: null,
+    languages: null,
+    interests: null,
+  });
+  const highlightTimerRef = useRef<number | null>(null);
+  const arrivalWaitRef = useRef<number>(0);
+  const [highlightedSection, setHighlightedSection] = useState<EditorSectionId | null>(null);
+  const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
+  const itemRefs = useRef<Record<string, HTMLElement | null>>({});
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current !== null) {
+        window.clearTimeout(highlightTimerRef.current);
+      }
+    };
+  }, []);
+
+  const setSectionRef = (id: EditorSectionId) => (node: HTMLElement | null) => {
+    sectionRefs.current[id] = node;
+  };
+
+  const setItemRef = (itemId: string) => (node: HTMLElement | null) => {
+    itemRefs.current[itemId] = node;
+  };
+
+  const handlePreviewSectionClick = ({
+    sectionId: rawSectionId,
+    itemId,
+  }: {
+    sectionId: string;
+    itemId?: string;
+  }) => {
+    if (!EDITOR_SECTION_IDS.includes(rawSectionId as EditorSectionId)) return;
+    const sectionId = rawSectionId as EditorSectionId;
+    const target = itemId
+      ? itemRefs.current[itemId] ?? sectionRefs.current[sectionId]
+      : sectionRefs.current[sectionId];
+    if (!target) return;
+    const waitToken = ++arrivalWaitRef.current;
+
+    const waitForArrival = (node: HTMLElement) =>
+      new Promise<void>((resolve) => {
+        const startedAt = performance.now();
+        const timeoutMs = 1200;
+        const thresholdPx = 24;
+
+        const check = () => {
+          if (waitToken !== arrivalWaitRef.current) {
+            resolve();
+            return;
+          }
+          const rect = node.getBoundingClientRect();
+          const arrived = Math.abs(rect.top - 96) <= thresholdPx || rect.top >= 0;
+          if (arrived || performance.now() - startedAt > timeoutMs) {
+            resolve();
+            return;
+          }
+          requestAnimationFrame(check);
+        };
+        requestAnimationFrame(check);
+      });
+
+    if (mobileTab === "preview") {
+      setMobileTab("edit");
+      requestAnimationFrame(() => {
+        target.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+      });
+    } else {
+      target.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+    }
+
+    void waitForArrival(target).then(() => {
+      if (waitToken !== arrivalWaitRef.current) return;
+      if (itemId) {
+        setHighlightedSection(null);
+        setHighlightedItemId(itemId);
+      } else {
+        setHighlightedItemId(null);
+        setHighlightedSection(sectionId);
+      }
+      if (highlightTimerRef.current !== null) {
+        window.clearTimeout(highlightTimerRef.current);
+      }
+      highlightTimerRef.current = window.setTimeout(() => {
+        setHighlightedSection(null);
+        setHighlightedItemId(null);
+        highlightTimerRef.current = null;
+      }, 1500);
+    });
+  };
 
   return (
     <AutofillSyncContext.Provider value={autofillSync}>
@@ -236,7 +340,12 @@ function EditorShell({
               className="px-4 pt-4 pb-24 md:h-[calc(100vh-64px)] md:overflow-y-auto md:border-r md:border-[var(--color-rule)] md:px-8 md:py-8"
               aria-label="Formulaire CV"
             >
-              <FormSections />
+              <FormSections
+                highlightedSection={highlightedSection}
+                highlightedItemId={highlightedItemId}
+                setSectionRef={setSectionRef}
+                setItemRef={setItemRef}
+              />
             </form>
           </section>
 
@@ -256,6 +365,7 @@ function EditorShell({
                   scale={scale}
                   overflowMode={overflowMode}
                   resetNonce={resetNonce}
+                  onSectionClick={handlePreviewSectionClick}
                 />
               </div>
             </aside>
@@ -270,15 +380,43 @@ function EditorShell({
   );
 }
 
-function FormSections() {
+function FormSections({
+  highlightedSection,
+  highlightedItemId,
+  setSectionRef,
+  setItemRef,
+}: {
+  highlightedSection: EditorSectionId | null;
+  highlightedItemId: string | null;
+  setSectionRef: (id: EditorSectionId) => (node: HTMLElement | null) => void;
+  setItemRef: (itemId: string) => (node: HTMLElement | null) => void;
+}) {
+  const sectionClass = (id: EditorSectionId) =>
+    cn("scroll-mt-24 rounded-xl transition-colors", highlightedSection === id && "editor-jump-highlight");
+
   return (
     <div className="mx-auto flex max-w-[44rem] flex-col gap-10">
-      <PersonalInfoForm />
-      <FormationsSection />
-      <ExperiencesSection />
-      <SkillsSection />
-      <LanguagesSection />
-      <InterestsSection />
+      <div ref={setSectionRef("personalInfo")} className={sectionClass("personalInfo")}>
+        <PersonalInfoForm />
+      </div>
+      <div ref={setSectionRef("formations")} className={sectionClass("formations")}>
+        <FormationsSection highlightedItemId={highlightedItemId} setItemRef={setItemRef} />
+      </div>
+      <div ref={setSectionRef("experiences")} className={sectionClass("experiences")}>
+        <ExperiencesSection
+          highlightedItemId={highlightedItemId}
+          setItemRef={setItemRef}
+        />
+      </div>
+      <div ref={setSectionRef("skills")} className={sectionClass("skills")}>
+        <SkillsSection highlightedItemId={highlightedItemId} setItemRef={setItemRef} />
+      </div>
+      <div ref={setSectionRef("languages")} className={sectionClass("languages")}>
+        <LanguagesSection highlightedItemId={highlightedItemId} setItemRef={setItemRef} />
+      </div>
+      <div ref={setSectionRef("interests")} className={sectionClass("interests")}>
+        <InterestsSection highlightedItemId={highlightedItemId} setItemRef={setItemRef} />
+      </div>
     </div>
   );
 }

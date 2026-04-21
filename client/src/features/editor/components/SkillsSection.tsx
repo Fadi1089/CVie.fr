@@ -9,7 +9,13 @@ import { useFocusAfterRemove } from "../hooks/useFocusAfterRemove";
 const SKILL_LEVELS = ["débutant", "intermédiaire", "avancé", "expert"] as const;
 const MAX_SKILLS = 50;
 
-export function SkillsSection() {
+export function SkillsSection({
+  highlightedItemId,
+  setItemRef,
+}: {
+  highlightedItemId?: string | null;
+  setItemRef?: (itemId: string) => (node: HTMLElement | null) => void;
+}) {
   const { control } = useFormContext<CvData>();
   const { fields, append, remove } = useFieldArray<CvData, "skills", "rhfId">({
     control,
@@ -37,14 +43,24 @@ export function SkillsSection() {
         }
       >
         {fields.map((field, index) => (
-          <SkillCard
+          <div
             key={field.rhfId}
-            index={index}
-            onRemove={() => {
-              remove(index);
-              focusAfterRemove(index);
-            }}
-          />
+            ref={setItemRef ? setItemRef(field.id) : undefined}
+            data-editor-item-id={field.id}
+            className={
+              highlightedItemId === field.id
+                ? "editor-jump-highlight-item scroll-mt-24 rounded-xl"
+                : "scroll-mt-24 rounded-xl"
+            }
+          >
+            <SkillCard
+              index={index}
+              onRemove={() => {
+                remove(index);
+                focusAfterRemove(index);
+              }}
+            />
+          </div>
         ))}
       </SectionShell>
     </div>

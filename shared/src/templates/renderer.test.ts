@@ -68,15 +68,31 @@ describe("renderCvHtml", () => {
     const html = renderCvHtml(sampleCv, "classique");
     expect(html).toContain('<article class="cv">');
     expect(html).toMatch(/<header(?:\s|>)/);
-    expect(html).toContain("<section>");
+    expect(html).toMatch(/<section(?:\s|>)/);
     expect(html).toContain("<h1>");
     expect(html).toContain("<h2>");
     expect(html).toContain("<h3>");
   });
 
+  it("adds editor section anchors for preview-to-form navigation", () => {
+    const html = renderCvHtml(sampleCv, "classique");
+    expect(html).toContain('data-editor-section="personalInfo"');
+    expect(html).toContain('data-editor-section="formations"');
+    expect(html).toContain('data-editor-section="experiences"');
+    expect(html).toContain('data-editor-section="skills"');
+    expect(html).toContain('data-editor-section="languages"');
+    expect(html).toContain('data-editor-section="interests"');
+    expect(html).toContain("cv-section-click");
+  });
+
+  it("adds editor item anchors for per-entry navigation", () => {
+    const html = renderCvHtml(sampleCv, "classique");
+    expect(html).toContain('data-editor-item-id="');
+  });
+
   it("renders the profile photo when photoUrl is set", () => {
     const html = renderCvHtml(sampleCv, "classique");
-    expect(html).toContain('<header class="has-photo">');
+    expect(html).toContain('<header data-editor-section="personalInfo" class="has-photo">');
     expect(html).toContain('<img class="photo"');
     expect(html).toContain(`src="${sampleCv.personalInfo.photoUrl}"`);
     expect(html).toContain(`alt="Yasmine Benali"`);
@@ -90,7 +106,7 @@ describe("renderCvHtml", () => {
     const html = renderCvHtml(noPhotoCv, "classique");
     expect(html).not.toContain('<img class="photo"');
     expect(html).not.toContain('class="has-photo"');
-    expect(html).toContain("<header>");
+    expect(html).toContain('<header data-editor-section="personalInfo">');
   });
 
   it("enforces A4 page size and 0.25in margins in the embedded CSS", () => {

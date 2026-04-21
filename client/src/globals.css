@@ -362,3 +362,38 @@ select:-webkit-autofill {
   animation-name: autofill-detected;
   animation-duration: 10ms;
 }
+
+@keyframes editorJumpHighlight {
+  0% {
+    background-color: color-mix(in oklab, var(--color-cvie-primary-light) 72%, white);
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--color-cvie-primary) 55%, transparent),
+      0 0 0 6px color-mix(in oklab, var(--color-cvie-primary-light) 45%, transparent);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 1px transparent;
+  }
+}
+
+.editor-jump-highlight {
+  animation: editorJumpHighlight 1.5s ease-out forwards;
+}
+
+@keyframes editorJumpHighlightItem {
+  0% {
+    background-color: color-mix(in oklab, var(--color-cvie-primary) 18%, white);
+    box-shadow:
+      0 0 0 2px color-mix(in oklab, var(--color-cvie-primary) 82%, transparent),
+      0 0 0 8px color-mix(in oklab, var(--color-cvie-primary-light) 65%, transparent),
+      0 8px 24px color-mix(in oklab, var(--color-cvie-primary) 22%, transparent);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 1px transparent;
+  }
+}
+
+.editor-jump-highlight-item {
+  animation: editorJumpHighlightItem 1.5s ease-out forwards;
+}

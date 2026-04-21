@@ -6,7 +6,13 @@ import { useFocusAfterRemove } from "../hooks/useFocusAfterRemove";
 const MAX_INTERESTS = 50;
 const MAX_INTEREST_CHARS = 200;
 
-export function InterestsSection() {
+export function InterestsSection({
+  highlightedItemId,
+  setItemRef,
+}: {
+  highlightedItemId?: string | null;
+  setItemRef?: (itemId: string) => (node: HTMLElement | null) => void;
+}) {
   const { register, control } = useFormContext<CvData>();
   const { fields, append, remove } = useFieldArray<CvData, "interests", "rhfId">({
     control,
@@ -42,7 +48,16 @@ export function InterestsSection() {
       ) : (
         <ul className="space-y-2">
           {fields.map((field, index) => (
-            <li key={field.rhfId} className="flex items-center gap-2">
+            <li
+              key={field.rhfId}
+              ref={setItemRef ? setItemRef(field.id) : undefined}
+              data-editor-item-id={field.id}
+              className={
+                highlightedItemId === field.id
+                  ? "editor-jump-highlight-item flex items-center gap-2 rounded-xl"
+                  : "flex items-center gap-2 rounded-xl"
+              }
+            >
               <input
                 type="text"
                 maxLength={MAX_INTEREST_CHARS}

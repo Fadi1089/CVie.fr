@@ -109,6 +109,10 @@ const BASE_PAGE_CSS = `
   box-sizing: border-box;
 }
 
+.cv [data-editor-section] {
+  cursor: pointer;
+}
+
 /* ==== overflow-mode contract =============================================
    Drives which DOM units Chromium's PDF page-breaker (and the iframe
    preview script, mirroring the same boundaries) treats as atomic.
@@ -444,6 +448,20 @@ const PAGINATION_SCRIPT = `
   if (document.readyState === 'complete') schedule();
   else window.addEventListener('load', schedule);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
+
+  document.addEventListener('click', function (event) {
+    var target = event.target;
+    if (!target || typeof target.closest !== 'function') return;
+    var sectionNode = target.closest('[data-editor-section]');
+    if (!sectionNode) return;
+    var sectionId = sectionNode.getAttribute('data-editor-section');
+    if (!sectionId) return;
+    var itemNode = target.closest('[data-editor-item-id]');
+    var itemId = itemNode ? itemNode.getAttribute('data-editor-item-id') : null;
+    var payload = { type: 'cv-section-click', sectionId: sectionId };
+    if (itemId) payload.itemId = itemId;
+    window.parent.postMessage(payload, '*');
+  });
 })();
 `;
 
@@ -508,7 +526,7 @@ function renderHeader(info: PersonalInfo): string {
     ? `<img class="photo" src="${escapeHtml(safePhoto)}" alt="${fullName}" />`
     : "";
 
-  return `<header${info.photoUrl ? ' class="has-photo"' : ""}>
+  return `<header data-editor-section="personalInfo"${info.photoUrl ? ' class="has-photo"' : ""}>
 <div class="header-top">
 ${photo}
 <div class="header-identity">
@@ -529,7 +547,7 @@ function renderFormations(formations: Formation[]): string {
     const desc = f.description
       ? `<p class="entry-description">${escapeHtml(f.description)}</p>`
       : "";
-    return `<article>
+    return `<article data-editor-item-id="${escapeHtml(f.id)}">
 <div class="entry-header">
 <h3>${escapeHtml(f.degree)}</h3>
 <p class="entry-meta">${dates}</p>
@@ -538,7 +556,7 @@ function renderFormations(formations: Formation[]): string {
 ${desc}
 </article>`;
   });
-  return `<section>
+  return `<section data-editor-section="formations">
 <h2>Formations</h2>
 ${items.join("\n")}
 </section>`;
@@ -595,7 +613,7 @@ function renderExperiences(experiences: Experience[]): string {
     // output; other non-empty lines render as paragraph text. Lets users
     // mix prose and points clés in a single box.
     const descriptionHtml = renderDescriptionWithBullets(e.description);
-    return `<article>
+    return `<article data-editor-item-id="${escapeHtml(e.id)}">
 <div class="entry-header">
 <h3>${escapeHtml(e.jobTitle)}</h3>
 <p class="entry-meta">${dates}</p>
@@ -605,7 +623,7 @@ ${descriptionHtml}
 ${bulletsHtml}
 </article>`;
   });
-  return `<section>
+  return `<section data-editor-section="experiences">
 <h2>Expériences Professionnelles</h2>
 ${items.join("\n")}
 </section>`;
@@ -630,19 +648,20 @@ function renderSkills(skills: Skill[]): string {
     const names = bucketSkills
       .map((s) => {
         const level = s.level
-          ? ` <span class="skill-level">(${escapeHtml(s.level)})</span>`
+          ? ` <span class="skill-level" data-editor-item-id="${escapeHtml(s.id)}">(${escapeHtml(s.level)})</span>`
           : "";
-        return `<span class="skill-name">${escapeHtml(s.name)}</span>${level}`;
+        return `<span class="skill-token" data-editor-item-id="${escapeHtml(s.id)}"><span class="skill-name">${escapeHtml(s.name)}</span>${level}</span>`;
       })
       .join(", ");
     const label =
       category === UNCATEGORIZED
         ? ""
         : `<strong class="skill-category">${escapeHtml(category)} :</strong> `;
-    items.push(`<li>${label}${names}</li>`);
+    const fallbackItemId = escapeHtml(bucketSkills[0]?.id ?? "");
+    items.push(`<li data-editor-item-id="${fallbackItemId}">${label}${names}</li>`);
   }
 
-  return `<section>
+  return `<section data-editor-section="skills">
 <h2>Compétences</h2>
 <ul class="skills-grouped">
 ${items.join("\n")}
@@ -654,9 +673,9 @@ function renderLanguages(languages: Language[]): string {
   if (languages.length === 0) return "";
   const items = languages.map(
     (l) =>
-      `<li><span class="lang-name">${escapeHtml(l.name)}</span><span class="lang-level">${escapeHtml(l.level)}</span></li>`,
+      `<li data-editor-item-id="${escapeHtml(l.id)}"><span class="lang-name">${escapeHtml(l.name)}</span><span class="lang-level">${escapeHtml(l.level)}</span></li>`,
   );
-  return `<section>
+  return `<section data-editor-section="languages">
 <h2>Langues</h2>
 <ul class="languages-list">
 ${items.join("\n")}
@@ -666,8 +685,8 @@ ${items.join("\n")}
 
 function renderInterests(interests: Interest[]): string {
   if (interests.length === 0) return "";
-  const items = interests.map((i) => `<li>${escapeHtml(i.name)}</li>`);
-  return `<section>
+  const items = interests.map((i) => `<li data-editor-item-id="${escapeHtml(i.id)}">${escapeHtml(i.name)}</li>`);
+  return `<section data-editor-section="interests">
 <h2>Centres d'Intérêt</h2>
 <ul class="interests-list">
 ${items.join("")}

@@ -16,6 +16,7 @@ type Props = {
   scale: number;
   overflowMode: OverflowMode;
   resetNonce?: number;
+  onSectionClick?: (payload: { sectionId: string; itemId?: string }) => void;
 };
 
 type PreviewPhase = "idle" | "rendering" | "ready" | "error";
@@ -62,7 +63,13 @@ function firstValidationMessage(values: CvData): string {
   return parsed.error.issues[0]?.message ?? "Vérifiez les champs du CV.";
 }
 
-export function EditorPreviewPane({ templateId, scale, overflowMode, resetNonce }: Props) {
+export function EditorPreviewPane({
+  templateId,
+  scale,
+  overflowMode,
+  resetNonce,
+  onSectionClick,
+}: Props) {
   const { getValues, control } = useFormContext<CvData>();
   const { isDirty } = useFormState({ control });
   const autofillSync = useAutofillSyncContext();
@@ -137,7 +144,21 @@ export function EditorPreviewPane({ templateId, scale, overflowMode, resetNonce 
       // Restore as defense-in-depth alongside the source check.
       if (e.origin !== "null") return;
       if (e.source !== iframeRef.current.contentWindow) return;
-      const data = e.data as { type?: string; height?: number };
+      const data = e.data as {
+        type?: string;
+        height?: number;
+        sectionId?: string;
+        itemId?: string;
+      };
+      if (data?.type === "cv-section-click") {
+        if (typeof data.sectionId === "string" && data.sectionId.trim().length > 0) {
+          onSectionClick?.({
+            sectionId: data.sectionId,
+            itemId: typeof data.itemId === "string" ? data.itemId : undefined,
+          });
+        }
+        return;
+      }
       if (data?.type !== "cv-height") return;
       if (typeof data.height !== "number" || !Number.isFinite(data.height)) {
         return;
@@ -150,7 +171,7 @@ export function EditorPreviewPane({ templateId, scale, overflowMode, resetNonce 
     }
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, []);
+  }, [onSectionClick]);
 
   useEffect(() => {
     // Dev-only perf instrumentation (Story 2-3 AC10). Mark the onChange→srcDoc
@@ -256,7 +277,7 @@ export function EditorPreviewPane({ templateId, scale, overflowMode, resetNonce 
               referrerPolicy="no-referrer"
               aria-label="Aperçu du CV"
               title="Aperçu du CV"
-              style={{ height: `${iframeHeight}px`, pointerEvents: "none" }}
+              style={{ height: `${iframeHeight}px` }}
               className={cn(
                 "block w-full border-0 bg-white",
                 prefersReducedMotion

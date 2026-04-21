@@ -9,7 +9,13 @@ import { useFocusAfterRemove } from "../hooks/useFocusAfterRemove";
 
 const MAX_FORMATIONS = 50;
 
-export function FormationsSection() {
+export function FormationsSection({
+  highlightedItemId,
+  setItemRef,
+}: {
+  highlightedItemId?: string | null;
+  setItemRef?: (itemId: string) => (node: HTMLElement | null) => void;
+}) {
   const { control } = useFormContext<CvData>();
   const { fields, append, remove } = useFieldArray<CvData, "formations", "rhfId">({
     control,
@@ -39,14 +45,24 @@ export function FormationsSection() {
         }
       >
         {fields.map((field, index) => (
-          <FormationCard
+          <div
             key={field.rhfId}
-            index={index}
-            onRemove={() => {
-              remove(index);
-              focusAfterRemove(index);
-            }}
-          />
+            ref={setItemRef ? setItemRef(field.id) : undefined}
+            data-editor-item-id={field.id}
+            className={
+              highlightedItemId === field.id
+                ? "editor-jump-highlight-item scroll-mt-24 rounded-xl"
+                : "scroll-mt-24 rounded-xl"
+            }
+          >
+            <FormationCard
+              index={index}
+              onRemove={() => {
+                remove(index);
+                focusAfterRemove(index);
+              }}
+            />
+          </div>
         ))}
       </SectionShell>
     </div>
