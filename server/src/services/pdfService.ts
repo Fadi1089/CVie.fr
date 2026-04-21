@@ -1,5 +1,11 @@
 import { chromium, type Browser } from "playwright";
-import { renderCvHtml, safeImageUrl, type CvData } from "@cvie/shared";
+import {
+  renderCvHtml,
+  safeImageUrl,
+  type CvData,
+  type OverflowMode,
+  type TemplateId,
+} from "@cvie/shared";
 
 /**
  * Singleton Chromium browser. One launch per server lifetime, reused across
@@ -43,35 +49,84 @@ async function getBrowser(): Promise<Browser> {
  * placeholder) reach the renderer. This prevents SSRF via user-supplied URLs
  * in CV fields.
  */
-export async function generateCvPdf(data: CvData): Promise<Uint8Array> {
+export async function generateCvPdf(
+  data: CvData,
+  template: TemplateId = "classique",
+  scale = 1,
+  overflowMode: OverflowMode = "section",
+): Promise<Uint8Array> {
+  // Playwright accepts scale 0.1–2. Clamp defensively even though the route
+  // schema caps it — keeps the service safe when called from other code paths.
+  const safeScale = Math.min(2, Math.max(0.1, Number.isFinite(scale) ? scale : 1));
   const browser = await getBrowser();
-  const context = await browser.newContext();
+  // Pin viewport to full A4 width (210mm @ 96dpi = 794px). Templates declare
+  // .cv-paginated with `width: 210mm` for the iframe preview chrome; a
+  // narrower viewport makes that element overflow the body horizontally,
+  // which Chromium clips on the right edge of the print canvas (symptom:
+  // trailing date characters chopped off). Matching the viewport to the
+  // CSS page width lets the pre-print layout and the print canvas share
+  // the same x-axis — @media print later collapses widths to content zone.
+  const context = await browser.newContext({
+    viewport: { width: 794, height: 1123 },
+    deviceScaleFactor: 1,
+  });
   try {
     const page = await context.newPage();
     // Defense-in-depth SSRF block: abort every non-data: request before it
-    // hits the network. The Classique template uses only inline assets
-    // (data URIs + embedded CSS), so nothing legitimate needs the network.
+    // hits the network. Exception: Google Fonts CDN — templates @import
+    // webfonts (Newsreader/Inter in classique), and falling back to
+    // Georgia/Times changes glyph metrics enough that the PDF reflows to
+    // an extra page vs. the preview iframe (which loads fonts freely).
+    // Hostnames are fixed, no user data reaches the URL → not an SSRF vector.
     await page.route("**/*", (route) => {
       const url = route.request().url();
       if (url.startsWith("data:") || url.startsWith("about:")) {
         return route.continue();
+      }
+      try {
+        const host = new URL(url).host;
+        if (host === "fonts.googleapis.com" || host === "fonts.gstatic.com") {
+          return route.continue();
+        }
+      } catch {
+        /* malformed URL — fall through to abort */
       }
       return route.abort();
     });
 
     const html = renderCvHtml(
       await inlineRemotePhotoForPdf(data),
-      "classique",
+      template,
+      safeScale,
+      overflowMode,
     );
     await page.setContent(html, {
-      waitUntil: "domcontentloaded",
+      waitUntil: "load",
       timeout: 10_000,
     });
+    // Block until webfonts finish downloading + parsing. Without this,
+    // Chromium can snapshot the PDF before Newsreader/Inter resolve and
+    // render with fallback metrics — the same source of preview/PDF
+    // pagination divergence the route allowlist above is meant to fix.
+    // Run in the page context — `document` resolves there, not in Node.
+    // Typed as a string-bodied function so the server tsconfig (no DOM lib)
+    // doesn't choke on the `document` reference.
+    await page.evaluate("document.fonts && document.fonts.ready");
     await page.emulateMedia({ media: "print" });
     const pdf = await page.pdf({
       format: "A4",
       printBackground: true,
-      margin: { top: 0, right: 0, bottom: 0, left: 0 },
+      // Per-page margin comes from the renderer's `@page` rule (see
+      // BASE_PAGE_CSS). `preferCSSPageSize: true` makes Chromium honor it,
+      // and the Playwright `margin` option would be ignored anyway — so we
+      // don't pass one here, to keep the single source of truth.
+      //
+      // We deliberately do NOT pass Playwright's `scale` option: that scales
+      // the whole rendered page (content + margins) down onto A4, producing
+      // a tiny CV with big white borders. Density scaling is driven by the
+      // --cv-scale CSS variable injected by renderCvHtml, which multiplies
+      // only template-owned lengths (fonts, margins, padding) — A4 page
+      // geometry stays exactly 210×297mm.
       preferCSSPageSize: true,
     });
     return pdf;

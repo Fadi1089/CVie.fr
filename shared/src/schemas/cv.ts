@@ -113,7 +113,7 @@ export const formationSchema = z
     description: z.string().max(MAX_LONG).optional(),
   })
   .refine(isEndAfterStart, {
-    message: "La date de fin doit suivre la date de début",
+    message: "La date de début doit précéder la date de fin",
     path: ["endDate"],
   });
 
@@ -131,7 +131,7 @@ export const experienceSchema = z
     description: z.string().max(MAX_LONG).optional(),
   })
   .refine(isEndAfterStart, {
-    message: "La date de fin doit suivre la date de début",
+    message: "La date de début doit précéder la date de fin",
     path: ["endDate"],
   });
 

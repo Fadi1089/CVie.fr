@@ -47,6 +47,25 @@ export function InterestsSection() {
                 type="text"
                 maxLength={MAX_INTEREST_CHARS}
                 {...register(`interests.${index}.name` as const)}
+                onPaste={(e) => {
+                  const pasted = e.clipboardData.getData("text");
+                  const input = e.currentTarget;
+                  const start = input.selectionStart ?? input.value.length;
+                  const end = input.selectionEnd ?? input.value.length;
+                  const before = input.value.slice(0, start);
+                  const after = input.value.slice(end);
+                  const beforePoints = [...before].length;
+                  const afterPoints = [...after].length;
+                  const budget = Math.max(
+                    0,
+                    MAX_INTEREST_CHARS - beforePoints - afterPoints,
+                  );
+                  const clamped = [...pasted].slice(0, budget).join("");
+                  if (clamped === pasted) return;
+                  e.preventDefault();
+                  input.setRangeText(clamped, start, end, "end");
+                  input.dispatchEvent(new Event("input", { bubbles: true }));
+                }}
                 placeholder="ex. Photographie argentique"
                 aria-label={`Centre d'intérêt ${index + 1}`}
                 className="block min-h-11 w-full rounded-md border border-[var(--color-ink)]/15 bg-white px-3 py-2 text-[14px] leading-6 text-[var(--color-ink)] outline-none transition-colors focus-visible:border-[var(--color-ink)] focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/20 motion-reduce:transition-none"

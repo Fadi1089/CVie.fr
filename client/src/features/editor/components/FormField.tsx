@@ -42,6 +42,11 @@ type TextareaProps<T extends FieldValues> = BaseProps<T> & {
 type SelectProps<T extends FieldValues> = BaseProps<T> & {
   as: "select";
   children: React.ReactNode;
+  /**
+   * If true, the placeholder option stays selectable so the user can clear
+   * a previously chosen value back to "none". Use for optional selects.
+   */
+  placeholderSelectable?: boolean;
 };
 
 type FormFieldProps<T extends FieldValues> =
@@ -217,7 +222,7 @@ export function FormField<T extends FieldValues>(props: FormFieldProps<T>) {
           onAnimationStart={onAutofillAnimation}
         >
           {placeholder ? (
-            <option value="" disabled>
+            <option value="" disabled={!props.placeholderSelectable}>
               {placeholder}
             </option>
           ) : null}

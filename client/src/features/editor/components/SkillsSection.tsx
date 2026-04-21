@@ -81,10 +81,11 @@ function SkillCard({
       <FormField<CvData>
         as="select"
         name={`skills.${index}.level`}
-        label="Niveau"
+        label="Niveau (facultatif)"
         register={register}
         errors={errors}
         placeholder="Non précisé"
+        placeholderSelectable
         registerOptions={{
           // Coerce empty string back to undefined so the optional enum
           // validates cleanly when the user picks the placeholder option.

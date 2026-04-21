@@ -167,28 +167,27 @@ export function MonthYearPicker<T extends FieldValues>({
   function writeValue(value: string, options?: { validate?: boolean }) {
     setValue(name, value as never, {
       shouldDirty: true,
-      shouldValidate: options?.validate ?? true,
+      shouldValidate: options?.validate ?? false,
       shouldTouch: true,
     });
   }
 
   function commitPartial(year: string, month: string) {
     setDraft({ month, year });
-    // Commit only when both halves are set; otherwise leave RHF at "" so the
-    // schema never sees a garbage string. Local `draft` keeps the partial
-    // selection visible in the UI.
     if (year && month) {
-      writeValue(`${year}-${month}`);
-    } else {
+      writeValue(`${year}-${month}`, { validate: true });
+    } else if (!year && !month) {
       writeValue("", { validate: false });
     }
+    // Else: one half present, one missing — preserve previous committed value.
   }
 
   function togglePresent(checked: boolean) {
     if (checked) {
-      writeValue(PRESENT_SENTINEL);
+      writeValue(PRESENT_SENTINEL, { validate: true });
     } else {
-      writeValue(lastConcreteRef.current || "");
+      const restored = lastConcreteRef.current || "";
+      writeValue(restored, { validate: restored.length > 0 });
     }
   }
 

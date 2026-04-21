@@ -1,16 +1,32 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FormProvider, useFormContext } from "react-hook-form";
 import { Link, useSearchParams } from "react-router";
-import { cvDataSchema, templateRegistry, type CvData, type TemplateId } from "@cvie/shared";
+import {
+  cvDataSchema,
+  templateRegistry,
+  type CvData,
+  type OverflowMode,
+  type TemplateId,
+} from "@cvie/shared";
 import { cn } from "@/lib/utils";
 import { AutofillSyncContext, useAutofillSync } from "../hooks/useAutofillSync";
 import { useCvDraft, type PersistStatus } from "../hooks/useCvDraft";
+import {
+  CV_SCALE_DEFAULT,
+  CV_SCALE_MAX,
+  CV_SCALE_MIN,
+  CV_SCALE_STEP,
+  useCvScale,
+} from "../hooks/useCvScale";
+import { useCvOverflowMode } from "../hooks/useCvOverflowMode";
+import { OverflowModeSelector } from "./OverflowModeSelector";
 import { EditorPreviewPane } from "./EditorPreviewPane";
 import { ExperiencesSection } from "./ExperiencesSection";
 import { FormationsSection } from "./FormationsSection";
 import { InterestsSection } from "./InterestsSection";
 import { LanguagesSection } from "./LanguagesSection";
 import { CvImportButton } from "./CvImportButton";
+import { CvResetButton } from "./CvResetButton";
 import { MobileTabBar, type EditorTab } from "./MobileTabBar";
 import { PersonalInfoForm } from "./PersonalInfoForm";
 import { SkillsSection } from "./SkillsSection";
@@ -86,9 +102,17 @@ export function CvEditor() {
     templateRegistry[0] ??
     SAFE_FALLBACK_META;
 
-  const { form, persistStatus } = useCvDraft();
+  const { form, persistStatus, resetDraft } = useCvDraft();
+  const { scale, setScale, resetScale } = useCvScale();
+  const { overflowMode, setOverflowMode } = useCvOverflowMode();
   const [mobileTab, setMobileTab] = useState<EditorTab>("edit");
   const [unknownBannerDismissed, setUnknownBannerDismissed] = useState(false);
+  const [resetNonce, setResetNonce] = useState(0);
+
+  const handleReset = () => {
+    resetDraft();
+    setResetNonce((n) => n + 1);
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -104,13 +128,12 @@ export function CvEditor() {
     if (typeof window === "undefined") return;
     function beforeUnload(e: BeforeUnloadEvent) {
       if (!form.formState.isDirty) return;
-      if (form.formState.isValid) return;
       e.preventDefault();
       e.returnValue = "";
     }
     window.addEventListener("beforeunload", beforeUnload);
     return () => window.removeEventListener("beforeunload", beforeUnload);
-  }, [form.formState.isDirty, form.formState.isValid]);
+  }, [form.formState.isDirty]);
 
   return (
     <FormProvider {...form}>
@@ -123,6 +146,13 @@ export function CvEditor() {
         onDismissUnknownBanner={() => setUnknownBannerDismissed(true)}
         mobileTab={mobileTab}
         setMobileTab={setMobileTab}
+        scale={scale}
+        setScale={setScale}
+        resetScale={resetScale}
+        overflowMode={overflowMode}
+        setOverflowMode={setOverflowMode}
+        resetDraft={handleReset}
+        resetNonce={resetNonce}
       />
     </FormProvider>
   );
@@ -137,6 +167,13 @@ type EditorShellProps = {
   onDismissUnknownBanner: () => void;
   mobileTab: EditorTab;
   setMobileTab: (t: EditorTab) => void;
+  scale: number;
+  setScale: (next: number) => void;
+  resetScale: () => void;
+  overflowMode: OverflowMode;
+  setOverflowMode: (next: OverflowMode) => void;
+  resetDraft: () => void;
+  resetNonce: number;
 };
 
 function EditorShell({
@@ -148,6 +185,13 @@ function EditorShell({
   onDismissUnknownBanner,
   mobileTab,
   setMobileTab,
+  scale,
+  setScale,
+  resetScale,
+  overflowMode,
+  setOverflowMode,
+  resetDraft,
+  resetNonce,
 }: EditorShellProps) {
   const autofillSync = useAutofillSync<CvData>();
 
@@ -161,8 +205,15 @@ function EditorShell({
         className="atelier-paper min-h-screen text-[var(--color-ink)]"
       >
         <EditorHeader
+          templateId={templateId}
           templateName={templateName}
           persistStatus={persistStatus}
+          scale={scale}
+          setScale={setScale}
+          resetScale={resetScale}
+          overflowMode={overflowMode}
+          setOverflowMode={setOverflowMode}
+          resetDraft={resetDraft}
         />
 
         {unknownQuery && !unknownBannerDismissed ? (
@@ -200,7 +251,12 @@ function EditorShell({
               aria-label="Aperçu du CV"
             >
               <div className="h-[calc(100vh-140px)] overflow-hidden rounded-md border border-[var(--color-rule)] bg-white md:h-full md:rounded-none md:border-0 md:bg-transparent">
-                <EditorPreviewPane templateId={templateId} />
+                <EditorPreviewPane
+                  templateId={templateId}
+                  scale={scale}
+                  overflowMode={overflowMode}
+                  resetNonce={resetNonce}
+                />
               </div>
             </aside>
           </section>
@@ -228,11 +284,25 @@ function FormSections() {
 }
 
 function EditorHeader({
+  templateId,
   templateName,
   persistStatus,
+  scale,
+  setScale,
+  resetScale,
+  overflowMode,
+  setOverflowMode,
+  resetDraft,
 }: {
+  templateId: TemplateId;
   templateName: string;
   persistStatus: PersistStatus;
+  scale: number;
+  setScale: (next: number) => void;
+  resetScale: () => void;
+  overflowMode: OverflowMode;
+  setOverflowMode: (next: OverflowMode) => void;
+  resetDraft: () => void;
 }) {
   const persistText =
     persistStatus === "failed"
@@ -266,19 +336,111 @@ function EditorHeader({
         >
           {persistText}
         </span>
+        <ScaleSlider scale={scale} setScale={setScale} resetScale={resetScale} />
+        <OverflowModeSelector value={overflowMode} onChange={setOverflowMode} />
         <CvImportButton />
-        <ExportPdfButton />
+        <CvResetButton onReset={resetDraft} />
+        <ExportPdfButton
+          templateId={templateId}
+          scale={scale}
+          overflowMode={overflowMode}
+        />
       </div>
     </header>
   );
 }
 
+function ScaleSlider({
+  scale,
+  setScale,
+  resetScale,
+}: {
+  scale: number;
+  setScale: (next: number) => void;
+  resetScale: () => void;
+}) {
+  const percent = Math.round(scale * 100);
+  const isDefault = Math.abs(scale - CV_SCALE_DEFAULT) < 0.001;
+  return (
+    <div
+      className="hidden items-center gap-2 rounded-md border border-[var(--color-rule)] bg-white/70 px-2.5 py-1.5 md:inline-flex"
+      role="group"
+      aria-label="Densité du CV"
+    >
+      <span
+        aria-hidden="true"
+        className="font-mono-caps text-[10px] tracking-wider text-[var(--color-ink-soft)]"
+      >
+        Densité
+      </span>
+      <input
+        type="range"
+        min={CV_SCALE_MIN}
+        max={CV_SCALE_MAX}
+        step={CV_SCALE_STEP}
+        value={scale}
+        onChange={(e) => setScale(Number.parseFloat(e.target.value))}
+        aria-label="Ajuster la densité d'affichage du CV"
+        aria-valuetext={`${percent} pour cent`}
+        className="h-1 w-28 cursor-pointer appearance-none rounded-full bg-[var(--color-rule)] accent-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/30"
+      />
+      <span className="font-mono-caps w-10 text-right text-[11px] tabular-nums text-[var(--color-ink)]">
+        {percent}%
+      </span>
+      <button
+        type="button"
+        onClick={resetScale}
+        disabled={isDefault}
+        aria-label="Réinitialiser la densité"
+        title="Réinitialiser la densité"
+        className="inline-flex h-5 w-5 items-center justify-center rounded text-[13px] leading-none text-[var(--color-ink-soft)] transition-colors hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/30 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
+      >
+        ⟲
+      </button>
+    </div>
+  );
+}
+
 type ExportStatus = "idle" | "pending" | "error";
 
-function ExportPdfButton() {
+function parseContentDispositionFilename(cd: string): string | null {
+  const star = /filename\*=\s*([^'']+)''([^;]+)/i.exec(cd);
+  if (star && star[2]) {
+    try {
+      return decodeURIComponent(star[2].trim());
+    } catch {
+      // fall through
+    }
+  }
+  const quoted = /filename="([^"]+)"/i.exec(cd);
+  if (quoted?.[1]) return quoted[1];
+  const unquoted = /filename=([^;]+)/i.exec(cd);
+  if (unquoted?.[1]) return unquoted[1].trim();
+  return null;
+}
+
+function ExportPdfButton({
+  templateId,
+  scale,
+  overflowMode,
+}: {
+  templateId: TemplateId;
+  scale: number;
+  overflowMode: OverflowMode;
+}) {
   const { getValues } = useFormContext<CvData>();
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      abortRef.current?.abort();
+    };
+  }, []);
 
   async function handleExport() {
     const values = getValues();
@@ -290,19 +452,34 @@ function ExportPdfButton() {
     }
     setStatus("pending");
     setErrorMessage(null);
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
       const res = await fetch("/api/v1/cv/pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsed.data),
+        body: JSON.stringify({ ...parsed.data, templateId, scale, overflowMode }),
+        signal: controller.signal,
       });
       if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
+        let detail = "";
+        try {
+          const ct = res.headers.get("Content-Type") ?? "";
+          if (ct.includes("application/json")) {
+            const j = await res.json();
+            detail = typeof j?.message === "string" ? j.message : JSON.stringify(j);
+          } else {
+            detail = await res.text();
+          }
+        } catch {
+          // ignore parse errors
+        }
+        throw new Error(detail ? `HTTP ${res.status}: ${detail}` : `HTTP ${res.status}`);
       }
       const blob = await res.blob();
       const contentDisposition = res.headers.get("Content-Disposition") ?? "";
-      const filenameMatch = /filename="([^"]+)"/.exec(contentDisposition);
-      const filename = filenameMatch?.[1] ?? "cv.pdf";
+      const filename = parseContentDispositionFilename(contentDisposition) ?? "cv.pdf";
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -311,11 +488,18 @@ function ExportPdfButton() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      setStatus("idle");
+      if (mountedRef.current) setStatus("idle");
     } catch (err) {
+      if ((err as { name?: string })?.name === "AbortError") return;
       console.error("[ExportPdfButton] export failed:", err);
+      if (!mountedRef.current) return;
       setStatus("error");
-      setErrorMessage("Échec de l'export. Réessayez dans un instant.");
+      const detail = err instanceof Error ? err.message : "";
+      setErrorMessage(
+        detail
+          ? `Échec de l'export (${detail}). Réessayez dans un instant.`
+          : "Échec de l'export. Réessayez dans un instant.",
+      );
     }
   }
 

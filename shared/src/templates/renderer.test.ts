@@ -15,8 +15,20 @@ describe("renderCvHtml", () => {
   it("returns a complete HTML document starting with <!DOCTYPE html>", () => {
     const html = renderCvHtml(sampleCv, "classique");
     expect(html.startsWith("<!DOCTYPE html>")).toBe(true);
-    expect(html).toContain('<html lang="fr">');
+    expect(html).toMatch(/<html lang="fr"[^>]*>/);
     expect(html).toContain("</html>");
+  });
+
+  it("bakes the default overflow mode into the .cv-paginated class", () => {
+    const html = renderCvHtml(sampleCv, "classique");
+    expect(html).toContain('class="cv-paginated cv-overflow-section"');
+    expect(html).toContain("break-inside: avoid");
+  });
+
+  it("switches the overflow class when the element mode is requested", () => {
+    const html = renderCvHtml(sampleCv, "classique", 1, "element");
+    expect(html).toContain('class="cv-paginated cv-overflow-element"');
+    expect(html).not.toContain('class="cv-paginated cv-overflow-section"');
   });
 
   it("contains all 5 French section headings", () => {
@@ -93,7 +105,7 @@ describe("renderCvHtml", () => {
   it("wraps content in .cv-canvas and .cv-paginated for multi-page layout", () => {
     const html = renderCvHtml(sampleCv, "classique");
     expect(html).toContain('<div class="cv-canvas">');
-    expect(html).toContain('<div class="cv-paginated">');
+    expect(html).toMatch(/<div class="cv-paginated cv-overflow-\w+">/);
     // Includes the pagination script that posts height to parent and creates
     // page-rectangle backdrops.
     expect(html).toContain("cv-page-bg");
@@ -119,7 +131,7 @@ describe("renderCvHtml", () => {
     expect(html).toContain("Yasmine Benali");
     expect(html).toContain("<h2>Formations</h2>");
     // Moderne-specific accent color should appear in the inlined CSS.
-    expect(html).toContain("#2D5F3F");
+    expect(html).toContain("#A8421E");
   });
 
   it("renders the Minimaliste template and hides the photo via CSS", () => {

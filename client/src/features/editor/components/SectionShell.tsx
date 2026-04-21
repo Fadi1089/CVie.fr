@@ -63,6 +63,7 @@ export const SectionShell = forwardRef<HTMLButtonElement, Props>(function Sectio
           </p>
           <button
             type="button"
+            ref={addButtonRef}
             onClick={onAdd}
             disabled={disabled}
             className={cn(

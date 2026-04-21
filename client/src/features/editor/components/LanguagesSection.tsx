@@ -67,17 +67,18 @@ function LanguageCard({
     formState: { errors, dirtyFields },
   } = useFormContext<CvData>();
   const name = useWatch({ control, name: `languages.${index}.name` });
+  const level = useWatch({ control, name: `languages.${index}.level` });
 
-  // Nudge the user to confirm the seeded "B1" default until they've touched
-  // the level select at least once. RHF's `dirtyFields.languages[i].level`
-  // flips true on first user change and stays true for the rest of the
-  // session.
-  const levelConfirmed = useMemo(() => {
+  // Show warning only while the seeded default level is still in place AND
+  // the user has touched it (flip dirty). Once they pick a non-default
+  // level the badge stays gone across reloads.
+  const showLevelWarning = useMemo(() => {
+    if (level !== DEFAULT_LEVEL) return false;
     const langs = dirtyFields.languages as
       | Array<Record<string, unknown>>
       | undefined;
     return Boolean(langs?.[index]?.level);
-  }, [dirtyFields.languages, index]);
+  }, [dirtyFields.languages, index, level]);
 
   return (
     <SectionCard
@@ -106,7 +107,7 @@ function LanguageCard({
             </option>
           ))}
         </FormField>
-        {!levelConfirmed ? (
+        {showLevelWarning ? (
           <p className="text-[11px] text-amber-700" aria-live="polite">
             ⚠ Niveau à vérifier
           </p>

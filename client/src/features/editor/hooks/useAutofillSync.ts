@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   type MutableRefObject,
 } from "react";
@@ -110,5 +111,8 @@ export function useAutofillSync<T extends FieldValues>() {
     };
   }, [syncAll]);
 
-  return { formRef, syncAll, onBlurCapture };
+  return useMemo(
+    () => ({ formRef, syncAll, onBlurCapture }),
+    [syncAll, onBlurCapture],
+  );
 }

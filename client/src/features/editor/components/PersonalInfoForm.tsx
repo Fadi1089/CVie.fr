@@ -1,14 +1,19 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import type { CvData } from "@cvie/shared";
 import { FormField } from "./FormField";
+
+const RESERVED_USERNAMES = new Set(["http", "https", "www", "api"]);
 
 function detectSource(raw: string): "linkedin" | "github" | null {
   const v = raw.trim();
   if (!v) return null;
   if (/linkedin\.com/i.test(v)) return "linkedin";
   if (/github\.com/i.test(v)) return "github";
-  if (/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/.test(v)) return "github";
+  if (/^[A-Za-z0-9](?:[A-Za-z0-9-]{1,38})$/.test(v)) {
+    if (RESERVED_USERNAMES.has(v.toLowerCase())) return null;
+    return "github";
+  }
   return null;
 }
 
@@ -22,6 +27,14 @@ export function PersonalInfoForm() {
   const [extractState, setExtractState] = useState<
     { status: "idle" } | { status: "loading" } | { status: "error"; message: string } | { status: "success" }
   >({ status: "idle" });
+  const mountedRef = useRef(true);
+  const requestGenRef = useRef(0);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   async function handleExtract() {
     const source = detectSource(extractValue);
@@ -32,17 +45,23 @@ export function PersonalInfoForm() {
       });
       return;
     }
+    const gen = ++requestGenRef.current;
     setExtractState({ status: "loading" });
     try {
       const res = await fetch(
         `/api/v1/avatar/${source}?value=${encodeURIComponent(extractValue.trim())}`,
       );
       const data = (await res.json()) as { url?: string; error?: string };
+      if (!mountedRef.current || gen !== requestGenRef.current) return;
       if (!res.ok || !data.url) {
         setExtractState({
           status: "error",
           message: data.error ?? "Extraction impossible.",
         });
+        return;
+      }
+      if (!/^(https:\/\/|data:image\/)/.test(data.url)) {
+        setExtractState({ status: "error", message: "URL invalide" });
         return;
       }
       setValue("personalInfo.photoUrl", data.url, {
@@ -51,6 +70,7 @@ export function PersonalInfoForm() {
       });
       setExtractState({ status: "success" });
     } catch {
+      if (!mountedRef.current || gen !== requestGenRef.current) return;
       setExtractState({ status: "error", message: "Erreur réseau." });
     }
   }

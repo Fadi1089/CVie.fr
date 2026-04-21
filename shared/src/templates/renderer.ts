@@ -14,6 +14,27 @@ import { moderneCss } from "./styles/moderne";
 export type TemplateId = "classique" | "moderne" | "minimaliste";
 
 /**
+ * Controls which DOM units the pagination pipeline treats as atomic when
+ * content overflows an A4 page:
+ *   - "section": entire `<section>` (heading + all entries) moves together.
+ *     Matches the "keep the block together" reader expectation.
+ *   - "element": only the leaf unit that overflows moves — the section
+ *     heading can stay on page N while trailing entries jump to page N+1.
+ *     Squeezes more content onto earlier pages for borderline layouts.
+ *
+ * The mode affects both the PDF (via break-inside CSS) and the iframe
+ * preview (via the pagination script). Baked into HTML as a class on
+ * `.cv-paginated` so PDF, SSR, and preview share a single source of truth.
+ */
+export type OverflowMode = "section" | "element";
+
+const DEFAULT_OVERFLOW_MODE: OverflowMode = "section";
+
+function normalizeOverflowMode(mode: OverflowMode | undefined): OverflowMode {
+  return mode === "element" ? "element" : DEFAULT_OVERFLOW_MODE;
+}
+
+/**
  * Renders a complete, standalone HTML document for a CV.
  *
  * The returned string is self-contained (includes <!DOCTYPE>, <head>, inline
@@ -25,6 +46,8 @@ export type TemplateId = "classique" | "moderne" | "minimaliste";
 export function renderCvHtml(
   data: CvData,
   template: TemplateId = "classique",
+  scale = 1,
+  overflowMode: OverflowMode = DEFAULT_OVERFLOW_MODE,
 ): string {
   const css = getTemplateCss(template);
   const body = renderCvBody(data);
@@ -32,17 +55,29 @@ export function renderCvHtml(
     `${data.personalInfo.firstName} ${data.personalInfo.lastName} — CV`,
   );
 
+  // Clamp defensively at render time so a caller passing e.g. NaN or a
+  // negative scale can't produce broken calc() values that would silently
+  // collapse every template length to 0. The editor slider + route schema
+  // also clamp, this is belt-and-braces.
+  const safeScale =
+    Number.isFinite(scale) && scale > 0
+      ? Math.min(2, Math.max(0.5, scale))
+      : 1;
+
+  const safeMode = normalizeOverflowMode(overflowMode);
+
   return `<!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" style="--cv-scale: ${safeScale}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${title}</title>
-<style>${css}</style>
+<style>${css}
+${BASE_PAGE_CSS}</style>
 </head>
 <body style="margin:0">
 <div class="cv-canvas">
-<div class="cv-paginated">
+<div class="cv-paginated cv-overflow-${safeMode}">
 ${body}
 </div>
 </div>
@@ -52,10 +87,99 @@ ${body}
 }
 
 /**
+ * Renderer-owned page geometry. Appended AFTER template CSS so it wins the
+ * cascade for `@page` descriptors and `.cv` box properties. Templates MUST
+ * NOT redeclare these — page margin, size, and per-page gutter are
+ * cross-cutting concerns of the pagination pipeline, not a template choice.
+ * Keeping them here is what lets a new template ship without breaking PDF
+ * layout or diverging preview from PDF.
+ *
+ * Keep in sync with PAGE_MARGIN_MM in PAGINATION_SCRIPT below.
+ */
+const BASE_PAGE_CSS = `
+/* ==== renderer-owned page geometry (cascade last, template-independent) ==== */
+@page {
+  size: A4;
+  margin: 0.25in;
+}
+.cv {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 0.25in;
+  box-sizing: border-box;
+}
+
+/* ==== overflow-mode contract =============================================
+   Drives which DOM units Chromium's PDF page-breaker (and the iframe
+   preview script, mirroring the same boundaries) treats as atomic.
+   The .cv-paginated wrapper carries a .cv-overflow-{section|element}
+   class baked by renderCvHtml; these selectors pick the matching rules.
+
+   Section mode: entire <section> is unbreakable. If a section exceeds one
+   content-zone height Chromium still splits it (CSS spec fallback) —
+   element mode is the escape hatch for that case.
+
+   Element mode: keep leaf units (article, ul, p) atomic but let the
+   section itself break between them. Lets a heading stay on page N with
+   a trailing <ul> jumping to N+1. Hard lock: ul is atomic so skills-grouped
+   (category lines — cannot page-break reliably) always moves wholesale. */
+.cv-paginated.cv-overflow-section .cv > section {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.cv-paginated.cv-overflow-element .cv > section > article,
+.cv-paginated.cv-overflow-element .cv > section > ul,
+.cv-paginated.cv-overflow-element .cv > section > p {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+@media print {
+  .cv-canvas {
+    background: #ffffff;
+    padding: 0;
+  }
+  .cv-page-bg,
+  .cv-page-advisory {
+    display: none;
+  }
+  .cv-paginated,
+  .cv {
+    margin: 0;
+    box-shadow: none;
+  }
+  .cv-paginated {
+    /* Templates declare .cv-paginated width: 210mm for the iframe preview's
+       framed-sheet look. In PDF that literal width exceeds @page's content
+       zone (210mm - 2x0.25in = 197.3mm), so the right edge gets clipped and
+       the scaled content reflows at a different width than the preview —
+       which is exactly the "editor scale != PDF scale" symptom. Collapse to
+       parent width so the print content zone matches preview's inner zone
+       (210mm - 2x0.25in = same 197.3mm). */
+    width: auto;
+  }
+  .cv {
+    /* In PDF, the @page margin above provides the per-page gutter on every
+       page (including top of page 2+ and bottom of every page). If .cv also
+       kept padding the gutters would stack and shrink the content area. */
+    padding: 0;
+    min-height: 0;
+    width: auto;
+  }
+  .cv [data-page-push] {
+    padding-top: 0 !important;
+  }
+}
+`;
+
+/**
  * Inline script that runs inside the iframe to:
  *   1. Layer "page rectangles" (white, shadow) behind the content at every
  *      297mm boundary — gives the Google Docs multi-page visual feel.
- *   2. Post the total content height back to the parent so the iframe can
+ *   2. Push breakable units so no content lands in a page's top / bottom
+ *      gutter or in the visual gap between pages. The preview therefore
+ *      shows the SAME per-page margins the PDF will get from `@page margin`.
+ *   3. Post the total content height back to the parent so the iframe can
  *      auto-resize to fit (eliminating the nested-scroll UX issue).
  *
  * Runs after fonts and images load so measurements are stable.
@@ -69,32 +193,257 @@ const PAGINATION_SCRIPT = `
   if (window.parent === window) return;
 
   var PAGE_MM = 297;
+  var GAP_MM = 18;
+  // Per-page gutter. MUST match @page margin in BASE_PAGE_CSS so the
+  // preview's content zone is identical to Chromium's PDF content zone.
+  // 0.25in = 6.35mm.
+  var PAGE_MARGIN_MM = 25.4 * 0.25;
   var PX_PER_MM = 96 / 25.4;
+  var pageHeightPx = PAGE_MM * PX_PER_MM;
+  var gapPx = GAP_MM * PX_PER_MM;
+  var marginPx = PAGE_MARGIN_MM * PX_PER_MM;
+  var stride = pageHeightPx + gapPx;
   var lastPostedHeight = -1;
+  // Density scale drives the --cv-scale CSS custom property on the <html>
+  // element. Templates reference it inside calc() to shrink fonts, margins,
+  // paddings, and borders uniformly — page geometry (A4 size, @page margin,
+  // page backdrops) is declared outside the variable system so it stays
+  // absolute. Pagination math therefore needs no scale awareness: content
+  // naturally occupies less height when scaled, and boundary constants
+  // stay fixed at real page dimensions.
+  var scale = 1;
+  // Overflow mode picks which DOM units to treat as atomic. Initial value
+  // is read from the .cv-paginated class baked by renderCvHtml; postMessage
+  // overrides let the editor toggle live without a full re-render.
+  var overflowMode = 'section';
+  var initialWrap = document.querySelector('.cv-paginated');
+  if (initialWrap && initialWrap.classList.contains('cv-overflow-element')) {
+    overflowMode = 'element';
+  }
+
+  window.addEventListener('message', function (e) {
+    var data = e && e.data;
+    if (!data) return;
+    if (data.type === 'cv-scale') {
+      var next = Number(data.scale);
+      if (!isFinite(next) || next <= 0) return;
+      if (next < 0.5) next = 0.5;
+      if (next > 1) next = 1;
+      if (next === scale) return;
+      scale = next;
+      document.documentElement.style.setProperty('--cv-scale', String(scale));
+      lastPostedHeight = -1;
+      schedule();
+      return;
+    }
+    if (data.type === 'cv-overflow-mode') {
+      var nextMode = data.mode === 'element' ? 'element' : 'section';
+      if (nextMode === overflowMode) return;
+      overflowMode = nextMode;
+      // Mirror the mode into the class so both the CSS rules (break-inside)
+      // and any later re-reads of the initial state stay in sync.
+      var wrap = document.querySelector('.cv-paginated');
+      if (wrap) {
+        wrap.classList.remove('cv-overflow-section', 'cv-overflow-element');
+        wrap.classList.add('cv-overflow-' + overflowMode);
+      }
+      lastPostedHeight = -1;
+      schedule();
+    }
+  });
+
+  function resetPushes(cv) {
+    var pushed = cv.querySelectorAll('[data-page-push]');
+    for (var i = 0; i < pushed.length; i++) {
+      pushed[i].style.paddingTop = '';
+      pushed[i].removeAttribute('data-page-push');
+    }
+  }
+
+  function clearChrome(wrap) {
+    var nodes = wrap.querySelectorAll('.cv-page-bg, .cv-page-advisory');
+    for (var i = 0; i < nodes.length; i++) nodes[i].remove();
+  }
+
+  function buildAdvisory(topMm) {
+    var el = document.createElement('div');
+    el.className = 'cv-page-advisory';
+    el.style.top = topMm + 'mm';
+    el.style.height = GAP_MM + 'mm';
+    el.innerHTML = '<div class="cv-page-advisory-inner">' +
+      '<span class="cv-page-advisory-rule"></span>' +
+      '<span class="cv-page-advisory-text"><strong>Usage</strong>En France, un CV gagne à tenir sur deux pages — la concision reste la marque des candidatures soignées.</span>' +
+      '<span class="cv-page-advisory-rule"></span>' +
+      '</div>';
+    return el;
+  }
+
   function paginate() {
     var wrap = document.querySelector('.cv-paginated');
     var cv = document.querySelector('.cv');
     if (!wrap || !cv) return;
-    var existing = wrap.querySelectorAll('.cv-page-bg');
-    for (var i = 0; i < existing.length; i++) existing[i].remove();
-    var totalPx = cv.getBoundingClientRect().height;
-    var pageHeightPx = PAGE_MM * PX_PER_MM;
-    var numPages = Math.max(1, Math.ceil(totalPx / pageHeightPx));
-    for (var i = 0; i < numPages; i++) {
+
+    resetPushes(cv);
+    clearChrome(wrap);
+    // Reset wrap height BEFORE measuring. A previous paginate() at higher
+    // scale may have set a tall minHeight; carrying it into this run keeps
+    // body.scrollHeight inflated and leaves a dead scroll strip below the
+    // content after scaling back down. Strip it, force reflow, then the
+    // later re-assignment sets the right value for the new page count.
+    wrap.style.minHeight = '';
+    void wrap.offsetHeight;
+
+    var contentZoneHeight = pageHeightPx - 2 * marginPx;
+    var cvTop = cv.getBoundingClientRect().top;
+
+    // Push el to the top of its next content zone if it spills the current
+    // page's bottom gutter. Returns true if a push was applied so callers
+    // can track whether the first-overflow decision for a section has fired.
+    function pushIfOverflow(el) {
+      var rect = el.getBoundingClientRect();
+      var top = rect.top - cvTop;
+      var bottom = rect.bottom - cvTop;
+      var page = Math.floor(top / stride);
+      if (page < 0) page = 0;
+      var zoneBottom = page * stride + pageHeightPx - marginPx;
+      var nextZoneTop = (page + 1) * stride + marginPx;
+      if (bottom <= zoneBottom + 0.5) return false;
+      if (top >= nextZoneTop - 0.5) return false;
+      var pushPx = nextZoneTop - top;
+      if (pushPx <= 0) return false;
+      var existing = parseFloat(el.style.paddingTop) || 0;
+      el.style.paddingTop = (existing + pushPx) + 'px';
+      el.setAttribute('data-page-push', '1');
+      // Force synchronous layout so later getBoundingClientRect reads
+      // reflect the push.
+      void el.offsetTop;
+      cvTop = cv.getBoundingClientRect().top;
+      return true;
+    }
+
+    // Walk header + each section in DOM order. In BOTH overflow modes the
+    // preview mirrors Chromium's PDF break behavior:
+    //
+    //   - Section fits in a single content zone → push the whole section
+    //     when it overflows (keeps h2 glued to its body, matching
+    //     page-break-after:avoid on h2).
+    //   - Section is taller than one zone → fall back to per-child pushing
+    //     on <article>/<ul>/<p>. The FIRST overflowing unit triggers a
+    //     section-level push so the h2 travels with it; subsequent units
+    //     push independently, letting the section split between children.
+    //
+    // The overflow-mode CSS distinction (break-inside:avoid on section vs
+    // on children) still drives Chromium's own PDF decisions; the preview
+    // script uses the same algorithm in both modes because Chromium's
+    // fallback for oversized section-atomic is functionally identical to
+    // its element-mode behavior (h2 always glues to first child).
+    var topLevel = cv.querySelectorAll(':scope > header, :scope > section');
+    for (var i = 0; i < topLevel.length; i++) {
+      var el = topLevel[i];
+      var elHeight = el.getBoundingClientRect().height;
+      if (elHeight <= contentZoneHeight + 0.5) {
+        pushIfOverflow(el);
+        continue;
+      }
+      // Oversized — split at atomic children. Leaf units (article/ul/p)
+      // all carry break-inside:avoid so Chromium keeps them atomic in the
+      // PDF; mirror that by pushing individual children.
+      var children = el.querySelectorAll(':scope > article, :scope > ul, :scope > p');
+      var firstOverflowHandled = false;
+      for (var j = 0; j < children.length; j++) {
+        var child = children[j];
+        var childRect = child.getBoundingClientRect();
+        var childTop = childRect.top - cvTop;
+        var childBottom = childRect.bottom - cvTop;
+        var childPage = Math.max(0, Math.floor(childTop / stride));
+        var childZoneBottom = childPage * stride + pageHeightPx - marginPx;
+        var childNextZoneTop = (childPage + 1) * stride + marginPx;
+        if (childBottom <= childZoneBottom + 0.5) continue;
+        if (childTop >= childNextZoneTop - 0.5) continue;
+        if (!firstOverflowHandled) {
+          // Push the SECTION so its h2 follows the first overflowing child.
+          // This is how Chromium resolves page-break-after:avoid on a h2
+          // whose first sibling body gets split to the next page.
+          firstOverflowHandled = pushIfOverflow(el);
+          continue;
+        }
+        pushIfOverflow(child);
+      }
+    }
+
+    // Page count is driven by the LAST REAL CONTENT PIXEL — not cv.height.
+    // cv.height reports the layout box including .cv's 0.25in bottom padding
+    // and the last section's scaled margin-bottom, neither of which is
+    // visible content. Using cv.height tipped single-page CVs at certain
+    // density scales into phantom 2-page layouts. Measure the bottom of the
+    // last top-level child (header/section) to find the true content edge,
+    // then find which page's content zone contains it.
+    var cvRectFinal = cv.getBoundingClientRect();
+    var contentBottomPx = 0;
+    for (var k = 0; k < topLevel.length; k++) {
+      var r = topLevel[k].getBoundingClientRect();
+      var b = r.bottom - cvRectFinal.top;
+      if (b > contentBottomPx) contentBottomPx = b;
+    }
+    var pageIdx = 0;
+    while (pageIdx * stride + pageHeightPx - marginPx < contentBottomPx - 0.5) {
+      pageIdx++;
+      if (pageIdx > 50) break;
+    }
+    var numPages = Math.max(1, pageIdx + 1);
+
+    for (var p = 0; p < numPages; p++) {
       var bg = document.createElement('div');
       bg.className = 'cv-page-bg';
-      bg.style.top = (i * PAGE_MM) + 'mm';
+      bg.style.top = (p * (PAGE_MM + GAP_MM)) + 'mm';
       wrap.appendChild(bg);
     }
-    var h = document.documentElement.scrollHeight;
+
+    // Extend the wrapper to the bottom of the last page so the canvas
+    // (and parent iframe height) don't cut off mid-page when .cv content
+    // ends partway down. Without this, the gray canvas background stops at
+    // .cv's intrinsic height while page-bg rects extend past it.
+    var lastPageBottomMm = numPages * PAGE_MM + (numPages - 1) * GAP_MM;
+    wrap.style.minHeight = lastPageBottomMm + 'mm';
+
+    // Advisory banner lives in the gap between page 1 and page 2, and only
+    // when the document actually overflows onto a second page.
+    if (numPages >= 2) {
+      wrap.appendChild(buildAdvisory(PAGE_MM));
+    }
+
+    // Post height derived from pagination math, not documentElement.scrollHeight.
+    // scrollHeight retains the prior-run value when the document shrinks
+    // (scale 2-pages → back to 1), leaving a dead scroll strip in the parent
+    // iframe. Deterministic formula: canvas vertical padding + wrap's set
+    // height. Read canvas padding from computed style so a print-mode change
+    // or template tweak doesn't silently drift the math.
+    var canvasEl = document.querySelector('.cv-canvas');
+    var canvasPadY = 0;
+    if (canvasEl) {
+      var cs = getComputedStyle(canvasEl);
+      canvasPadY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+    }
+    var h = Math.ceil(lastPageBottomMm * PX_PER_MM + canvasPadY);
     if (h !== lastPostedHeight) {
       lastPostedHeight = h;
       window.parent.postMessage({ type: 'cv-height', height: h }, '*');
     }
   }
-  if (document.readyState === 'complete') paginate();
-  else window.addEventListener('load', paginate);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(paginate);
+
+  function schedule() {
+    // requestAnimationFrame lets browser finish any pending layout before
+    // we measure — prevents a first-paint flash with wrong page count.
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(paginate);
+    } else {
+      paginate();
+    }
+  }
+
+  if (document.readyState === 'complete') schedule();
+  else window.addEventListener('load', schedule);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
 })();
 `;
 
@@ -264,15 +613,38 @@ ${items.join("\n")}
 
 function renderSkills(skills: Skill[]): string {
   if (skills.length === 0) return "";
-  const items = skills.map((s) => {
-    const level = s.level
-      ? ` <span class="skill-level">(${escapeHtml(s.level)})</span>`
-      : "";
-    return `<li><span class="skill-name">${escapeHtml(s.name)}</span>${level}</li>`;
-  });
+
+  // Group by category, preserving insertion order. Uncategorized skills
+  // collect into a single trailing bucket rendered without a label.
+  const buckets = new Map<string, Skill[]>();
+  const UNCATEGORIZED = "__uncategorized__";
+  for (const s of skills) {
+    const key = s.category?.trim() ? s.category.trim() : UNCATEGORIZED;
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(s);
+    else buckets.set(key, [s]);
+  }
+
+  const items: string[] = [];
+  for (const [category, bucketSkills] of buckets) {
+    const names = bucketSkills
+      .map((s) => {
+        const level = s.level
+          ? ` <span class="skill-level">(${escapeHtml(s.level)})</span>`
+          : "";
+        return `<span class="skill-name">${escapeHtml(s.name)}</span>${level}`;
+      })
+      .join(", ");
+    const label =
+      category === UNCATEGORIZED
+        ? ""
+        : `<strong class="skill-category">${escapeHtml(category)} :</strong> `;
+    items.push(`<li>${label}${names}</li>`);
+  }
+
   return `<section>
 <h2>Compétences</h2>
-<ul class="skills-grid">
+<ul class="skills-grouped">
 ${items.join("\n")}
 </ul>
 </section>`;

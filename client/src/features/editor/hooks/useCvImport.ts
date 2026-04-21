@@ -7,13 +7,16 @@ export type ImportStatus = "idle" | "loading" | "success" | "error";
 export type UseCvImportReturn = {
   status: ImportStatus;
   error: string | null;
+  fileName: string | null;
   importPdf: (file: File) => void;
+  cancelImport: () => void;
 };
 
 export function useCvImport(): UseCvImportReturn {
   const { reset } = useFormContext<CvData>();
   const [status, setStatus] = useState<ImportStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -22,10 +25,18 @@ export function useCvImport(): UseCvImportReturn {
     };
   }, []);
 
+  function cancelImport() {
+    abortRef.current?.abort();
+    setStatus("idle");
+    setError(null);
+    setFileName(null);
+  }
+
   function importPdf(file: File) {
     if (file.type !== "application/pdf") {
       setStatus("error");
       setError("Le fichier doit être un PDF.");
+      setFileName(file.name);
       return;
     }
 
@@ -35,6 +46,7 @@ export function useCvImport(): UseCvImportReturn {
 
     setStatus("loading");
     setError(null);
+    setFileName(file.name);
 
     const formData = new FormData();
     formData.append("file", file);
@@ -54,5 +66,5 @@ export function useCvImport(): UseCvImportReturn {
       });
   }
 
-  return { status, error, importPdf };
+  return { status, error, fileName, importPdf, cancelImport };
 }

@@ -303,6 +303,46 @@
   }
 }
 
+/* CV import — document scan beam animation */
+@keyframes cvScanBeam {
+  0%   { top: 6%;  opacity: 0; }
+  8%   { top: 10%; opacity: 1; }
+  82%  { top: 86%; opacity: 1; }
+  92%  { top: 86%; opacity: 0; }
+  100% { top: 6%;  opacity: 0; }
+}
+
+.cv-import-scan-beam {
+  animation: cvScanBeam 2.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cv-import-scan-beam {
+    animation: none;
+    top: 50%;
+    opacity: 0.4;
+  }
+}
+
+/* CV import — success checkmark draw */
+@keyframes cvCheckDraw {
+  from { stroke-dashoffset: 40; }
+  to   { stroke-dashoffset: 0; }
+}
+
+.cv-import-check-draw {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: cvCheckDraw 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cv-import-check-draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
 /*
  * Autofill detection hook. Chrome / Safari apply `:-webkit-autofill` the
  * moment browser or extension autofill fires — but those paths often skip

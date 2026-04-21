@@ -34,7 +34,18 @@ export function SectionCard({
   children,
 }: Props) {
   const [armed, setArmed] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timeoutRef = useRef<number | null>(null);
+  const blurTimeoutRef = useRef<number | null>(null);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      if (blurTimeoutRef.current != null) {
+        clearTimeout(blurTimeoutRef.current);
+        blurTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!armed) {
@@ -44,7 +55,7 @@ export function SectionCard({
       }
       return;
     }
-    timeoutRef.current = setTimeout(() => setArmed(false), ARMED_TIMEOUT_MS);
+    timeoutRef.current = window.setTimeout(() => setArmed(false), ARMED_TIMEOUT_MS);
     return () => {
       if (timeoutRef.current != null) {
         clearTimeout(timeoutRef.current);
@@ -82,7 +93,12 @@ export function SectionCard({
           // Defer the blur-driven disarm a tick so a tap on the button itself
           // (which fires blur-then-click on some touch browsers) still lands.
           onBlur={() => {
-            window.setTimeout(() => setArmed(false), 150);
+            if (blurTimeoutRef.current != null) {
+              clearTimeout(blurTimeoutRef.current);
+            }
+            blurTimeoutRef.current = window.setTimeout(() => {
+              if (mountedRef.current) setArmed(false);
+            }, 150);
           }}
           className={cn(
             "shrink-0 rounded-md border px-3 py-2 text-[12px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 motion-reduce:transition-none",

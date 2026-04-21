@@ -1,8 +1,21 @@
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
+import { z } from "zod";
 import { cvDataSchema } from "@cvie/shared";
 import { generateCvPdf, pdfFilename } from "../services/pdfService";
 import { rateLimit } from "../middleware/rateLimit";
+
+const templateIdSchema = z
+  .enum(["classique", "moderne", "minimaliste"])
+  .optional();
+
+// Client UI exposes scale 0.7–1.0; server allows the wider Playwright-safe
+// range 0.5–1.0 so future UI expansion doesn't require a coordinated deploy.
+// Anything outside gets rejected rather than silently clamped so malformed
+// client payloads are surfaced loudly.
+const scaleSchema = z.number().min(0.5).max(1).optional();
+
+const overflowModeSchema = z.enum(["section", "element"]).optional();
 
 /**
  * Resolve the PDF rate limit from env with NaN-safe fallback. A malformed
@@ -66,8 +79,52 @@ cvRoutes.post(
       );
     }
 
+    const templateParsed = templateIdSchema.safeParse(
+      (body as { templateId?: unknown })?.templateId,
+    );
+    if (!templateParsed.success) {
+      return c.json(
+        {
+          error: "Le template sélectionné est invalide.",
+          code: "INVALID_TEMPLATE",
+        },
+        400,
+      );
+    }
+
+    const scaleParsed = scaleSchema.safeParse(
+      (body as { scale?: unknown })?.scale,
+    );
+    if (!scaleParsed.success) {
+      return c.json(
+        {
+          error: "L'échelle demandée est invalide.",
+          code: "INVALID_SCALE",
+        },
+        400,
+      );
+    }
+
+    const overflowParsed = overflowModeSchema.safeParse(
+      (body as { overflowMode?: unknown })?.overflowMode,
+    );
+    if (!overflowParsed.success) {
+      return c.json(
+        {
+          error: "Le mode de débordement demandé est invalide.",
+          code: "INVALID_OVERFLOW_MODE",
+        },
+        400,
+      );
+    }
+
     try {
-      const pdf = await generateCvPdf(parsed.data);
+      const pdf = await generateCvPdf(
+        parsed.data,
+        templateParsed.data,
+        scaleParsed.data,
+        overflowParsed.data,
+      );
       const filename = pdfFilename(parsed.data);
       return new Response(new Uint8Array(pdf), {
         status: 200,

@@ -1,18 +1,41 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useFormContext, useFormState, useWatch } from "react-hook-form";
-import { cvDataSchema, renderCvHtml, type CvData, type TemplateId } from "@cvie/shared";
+import {
+  cvDataSchema,
+  renderCvHtml,
+  type CvData,
+  type OverflowMode,
+  type TemplateId,
+} from "@cvie/shared";
 import { cn } from "@/lib/utils";
+import { useReducedMotion } from "@/lib/useReducedMotion";
 import { useAutofillSyncContext } from "../hooks/useAutofillSync";
 
 type Props = {
   templateId: TemplateId;
+  scale: number;
+  overflowMode: OverflowMode;
+  resetNonce?: number;
 };
 
 type PreviewPhase = "idle" | "rendering" | "ready" | "error";
 
 const MAX_IFRAME_HEIGHT_PX = 20_000;
 const MIN_IFRAME_HEIGHT_PX = 297 * 3.78;
-const AUTO_REFRESH_DEBOUNCE_MS = 300;
+// Preview debounce — Story 2-3 NFR6 (≤100 ms p50 onChange→srcDoc). 80 ms debounce
+// plus ~10–20 ms render headroom on modern Chrome lands under budget. See the
+// persistence debounce in `useCvDraft` (300 ms) for the separate disk-write tier.
+const AUTO_REFRESH_DEBOUNCE_MS = 80;
+// Unique per debounce window to avoid mark-name collisions on rapid keystrokes.
+let _perfSeq = 0;
+function perfMarkNames() {
+  const id = ++_perfSeq;
+  return {
+    input: `cvie:preview:input:${id}`,
+    setHtml: `cvie:preview:set-html:${id}`,
+    measure: `cvie:preview:onchange-to-srcdoc:${id}`,
+  };
+}
 
 function Spinner({
   className,
@@ -39,25 +62,81 @@ function firstValidationMessage(values: CvData): string {
   return parsed.error.issues[0]?.message ?? "Vérifiez les champs du CV.";
 }
 
-export function EditorPreviewPane({ templateId }: Props) {
+export function EditorPreviewPane({ templateId, scale, overflowMode, resetNonce }: Props) {
   const { getValues, control } = useFormContext<CvData>();
   const { isDirty } = useFormState({ control });
   const autofillSync = useAutofillSyncContext();
   const watchedValues = useWatch({ control });
+  const prefersReducedMotion = useReducedMotion();
   const [html, setHtml] = useState<string | null>(null);
   const [phase, setPhase] = useState<PreviewPhase>("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [iframeHeight, setIframeHeight] = useState<number>(MIN_IFRAME_HEIGHT_PX);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const htmlRef = useRef<string | null>(null);
+  const phaseRef = useRef<PreviewPhase>("idle");
+  // Latest scale + mode kept in refs so the iframe onLoad callback (which
+  // may run after many state updates) always sends the current value, not
+  // a stale closure capture from when the iframe was created.
+  const scaleRef = useRef<number>(scale);
+  const overflowModeRef = useRef<OverflowMode>(overflowMode);
+  useEffect(() => {
+    htmlRef.current = html;
+  }, [html]);
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
+  useEffect(() => {
+    scaleRef.current = scale;
+  }, [scale]);
+  useEffect(() => {
+    overflowModeRef.current = overflowMode;
+  }, [overflowMode]);
+
+  const postScale = useCallback((value: number) => {
+    const target = iframeRef.current?.contentWindow;
+    if (!target) return;
+    target.postMessage({ type: "cv-scale", scale: value }, "*");
+  }, []);
+
+  const postOverflowMode = useCallback((mode: OverflowMode) => {
+    const target = iframeRef.current?.contentWindow;
+    if (!target) return;
+    target.postMessage({ type: "cv-overflow-mode", mode }, "*");
+  }, []);
+
+  // Push scale changes into the iframe.
+  useEffect(() => {
+    if (!html) return;
+    postScale(scale);
+  }, [scale, html, postScale]);
+
+  // Push overflow-mode changes into the iframe so re-pagination runs
+  // without forcing a full srcDoc reload (flicker-free toggle).
+  useEffect(() => {
+    if (!html) return;
+    postOverflowMode(overflowMode);
+  }, [overflowMode, html, postOverflowMode]);
 
   useEffect(() => {
     setMessage(null);
   }, [templateId]);
 
   useEffect(() => {
+    if (resetNonce === undefined) return;
+    setHtml(null);
+    setPhase("idle");
+    setMessage(null);
+    setIframeHeight(MIN_IFRAME_HEIGHT_PX);
+  }, [resetNonce]);
+
+  useEffect(() => {
     function onMessage(e: MessageEvent) {
-      if (e.origin !== "null" && e.origin !== "") return;
-      if (e.source !== iframeRef.current?.contentWindow) return;
+      if (iframeRef.current === null) return;
+      // Origin of a sandboxed iframe (no allow-same-origin) is always "null".
+      // Restore as defense-in-depth alongside the source check.
+      if (e.origin !== "null") return;
+      if (e.source !== iframeRef.current.contentWindow) return;
       const data = e.data as { type?: string; height?: number };
       if (data?.type !== "cv-height") return;
       if (typeof data.height !== "number" || !Number.isFinite(data.height)) {
@@ -74,6 +153,17 @@ export function EditorPreviewPane({ templateId }: Props) {
   }, []);
 
   useEffect(() => {
+    // Dev-only perf instrumentation (Story 2-3 AC10). Mark the onChange→srcDoc
+    // window; Task 6.2 captures p50/p95 in the Debug Log. Gated on DEV so no
+    // `performance.mark` entries ship to prod.
+    const marks = import.meta.env.DEV && typeof performance !== "undefined"
+      ? perfMarkNames()
+      : null;
+
+    if (marks) {
+      try { performance.mark(marks.input); } catch { /* ignore */ }
+    }
+
     const timer = window.setTimeout(() => {
       autofillSync?.syncAll();
       const values = getValues();
@@ -86,13 +176,37 @@ export function EditorPreviewPane({ templateId }: Props) {
       }
 
       try {
-        const rendered = renderCvHtml(parsed.data, templateId);
-        setHtml((prev) => {
-          if (prev !== rendered) {
-            queueMicrotask(() => setPhase("rendering"));
+        const rendered = renderCvHtml(
+          parsed.data,
+          templateId,
+          undefined,
+          overflowMode,
+        );
+        const willChange = htmlRef.current !== rendered;
+        if (willChange) {
+          setHtml(rendered);
+          setPhase("rendering");
+          if (marks) {
+            try {
+              performance.mark(marks.setHtml);
+              performance.measure(marks.measure, marks.input, marks.setHtml);
+              const entries = performance.getEntriesByName(marks.measure);
+              const last = entries[entries.length - 1];
+              if (last) {
+                console.debug(`[cvie:preview] onchange→srcdoc ${last.duration.toFixed(1)}ms`);
+              }
+              performance.clearMarks(marks.input);
+              performance.clearMarks(marks.setHtml);
+              performance.clearMeasures(marks.measure);
+            } catch {
+              /* ignore */
+            }
           }
-          return prev === rendered ? prev : rendered;
-        });
+        } else {
+          // Render succeeded but HTML is unchanged — recover from any prior phase
+          // (including "error") so the UI never stays stuck with a stale status.
+          if (phaseRef.current !== "ready") setPhase("ready");
+        }
         setMessage(null);
       } catch (err) {
         console.error("[EditorPreviewPane] renderCvHtml threw:", err);
@@ -104,16 +218,7 @@ export function EditorPreviewPane({ templateId }: Props) {
     }, AUTO_REFRESH_DEBOUNCE_MS);
 
     return () => window.clearTimeout(timer);
-  }, [watchedValues, templateId, autofillSync, getValues, isDirty]);
-
-  useEffect(() => {
-    if (phase !== "rendering" || !html) return;
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-    const onLoad = () => setPhase("ready");
-    iframe.addEventListener("load", onLoad);
-    return () => iframe.removeEventListener("load", onLoad);
-  }, [phase, html]);
+  }, [watchedValues, templateId, overflowMode, autofillSync, getValues, isDirty]);
 
   const statusText =
     phase === "rendering"
@@ -152,7 +257,23 @@ export function EditorPreviewPane({ templateId }: Props) {
               aria-label="Aperçu du CV"
               title="Aperçu du CV"
               style={{ height: `${iframeHeight}px`, pointerEvents: "none" }}
-              className="block w-full border-0 bg-white"
+              className={cn(
+                "block w-full border-0 bg-white",
+                prefersReducedMotion
+                  ? "transition-none"
+                  : "transition-opacity duration-200",
+                phase === "rendering" ? "opacity-60" : "opacity-100",
+              )}
+              onLoad={() => {
+                setPhase("ready");
+                // srcDoc reloads reset the iframe's scripting state, so the
+                // pagination script restarts at its baked defaults. Replay
+                // the current scale + overflow mode immediately so the
+                // header selections survive every form edit that triggers
+                // a fresh HTML render.
+                postScale(scaleRef.current);
+                postOverflowMode(overflowModeRef.current);
+              }}
             />
 
             {phase === "error" && message ? (

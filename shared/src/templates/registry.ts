@@ -28,14 +28,14 @@ export const templateRegistry: readonly TemplateMeta[] = [
     id: "moderne",
     name: "Moderne",
     description:
-      "Titres sérifs et palette verte, ton professionnel contemporain.",
+      "Éditorial presse : serif italique, accent rouille, mise en page asymétrique.",
     atsCompatible: true,
   },
   {
     id: "minimaliste",
     name: "Minimaliste",
     description:
-      "Noir et blanc, typographie capitalisée, sans photo.",
+      "Ligne claire suisse : noir et blanc, dates monospace, grille typographique, sans photo.",
     atsCompatible: true,
   },
 ] as const;
