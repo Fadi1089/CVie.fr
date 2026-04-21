@@ -212,6 +212,22 @@ export const classiqueCss = `
   border: ${s(0.75, "pt")} solid #1B365D;
 }
 
+.cv .portfolio-qr-box {
+  width: ${s(28, "mm")};
+  height: ${s(28, "mm")};
+  border-radius: ${s(1.5, "mm")};
+  background: #e8e6dc;
+  box-sizing: border-box;
+  border: ${s(0.75, "pt")} solid #1B365D;
+  overflow: hidden;
+}
+
+.cv .portfolio-qr-box img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .cv header h1 {
   margin: 0 0 ${s(1.2, "mm")} 0;
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, serif;

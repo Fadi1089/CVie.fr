@@ -17,7 +17,13 @@ function detectSource(raw: string): "linkedin" | "github" | null {
   return null;
 }
 
-export function PersonalInfoForm() {
+export function PersonalInfoForm({
+  highlightedItemId,
+  setItemRef,
+}: {
+  highlightedItemId?: string | null;
+  setItemRef?: (itemId: string) => (node: HTMLElement | null) => void;
+}) {
   const {
     register,
     setValue,
@@ -88,97 +94,136 @@ export function PersonalInfoForm() {
       </header>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormField<CvData>
-          name="personalInfo.firstName"
-          label="Prénom"
-          register={register}
-          errors={errors}
-          required
-          autoComplete="given-name"
-          spellCheck={false}
-        />
-        <FormField<CvData>
-          name="personalInfo.lastName"
-          label="Nom"
-          register={register}
-          errors={errors}
-          required
-          autoComplete="family-name"
-          spellCheck={false}
-        />
-        <FormField<CvData>
-          name="personalInfo.jobTitle"
-          label="Intitulé du poste visé"
-          register={register}
-          errors={errors}
-          placeholder="ex. Développeuse Full-Stack — Alternance"
-          autoComplete="organization-title"
-          className="sm:col-span-2"
-        />
-        <FormField<CvData>
-          as="textarea"
-          name="personalInfo.summary"
-          label="Résumé / accroche"
-          register={register}
-          errors={errors}
-          rows={4}
-          hint="Quelques lignes pour vous présenter (facultatif)."
-          className="sm:col-span-2"
-        />
-        <FormField<CvData>
-          name="personalInfo.email"
-          type="email"
-          label="Email"
-          register={register}
-          errors={errors}
-          autoComplete="email"
-          spellCheck={false}
-        />
-        <FormField<CvData>
-          name="personalInfo.phone"
-          type="tel"
-          label="Téléphone"
-          register={register}
-          errors={errors}
-          autoComplete="tel"
-          spellCheck={false}
-        />
-        <FormField<CvData>
-          name="personalInfo.city"
-          label="Ville"
-          register={register}
-          errors={errors}
-          autoComplete="address-level2"
-        />
-        <FormField<CvData>
-          name="personalInfo.linkedinUrl"
-          type="url"
-          label="LinkedIn"
-          register={register}
-          errors={errors}
-          placeholder="https://linkedin.com/in/…"
-          spellCheck={false}
-        />
-        <FormField<CvData>
-          name="personalInfo.portfolioUrl"
-          type="url"
-          label="Portfolio"
-          register={register}
-          errors={errors}
-          placeholder="https://…"
-          className="sm:col-span-2"
-          spellCheck={false}
-        />
-        <FormField<CvData>
-          name="personalInfo.photoUrl"
-          type="url"
-          label="URL de la photo (facultatif)"
-          register={register}
-          errors={errors}
-          hint="Légalement facultatif en France. http(s) ou data:image."
-          className="sm:col-span-2"
-          spellCheck={false}
-        />
+        <div
+          ref={setItemRef ? setItemRef("personalInfo.name") : undefined}
+          className={
+            highlightedItemId === "personalInfo.name"
+              ? "editor-jump-highlight-item rounded-md scroll-mt-24 sm:col-span-2"
+              : "rounded-md scroll-mt-24 sm:col-span-2"
+          }
+        >
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField<CvData>
+              name="personalInfo.firstName"
+              label="Prénom"
+              register={register}
+              errors={errors}
+              required
+              autoComplete="given-name"
+              spellCheck={false}
+            />
+            <FormField<CvData>
+              name="personalInfo.lastName"
+              label="Nom"
+              register={register}
+              errors={errors}
+              required
+              autoComplete="family-name"
+              spellCheck={false}
+            />
+          </div>
+        </div>
+        <div ref={setItemRef ? setItemRef("personalInfo.jobTitle") : undefined} className={highlightedItemId === "personalInfo.jobTitle" ? "editor-jump-highlight-item rounded-md scroll-mt-24 sm:col-span-2" : "rounded-md scroll-mt-24 sm:col-span-2"}>
+          <FormField<CvData>
+            name="personalInfo.jobTitle"
+            label="Intitulé du poste visé"
+            register={register}
+            errors={errors}
+            placeholder="ex. Développeuse Full-Stack — Alternance"
+            autoComplete="organization-title"
+            className="sm:col-span-2"
+          />
+        </div>
+        <div ref={setItemRef ? setItemRef("personalInfo.summary") : undefined} className={highlightedItemId === "personalInfo.summary" ? "editor-jump-highlight-item rounded-md scroll-mt-24 sm:col-span-2" : "rounded-md scroll-mt-24 sm:col-span-2"}>
+          <FormField<CvData>
+            as="textarea"
+            name="personalInfo.summary"
+            label="Résumé / accroche"
+            register={register}
+            errors={errors}
+            rows={4}
+            hint="Quelques lignes pour vous présenter (facultatif)."
+            className="sm:col-span-2"
+          />
+        </div>
+        <div ref={setItemRef ? setItemRef("personalInfo.email") : undefined} className={highlightedItemId === "personalInfo.email" ? "editor-jump-highlight-item rounded-md scroll-mt-24" : "rounded-md scroll-mt-24"}>
+          <FormField<CvData>
+            name="personalInfo.email"
+            type="email"
+            label="Email"
+            register={register}
+            errors={errors}
+            autoComplete="email"
+            spellCheck={false}
+          />
+        </div>
+        <div ref={setItemRef ? setItemRef("personalInfo.phone") : undefined} className={highlightedItemId === "personalInfo.phone" ? "editor-jump-highlight-item rounded-md scroll-mt-24" : "rounded-md scroll-mt-24"}>
+          <FormField<CvData>
+            name="personalInfo.phone"
+            type="tel"
+            label="Téléphone"
+            register={register}
+            errors={errors}
+            autoComplete="tel"
+            spellCheck={false}
+          />
+        </div>
+        <div ref={setItemRef ? setItemRef("personalInfo.city") : undefined} className={highlightedItemId === "personalInfo.city" ? "editor-jump-highlight-item rounded-md scroll-mt-24" : "rounded-md scroll-mt-24"}>
+          <FormField<CvData>
+            name="personalInfo.city"
+            label="Ville"
+            register={register}
+            errors={errors}
+            autoComplete="address-level2"
+          />
+        </div>
+        <div ref={setItemRef ? setItemRef("personalInfo.linkedinUrl") : undefined} className={highlightedItemId === "personalInfo.linkedinUrl" ? "editor-jump-highlight-item rounded-md scroll-mt-24" : "rounded-md scroll-mt-24"}>
+          <FormField<CvData>
+            name="personalInfo.linkedinUrl"
+            type="url"
+            label="LinkedIn"
+            register={register}
+            errors={errors}
+            placeholder="https://linkedin.com/in/…"
+            spellCheck={false}
+          />
+        </div>
+        <div ref={setItemRef ? setItemRef("personalInfo.portfolioUrl") : undefined} className={highlightedItemId === "personalInfo.portfolioUrl" ? "editor-jump-highlight-item rounded-md scroll-mt-24 sm:col-span-2" : "rounded-md scroll-mt-24 sm:col-span-2"}>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField<CvData>
+              name="personalInfo.portfolioUrl"
+              type="url"
+              label="Portfolio"
+              register={register}
+              errors={errors}
+              placeholder="https://…"
+              spellCheck={false}
+            />
+            <FormField<CvData>
+              as="select"
+              name="personalInfo.portfolioDisplay"
+              label="Affichage du portfolio"
+              register={register}
+              errors={errors}
+            >
+              <option value="cleartext">Lien en clair (impression)</option>
+              <option value="qr">QR code (impression, plus volumineux)</option>
+              <option value="clickable">Lien cliquable (CV numérique)</option>
+            </FormField>
+          </div>
+        </div>
+        <div ref={setItemRef ? setItemRef("personalInfo.photoUrl") : undefined} className={highlightedItemId === "personalInfo.photoUrl" ? "editor-jump-highlight-item rounded-md scroll-mt-24 sm:col-span-2" : "rounded-md scroll-mt-24 sm:col-span-2"}>
+          <FormField<CvData>
+            name="personalInfo.photoUrl"
+            type="url"
+            label="URL de la photo (facultatif)"
+            register={register}
+            errors={errors}
+            hint="Légalement facultatif en France. http(s) ou data:image."
+            className="sm:col-span-2"
+            spellCheck={false}
+          />
+        </div>
         <div className="sm:col-span-2 rounded-md border border-dashed border-[var(--color-rule)] bg-[var(--color-paper-deep)]/40 p-3">
           <p className="text-[12px] font-medium text-[var(--color-ink)]">
             Extraire depuis LinkedIn ou GitHub

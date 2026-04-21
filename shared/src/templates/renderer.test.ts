@@ -69,9 +69,9 @@ describe("renderCvHtml", () => {
     expect(html).toContain('<article class="cv">');
     expect(html).toMatch(/<header(?:\s|>)/);
     expect(html).toMatch(/<section(?:\s|>)/);
-    expect(html).toContain("<h1>");
-    expect(html).toContain("<h2>");
-    expect(html).toContain("<h3>");
+    expect(html).toMatch(/<h1(?:\s|>)/);
+    expect(html).toMatch(/<h2(?:\s|>)/);
+    expect(html).toMatch(/<h3(?:\s|>)/);
   });
 
   it("adds editor section anchors for preview-to-form navigation", () => {
@@ -126,6 +126,7 @@ describe("renderCvHtml", () => {
     // page-rectangle backdrops.
     expect(html).toContain("cv-page-bg");
     expect(html).toContain("postMessage");
+    expect(html).toContain("cv-wheel");
   });
 
   // AC5: renderer is the single source of truth — iframe preview, PDF pipeline,

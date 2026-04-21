@@ -178,6 +178,22 @@ export const minimalisteCss = `
   display: none;
 }
 
+.cv .portfolio-qr-box {
+  width: ${s(22, "mm")};
+  height: ${s(22, "mm")};
+  border-radius: ${s(1, "mm")};
+  background: #ffffff;
+  box-sizing: border-box;
+  border: ${s(0.5, "pt")} solid #111111;
+  overflow: hidden;
+}
+
+.cv .portfolio-qr-box img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .cv header h1 {
   margin: 0 0 ${s(1.5, "mm")} 0;
   font-family: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;

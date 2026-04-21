@@ -80,6 +80,7 @@ export function EditorPreviewPane({
   const [message, setMessage] = useState<string | null>(null);
   const [iframeHeight, setIframeHeight] = useState<number>(MIN_IFRAME_HEIGHT_PX);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
   const htmlRef = useRef<string | null>(null);
   const phaseRef = useRef<PreviewPhase>("idle");
   // Latest scale + mode kept in refs so the iframe onLoad callback (which
@@ -149,6 +150,8 @@ export function EditorPreviewPane({
         height?: number;
         sectionId?: string;
         itemId?: string;
+        deltaY?: number;
+        deltaMode?: number;
       };
       if (data?.type === "cv-section-click") {
         if (typeof data.sectionId === "string" && data.sectionId.trim().length > 0) {
@@ -157,6 +160,16 @@ export function EditorPreviewPane({
             itemId: typeof data.itemId === "string" ? data.itemId : undefined,
           });
         }
+        return;
+      }
+      if (data?.type === "cv-wheel") {
+        if (!scrollerRef.current) return;
+        if (typeof data.deltaY !== "number" || !Number.isFinite(data.deltaY)) return;
+        const mode = data.deltaMode ?? 0;
+        const lineHeightPx = 16;
+        const pageStepPx = scrollerRef.current.clientHeight || 0;
+        const multiplier = mode === 1 ? lineHeightPx : mode === 2 ? pageStepPx : 1;
+        scrollerRef.current.scrollTop += data.deltaY * multiplier;
         return;
       }
       if (data?.type !== "cv-height") return;
@@ -267,7 +280,10 @@ export function EditorPreviewPane({
         ) : null}
       </div>
 
-      <div className="relative flex-1 overflow-auto rounded-md border border-[var(--color-rule)] bg-[var(--color-paper-deep)]">
+      <div
+        ref={scrollerRef}
+        className="relative flex-1 overflow-auto rounded-md border border-[var(--color-rule)] bg-[var(--color-paper-deep)]"
+      >
         {html ? (
           <>
             <iframe

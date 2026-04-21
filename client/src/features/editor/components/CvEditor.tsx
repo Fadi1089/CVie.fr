@@ -392,12 +392,12 @@ function FormSections({
   setItemRef: (itemId: string) => (node: HTMLElement | null) => void;
 }) {
   const sectionClass = (id: EditorSectionId) =>
-    cn("scroll-mt-24 rounded-xl transition-colors", highlightedSection === id && "editor-jump-highlight");
+    cn("scroll-mt-24 rounded-md transition-colors", highlightedSection === id && "editor-jump-highlight");
 
   return (
     <div className="mx-auto flex max-w-[44rem] flex-col gap-10">
       <div ref={setSectionRef("personalInfo")} className={sectionClass("personalInfo")}>
-        <PersonalInfoForm />
+        <PersonalInfoForm highlightedItemId={highlightedItemId} setItemRef={setItemRef} />
       </div>
       <div ref={setSectionRef("formations")} className={sectionClass("formations")}>
         <FormationsSection highlightedItemId={highlightedItemId} setItemRef={setItemRef} />

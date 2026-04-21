@@ -52,8 +52,8 @@ export function LanguagesSection({
             data-editor-item-id={field.id}
             className={
               highlightedItemId === field.id
-                ? "editor-jump-highlight-item scroll-mt-24 rounded-xl"
-                : "scroll-mt-24 rounded-xl"
+                ? "editor-jump-highlight-item scroll-mt-24 rounded-md"
+                : "scroll-mt-24 rounded-md"
             }
           >
             <LanguageCard

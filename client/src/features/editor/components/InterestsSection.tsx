@@ -54,8 +54,8 @@ export function InterestsSection({
               data-editor-item-id={field.id}
               className={
                 highlightedItemId === field.id
-                  ? "editor-jump-highlight-item flex items-center gap-2 rounded-xl"
-                  : "flex items-center gap-2 rounded-xl"
+                  ? "editor-jump-highlight-item flex items-center gap-2 rounded-md"
+                  : "flex items-center gap-2 rounded-md"
               }
             >
               <input

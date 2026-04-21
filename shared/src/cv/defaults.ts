@@ -11,7 +11,7 @@ import type { CvData } from "../types/cv";
  */
 export function createEmptyCv(): CvData {
   return {
-    personalInfo: { firstName: "", lastName: "" },
+    personalInfo: { firstName: "", lastName: "", portfolioDisplay: "clickable" },
     formations: [],
     experiences: [],
     skills: [],
@@ -35,6 +35,7 @@ export const sampleCv: CvData = {
     summary:
       "Étudiante passionnée par le développement web et les architectures cloud. À la recherche d'une alternance Master pour septembre 2026 afin d'approfondir mes compétences en ingénierie logicielle.",
     linkedinUrl: "https://linkedin.com/in/yasmine-benali",
+    portfolioDisplay: "clickable",
     // Generic SVG person-silhouette placeholder (no real photo).
     // Inline data URI — works in iframe srcDoc, no network fetch, ATS ignores <img>.
     photoUrl:

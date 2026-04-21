@@ -195,6 +195,22 @@ export const moderneCss = `
   border: ${s(0.5, "pt")} solid rgba(17, 17, 17, 0.15);
 }
 
+.cv .portfolio-qr-box {
+  width: ${s(26, "mm")};
+  height: ${s(26, "mm")};
+  border-radius: 0;
+  background: #f3f0ea;
+  box-sizing: border-box;
+  border: ${s(0.5, "pt")} solid rgba(17, 17, 17, 0.15);
+  overflow: hidden;
+}
+
+.cv .portfolio-qr-box img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .cv header h1 {
   margin: 0 0 ${s(1.5, "mm")} 0;
   font-family: "Fraunces", "Charter", Georgia, "Times New Roman", serif;

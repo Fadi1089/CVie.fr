@@ -7,6 +7,7 @@ import type {
   PersonalInfo,
   Skill,
 } from "../types/cv";
+import qrcode from "qrcode-generator";
 import { classiqueCss } from "./styles/classique";
 import { minimalisteCss } from "./styles/minimaliste";
 import { moderneCss } from "./styles/moderne";
@@ -50,7 +51,7 @@ export function renderCvHtml(
   overflowMode: OverflowMode = DEFAULT_OVERFLOW_MODE,
 ): string {
   const css = getTemplateCss(template);
-  const body = renderCvBody(data);
+  const body = renderCvBody(data, template);
   const title = escapeHtml(
     `${data.personalInfo.firstName} ${data.personalInfo.lastName} — CV`,
   );
@@ -111,6 +112,81 @@ const BASE_PAGE_CSS = `
 
 .cv [data-editor-section] {
   cursor: pointer;
+}
+
+.cv header .contact .contact-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38em;
+}
+
+.cv header .contact .contact-item::before {
+  content: "";
+  width: 0.95em;
+  height: 0.95em;
+  flex: 0 0 auto;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.72;
+  user-select: none;
+  pointer-events: none;
+}
+
+.cv header .contact .contact-email::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.2' y='5.3' width='17.6' height='13.4' rx='2.4'/%3E%3Cpath d='M4.2 7l7.8 6 7.8-6'/%3E%3C/svg%3E");
+}
+
+.cv header .contact .contact-phone::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7.3 3.7h3.4l1.1 4.3-2.2 1.3a14.3 14.3 0 0 0 5.1 5.1l1.3-2.2 4.3 1.1v3.4c0 1.1-.9 2-2 2C10.5 18.7 5.3 13.5 5.3 6.3c0-1.1.9-2 2-2z'/%3E%3C/svg%3E");
+}
+
+.cv header .contact .contact-city::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 21s6-5.3 6-10a6 6 0 1 0-12 0c0 4.7 6 10 6 10z'/%3E%3Ccircle cx='12' cy='11' r='2.3'/%3E%3C/svg%3E");
+}
+
+.cv header .contact .contact-linkedin::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236b7280'%3E%3Crect x='4' y='8.5' width='3.2' height='10.5' rx='0.6'/%3E%3Ccircle cx='5.6' cy='5.6' r='1.6'/%3E%3Cpath d='M10 8.5h3v1.6c.7-1.2 1.9-2 3.8-2 3 0 4.2 2 4.2 5v6h-3.2v-5.2c0-1.7-.6-2.8-2.1-2.8-1.6 0-2.5 1.1-2.5 3v5h-3.2z'/%3E%3C/svg%3E");
+}
+
+.cv header .contact .contact-portfolio::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8.3'/%3E%3Cpath d='M3.8 12h16.4M12 3.7c2.2 2.3 3.5 5.2 3.5 8.3 0 3.1-1.3 6-3.5 8.3M12 3.7c-2.2 2.3-3.5 5.2-3.5 8.3 0 3.1 1.3 6 3.5 8.3'/%3E%3C/svg%3E");
+}
+
+.cv header.has-portfolio-qr {
+  position: relative;
+}
+
+.cv header.has-portfolio-qr .header-top,
+.cv header.has-portfolio-qr .summary {
+  padding-right: 24mm;
+}
+
+.cv .portfolio-qr {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2mm;
+}
+
+.cv .portfolio-qr-label {
+  display: inline-block;
+  margin: 0;
+  font-family: "Inter", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-size: 7.5pt;
+  line-height: 1.1;
+  color: #5e5d59;
+  text-align: center;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+}
+
+.cv .portfolio-qr-label::before {
+  content: "Lien portfolio";
 }
 
 /* ==== overflow-mode contract =============================================
@@ -452,6 +528,10 @@ const PAGINATION_SCRIPT = `
   document.addEventListener('click', function (event) {
     var target = event.target;
     if (!target || typeof target.closest !== 'function') return;
+    var portfolioAnchor = target.closest('a[data-editor-item-id="personalInfo.portfolioUrl"]');
+    if (portfolioAnchor && typeof event.preventDefault === 'function') {
+      event.preventDefault();
+    }
     var sectionNode = target.closest('[data-editor-section]');
     if (!sectionNode) return;
     var sectionId = sectionNode.getAttribute('data-editor-section');
@@ -462,6 +542,25 @@ const PAGINATION_SCRIPT = `
     if (itemId) payload.itemId = itemId;
     window.parent.postMessage(payload, '*');
   });
+
+  // Scroll-bridge: when the preview iframe captures wheel events, the outer
+  // editor scroller can appear to "stall" mid-way. Forward wheel deltas to
+  // the parent so the host pane keeps scrolling smoothly.
+  window.addEventListener(
+    'wheel',
+    function (event) {
+      if (!event) return;
+      window.parent.postMessage(
+        {
+          type: 'cv-wheel',
+          deltaY: event.deltaY,
+          deltaMode: event.deltaMode,
+        },
+        '*',
+      );
+    },
+    { passive: true },
+  );
 })();
 `;
 
@@ -480,9 +579,9 @@ function getTemplateCss(template: TemplateId): string {
   }
 }
 
-function renderCvBody(data: CvData): string {
+function renderCvBody(data: CvData, template: TemplateId): string {
   return `<article class="cv">
-${renderHeader(data.personalInfo)}
+${renderHeader(data.personalInfo, template)}
 ${renderFormations(data.formations)}
 ${renderExperiences(data.experiences)}
 ${renderSkills(data.skills)}
@@ -491,52 +590,235 @@ ${renderInterests(data.interests)}
 </article>`;
 }
 
-function renderHeader(info: PersonalInfo): string {
+function renderHeader(info: PersonalInfo, template: TemplateId): string {
   const fullName = `${escapeHtml(info.firstName)} ${escapeHtml(info.lastName)}`;
   const contactItems: string[] = [];
-  if (info.email) contactItems.push(`<li>${escapeHtml(info.email)}</li>`);
-  if (info.phone) contactItems.push(`<li>${escapeHtml(info.phone)}</li>`);
-  if (info.city) contactItems.push(`<li>${escapeHtml(info.city)}</li>`);
+  if (info.email) {
+    contactItems.push(
+      `<li class="contact-item contact-email" data-editor-item-id="personalInfo.email">${escapeHtml(info.email)}</li>`,
+    );
+  }
+  if (info.phone) {
+    contactItems.push(
+      `<li class="contact-item contact-phone" data-editor-item-id="personalInfo.phone">${escapeHtml(info.phone)}</li>`,
+    );
+  }
+  if (info.city) {
+    contactItems.push(
+      `<li class="contact-item contact-city" data-editor-item-id="personalInfo.city">${escapeHtml(info.city)}</li>`,
+    );
+  }
   const safeLinkedin = safeHttpUrl(info.linkedinUrl);
   if (safeLinkedin) {
     contactItems.push(
-      `<li><a href="${escapeHtml(safeLinkedin)}">LinkedIn</a></li>`,
+      `<li class="contact-item contact-linkedin" data-editor-item-id="personalInfo.linkedinUrl"><a href="${escapeHtml(safeLinkedin)}">LinkedIn</a></li>`,
     );
   }
   const safePortfolio = safeHttpUrl(info.portfolioUrl);
-  if (safePortfolio) {
+  const portfolioDisplay = info.portfolioDisplay ?? "clickable";
+  if (safePortfolio && portfolioDisplay === "clickable") {
     contactItems.push(
-      `<li><a href="${escapeHtml(safePortfolio)}">Portfolio</a></li>`,
+      `<li class="contact-item contact-portfolio"><a data-editor-item-id="personalInfo.portfolioUrl" href="${escapeHtml(safePortfolio)}">Portfolio</a></li>`,
+    );
+  }
+  if (safePortfolio && portfolioDisplay === "cleartext") {
+    const cleartextPortfolio = safePortfolio.replace(/^https?:\/\//i, "");
+    contactItems.push(
+      `<li class="contact-item contact-portfolio" data-editor-item-id="personalInfo.portfolioUrl">${escapeHtml(cleartextPortfolio)}</li>`,
     );
   }
 
   const jobTitle = info.jobTitle
-    ? `<p class="job-title">${escapeHtml(info.jobTitle)}</p>`
+    ? `<p class="job-title" data-editor-item-id="personalInfo.jobTitle">${escapeHtml(info.jobTitle)}</p>`
     : "";
   const contact = contactItems.length
     ? `<ul class="contact">${contactItems.join("")}</ul>`
     : "";
   const summary = info.summary
-    ? `<p class="summary">${escapeHtml(info.summary)}</p>`
+    ? `<p class="summary" data-editor-item-id="personalInfo.summary">${escapeHtml(info.summary)}</p>`
     : "";
   // Photo rendered as <img> (not background-image) so PDF generators preserve
   // it. ATS systems ignore <img> content entirely — only alt text is read.
   const safePhoto = safeImageUrl(info.photoUrl);
   const photo = safePhoto
-    ? `<img class="photo" src="${escapeHtml(safePhoto)}" alt="${fullName}" />`
+    ? `<img class="photo" data-editor-item-id="personalInfo.photoUrl" src="${escapeHtml(safePhoto)}" alt="${fullName}" />`
     : "";
+  const qrCode = safePortfolio && portfolioDisplay === "qr"
+    ? `<div class="portfolio-qr" data-editor-item-id="personalInfo.portfolioUrl"><div class="portfolio-qr-box"><img src="${buildQrCodeDataUri(safePortfolio, template)}" alt="QR code du portfolio" /></div><p class="portfolio-qr-label" aria-hidden="true"></p></div>`
+    : "";
+  const headerClassNames = [
+    info.photoUrl ? "has-photo" : "",
+    safePortfolio && portfolioDisplay === "qr" ? "has-portfolio-qr" : "",
+  ].filter(Boolean).join(" ");
 
-  return `<header data-editor-section="personalInfo"${info.photoUrl ? ' class="has-photo"' : ""}>
+  return `<header data-editor-section="personalInfo"${headerClassNames ? ` class="${headerClassNames}"` : ""}>
 <div class="header-top">
 ${photo}
 <div class="header-identity">
-<h1>${fullName}</h1>
+<h1 data-editor-item-id="personalInfo.name">${fullName}</h1>
 ${jobTitle}
 ${contact}
 </div>
 </div>
 ${summary}
+${qrCode}
 </header>`;
+}
+
+function buildQrCodeDataUri(value: string, template: TemplateId): string {
+  const palette = getQrPalette(template);
+  const qr = qrcode(0, "M");
+  qr.addData(value);
+  qr.make();
+  const modules = qr.getModuleCount();
+  const anchorCells = new Set<string>();
+  const bodyCells = new Set<string>();
+
+  const isInFinder = (x: number, y: number): boolean => {
+    const inTop = y >= 0 && y <= 6;
+    const inBottom = y >= modules - 7 && y <= modules - 1;
+    const inLeft = x >= 0 && x <= 6;
+    const inRight = x >= modules - 7 && x <= modules - 1;
+    return (inTop && (inLeft || inRight)) || (inBottom && inLeft);
+  };
+
+  for (let y = 0; y < modules; y++) {
+    for (let x = 0; x < modules; x++) {
+      if (!qr.isDark(y, x)) continue;
+      const key = `${x},${y}`;
+      if (isInFinder(x, y)) anchorCells.add(key);
+      else bodyCells.add(key);
+    }
+  }
+
+  const bodyPath = buildRoundedMergedPath(bodyCells, 0.22);
+  const anchorPath = buildRoundedMergedPath(anchorCells, 0.32);
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${modules} ${modules}" preserveAspectRatio="xMidYMid meet">` +
+    `<rect width="100%" height="100%" fill="${palette.background}"/>` +
+    (bodyPath ? `<path d="${bodyPath}" fill="${palette.cell}" />` : "") +
+    (anchorPath ? `<path d="${anchorPath}" fill="${palette.anchor}" />` : "") +
+    `</svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+function buildRoundedMergedPath(cells: Set<string>, radius: number): string {
+  if (cells.size === 0) return "";
+  const edges = new Map<string, string[]>();
+  const has = (x: number, y: number) => cells.has(`${x},${y}`);
+  const addEdge = (sx: number, sy: number, ex: number, ey: number) => {
+    const key = `${sx},${sy}`;
+    const end = `${ex},${ey}`;
+    const list = edges.get(key);
+    if (list) list.push(end);
+    else edges.set(key, [end]);
+  };
+
+  for (const key of cells) {
+    const [xRaw, yRaw] = key.split(",");
+    const x = Number(xRaw);
+    const y = Number(yRaw);
+    if (!has(x, y - 1)) addEdge(x, y, x + 1, y);
+    if (!has(x + 1, y)) addEdge(x + 1, y, x + 1, y + 1);
+    if (!has(x, y + 1)) addEdge(x + 1, y + 1, x, y + 1);
+    if (!has(x - 1, y)) addEdge(x, y + 1, x, y);
+  }
+
+  const paths: string[] = [];
+  const takeNextEdge = (start: string): string | null => {
+    const list = edges.get(start);
+    if (!list || list.length === 0) return null;
+    const next = list.pop() ?? null;
+    if (list.length === 0) edges.delete(start);
+    return next;
+  };
+
+  while (edges.size > 0) {
+    const start = edges.keys().next().value as string;
+    const first = takeNextEdge(start);
+    if (!first) break;
+    const loop: Array<{ x: number; y: number }> = [];
+    const [sxRaw, syRaw] = start.split(",");
+    const sx = Number(sxRaw);
+    const sy = Number(syRaw);
+    if (!Number.isFinite(sx) || !Number.isFinite(sy)) break;
+    loop.push({ x: sx, y: sy });
+    let current = first;
+    while (true) {
+      const [cxRaw, cyRaw] = current.split(",");
+      const cx = Number(cxRaw);
+      const cy = Number(cyRaw);
+      if (!Number.isFinite(cx) || !Number.isFinite(cy)) break;
+      loop.push({ x: cx, y: cy });
+      if (current === start) break;
+      const next = takeNextEdge(current);
+      if (!next) break;
+      current = next;
+    }
+    if (loop.length < 4) continue;
+    if (loop[loop.length - 1]?.x === loop[0]?.x && loop[loop.length - 1]?.y === loop[0]?.y) {
+      loop.pop();
+    }
+    paths.push(roundedLoopPath(loop, radius));
+  }
+
+  return paths.join(" ");
+}
+
+function roundedLoopPath(loop: Array<{ x: number; y: number }>, radius: number): string {
+  const n = loop.length;
+  if (n < 3) return "";
+  const fmt = (v: number) => Number(v.toFixed(3)).toString();
+  const dist = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+    Math.hypot(a.x - b.x, a.y - b.y);
+  const move = (
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    len: number,
+  ): { x: number; y: number } => {
+    const d = dist(from, to);
+    if (d === 0) return from;
+    return { x: from.x + ((to.x - from.x) * len) / d, y: from.y + ((to.y - from.y) * len) / d };
+  };
+
+  const enters: Array<{ x: number; y: number }> = [];
+  const exits: Array<{ x: number; y: number }> = [];
+  for (let i = 0; i < n; i++) {
+    const prev = loop[(i - 1 + n) % n]!;
+    const cur = loop[i]!;
+    const next = loop[(i + 1) % n]!;
+    const rr = Math.min(radius, dist(prev, cur) / 2, dist(cur, next) / 2);
+    enters.push(move(cur, prev, rr));
+    exits.push(move(cur, next, rr));
+  }
+
+  let d = `M${fmt(exits[0]!.x)},${fmt(exits[0]!.y)}`;
+  for (let i = 1; i < n; i++) {
+    d += ` L${fmt(enters[i]!.x)},${fmt(enters[i]!.y)}`;
+    d += ` Q${fmt(loop[i]!.x)},${fmt(loop[i]!.y)} ${fmt(exits[i]!.x)},${fmt(exits[i]!.y)}`;
+  }
+  d += ` L${fmt(enters[0]!.x)},${fmt(enters[0]!.y)}`;
+  d += ` Q${fmt(loop[0]!.x)},${fmt(loop[0]!.y)} ${fmt(exits[0]!.x)},${fmt(exits[0]!.y)} Z`;
+  return d;
+}
+
+function getQrPalette(template: TemplateId): {
+  cell: string;
+  anchor: string;
+  background: string;
+} {
+  switch (template) {
+    case "classique":
+      return { cell: "#1B365D", anchor: "#122743", background: "#FFFFFF" };
+    case "moderne":
+      return { cell: "#A8421E", anchor: "#7A2C11", background: "#FFFFFF" };
+    case "minimaliste":
+      return { cell: "#111111", anchor: "#000000", background: "#FFFFFF" };
+    default: {
+      const _exhaustive: never = template;
+      throw new Error(`Unknown template: ${String(_exhaustive)}`);
+    }
+  }
 }
 
 function renderFormations(formations: Formation[]): string {

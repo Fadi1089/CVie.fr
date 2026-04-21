@@ -74,6 +74,10 @@ export const personalInfoSchema = z.object({
   summary: z.string().max(MAX_LONG).optional(),
   linkedinUrl: optionalHttpUrl,
   portfolioUrl: optionalHttpUrl,
+  portfolioDisplay: z
+    .enum(["cleartext", "qr", "clickable"])
+    .optional()
+    .default("clickable"),
   /**
    * Optional profile photo URL. Photos are legally optional in France
    * (loi du 27 mai 2008 — anti-discrimination). Rendered as <img> so the
