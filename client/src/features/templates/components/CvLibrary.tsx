@@ -20,7 +20,7 @@ const STORAGE_KEY = "cvie.template.selected";
 const OVERFLOW_MODE_STORAGE_KEY = "cvie.cv.overflow-mode";
 const CV_SCALE_STORAGE_KEY = "cvie.cv.scale";
 
-export function TemplateBrowser() {
+export function CvLibrary() {
   const navigate = useNavigate();
   const [library, setLibrary] = useState<CvLibraryRecord[]>(() => readCvLibrary());
   const [activeCvId, setActiveCvId] = useState<string>(library[0]?.id ?? "");

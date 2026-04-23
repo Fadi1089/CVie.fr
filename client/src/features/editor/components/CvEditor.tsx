@@ -389,7 +389,6 @@ function EditorShell({
         <EditorHeader
           templateId={templateId}
           templateName={templateName}
-          cvTitle={cvTitle}
           persistStatus={persistStatus}
           scale={scale}
           setScale={setScale}
@@ -397,9 +396,6 @@ function EditorShell({
           overflowMode={overflowMode}
           setOverflowMode={setOverflowMode}
           resetDraft={resetDraft}
-          onTemplateChange={onTemplateChange}
-          onCvTitleChange={onCvTitleChange}
-          onCvTitleCommit={onCvTitleCommit}
         />
 
         {unknownQuery && !unknownBannerDismissed ? (
@@ -422,6 +418,30 @@ function EditorShell({
               className="px-4 pt-4 pb-24 md:h-[calc(100vh-64px)] md:overflow-y-auto md:border-r md:border-[var(--color-rule)] md:px-8 md:py-8"
               aria-label="Formulaire CV"
             >
+              <div className="mx-auto mb-6 max-w-[44rem] rounded-md border border-[var(--color-rule)] bg-white/75 p-3">
+                <label
+                  htmlFor="cv-title-input"
+                  className="font-mono-caps mb-2 block text-[10px] text-[var(--color-ink-soft)]"
+                >
+                  Nom du CV
+                </label>
+                <input
+                  id="cv-title-input"
+                  type="text"
+                  value={cvTitle}
+                  onChange={(event) => onCvTitleChange(event.target.value)}
+                  onBlur={(event) => onCvTitleCommit(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      onCvTitleCommit((event.target as HTMLInputElement).value);
+                      (event.target as HTMLInputElement).blur();
+                    }
+                  }}
+                  className="h-9 w-full rounded-md border border-[var(--color-rule)] bg-white px-3 text-[13px] text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/30"
+                  aria-label="Titre du CV"
+                />
+              </div>
               <FormSections
                 highlightedSection={highlightedSection}
                 highlightedItemId={highlightedItemId}
@@ -448,6 +468,12 @@ function EditorShell({
                   overflowMode={overflowMode}
                   resetNonce={resetNonce}
                   onSectionClick={handlePreviewSectionClick}
+                  headerActions={
+                    <TemplateDrawerButton
+                      currentTemplateId={templateId}
+                      onTemplateChange={onTemplateChange}
+                    />
+                  }
                 />
               </div>
             </aside>
@@ -506,7 +532,6 @@ function FormSections({
 function EditorHeader({
   templateId,
   templateName,
-  cvTitle,
   persistStatus,
   scale,
   setScale,
@@ -514,13 +539,9 @@ function EditorHeader({
   overflowMode,
   setOverflowMode,
   resetDraft,
-  onTemplateChange,
-  onCvTitleChange,
-  onCvTitleCommit,
 }: {
   templateId: TemplateId;
   templateName: string;
-  cvTitle: string;
   persistStatus: PersistStatus;
   scale: number;
   setScale: (next: number) => void;
@@ -528,9 +549,6 @@ function EditorHeader({
   overflowMode: OverflowMode;
   setOverflowMode: (next: OverflowMode) => void;
   resetDraft: () => void;
-  onTemplateChange: (nextTemplateId: TemplateId) => void;
-  onCvTitleChange: (nextTitle: string) => void;
-  onCvTitleCommit: (rawTitle?: string) => void;
 }) {
   const persistText =
     persistStatus === "failed"
@@ -551,21 +569,6 @@ function EditorHeader({
         <h1 className="font-display truncate text-[18px] font-medium text-[var(--color-ink)]">
           Éditeur · {templateName}
         </h1>
-        <input
-          type="text"
-          value={cvTitle}
-          onChange={(event) => onCvTitleChange(event.target.value)}
-          onBlur={(event) => onCvTitleCommit(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              onCvTitleCommit((event.target as HTMLInputElement).value);
-              (event.target as HTMLInputElement).blur();
-            }
-          }}
-          className="h-8 w-[13rem] rounded-md border border-[var(--color-rule)] bg-white/72 px-2.5 text-[12px] text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/30"
-          aria-label="Titre du CV"
-        />
       </div>
       <div className="flex items-center gap-3">
         <span
@@ -581,10 +584,6 @@ function EditorHeader({
         </span>
         <ScaleSlider scale={scale} setScale={setScale} resetScale={resetScale} />
         <OverflowModeSelector value={overflowMode} onChange={setOverflowMode} />
-        <TemplateDrawerButton
-          currentTemplateId={templateId}
-          onTemplateChange={onTemplateChange}
-        />
         <CvImportButton />
         <CvResetButton onReset={resetDraft} />
         <ExportPdfButton

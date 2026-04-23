@@ -3,7 +3,7 @@ import { createBrowserRouter, Link, Navigate, useSearchParams } from "react-rout
 import { renderCvHtml, sampleCv } from "@cvie/shared";
 import { CvEditor } from "./features/editor";
 import { EditorErrorBoundary } from "./features/editor/components/EditorErrorBoundary";
-import { TemplateBrowser } from "./features/templates";
+import { CvLibrary } from "./features/templates";
 
 function HomePage() {
   return (
@@ -235,7 +235,7 @@ function EditorRouteGate() {
 
 export const router = createBrowserRouter([
   { path: "/", element: <HomePage /> },
-  { path: "/home", element: <TemplateBrowser /> },
+  { path: "/home", element: <CvLibrary /> },
   { path: "/templates", element: <Navigate to="/home" replace /> },
   {
     path: "/editor",

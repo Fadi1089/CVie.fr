@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useFormContext, useFormState, useWatch } from "react-hook-form";
 import {
   cvDataSchema,
@@ -17,6 +17,7 @@ type Props = {
   overflowMode: OverflowMode;
   resetNonce?: number;
   onSectionClick?: (payload: { sectionId: string; itemId?: string }) => void;
+  headerActions?: ReactNode;
 };
 
 type PreviewPhase = "idle" | "rendering" | "ready" | "error";
@@ -69,6 +70,7 @@ export function EditorPreviewPane({
   overflowMode,
   resetNonce,
   onSectionClick,
+  headerActions,
 }: Props) {
   const { getValues, control } = useFormContext<CvData>();
   const { isDirty } = useFormState({ control });
@@ -272,12 +274,15 @@ export function EditorPreviewPane({
           </p>
           <p className="text-[11px] text-[var(--color-ink-soft)]">{statusText}</p>
         </div>
-        {phase === "rendering" ? (
-          <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-rule)] bg-white/80 px-3 py-1 text-[11px] text-[var(--color-ink-soft)] shadow-sm backdrop-blur">
-            <Spinner />
-            Mise à jour
-          </div>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {headerActions}
+          {phase === "rendering" ? (
+            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-rule)] bg-white/80 px-3 py-1 text-[11px] text-[var(--color-ink-soft)] shadow-sm backdrop-blur">
+              <Spinner />
+              Mise à jour
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <div
