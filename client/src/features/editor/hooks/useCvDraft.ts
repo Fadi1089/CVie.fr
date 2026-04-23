@@ -4,7 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { createEmptyCv, cvDataSchema, type CvData } from "@cvie/shared";
 import "@/lib/zodFrenchErrorMap";
 
-export const DRAFT_STORAGE_KEY = "cvie.cv.draft";
+const DRAFT_STORAGE_KEY_PREFIX = "cvie.cv.draft";
+// Backward-compatible export used by existing imports/tests.
+export const DRAFT_STORAGE_KEY = DRAFT_STORAGE_KEY_PREFIX;
 // Two-tier debounce contract (Story 2-3):
 //   - preview (EditorPreviewPane `AUTO_REFRESH_DEBOUNCE_MS`) = 80 ms — NFR6 ≤100 ms p50.
 //   - persistence (this constant) = 300 ms — localStorage write isn't in NFR6 scope and
@@ -40,17 +42,21 @@ function safeStorage(): Storage | null {
  * invalid — and silently removes the bad entry so it can't keep failing on
  * every load.
  */
-function readStoredDraft(storage: Storage): CvData | null {
+function draftStorageKey(cvId: string): string {
+  return `${DRAFT_STORAGE_KEY_PREFIX}.${cvId}`;
+}
+
+function readStoredDraft(storage: Storage, key: string): CvData | null {
   let raw: string | null;
   try {
-    raw = storage.getItem(DRAFT_STORAGE_KEY);
+    raw = storage.getItem(key);
   } catch {
     return null;
   }
   if (!raw) return null;
   if (raw.length > MAX_STORED_BYTES) {
     try {
-      storage.removeItem(DRAFT_STORAGE_KEY);
+      storage.removeItem(key);
     } catch {
       /* ignore */
     }
@@ -63,7 +69,7 @@ function readStoredDraft(storage: Storage): CvData | null {
     /* fallthrough — remove */
   }
   try {
-    storage.removeItem(DRAFT_STORAGE_KEY);
+    storage.removeItem(key);
   } catch {
     /* ignore */
   }
@@ -87,13 +93,15 @@ function readStoredDraft(storage: Storage): CvData | null {
  * NOT schema-valid (firstName/lastName are `.min(1)`). That's fine: the
  * validate-then-persist gate means the empty skeleton never gets written.
  */
-export function useCvDraft(): UseCvDraftReturn {
+export function useCvDraft(cvId: string): UseCvDraftReturn {
   const form = useForm<CvData>({
     resolver: zodResolver(cvDataSchema) as unknown as Resolver<CvData>,
     defaultValues: createEmptyCv(),
     mode: "onBlur",
   });
   const [persistStatus, setPersistStatus] = useState<PersistStatus>("idle");
+  const storageKey = draftStorageKey(cvId);
+
   const hasHydratedRef = useRef(false);
   const hasSeenHydratedSnapshotRef = useRef(false);
   const latestValuesRef = useRef<CvData>(form.getValues());
@@ -108,7 +116,7 @@ export function useCvDraft(): UseCvDraftReturn {
       return;
     }
     try {
-      storage.setItem(DRAFT_STORAGE_KEY, serialized);
+      storage.setItem(storageKey, serialized);
       setPersistStatus("saved");
     } catch {
       // Quota exceeded, serializer threw, localStorage disabled, etc.
@@ -126,16 +134,16 @@ export function useCvDraft(): UseCvDraftReturn {
       hasSeenHydratedSnapshotRef.current = true;
       return;
     }
-    const draft = readStoredDraft(storage);
+    const draft = readStoredDraft(storage, storageKey);
     if (draft) form.reset(draft);
     hasHydratedRef.current = true;
     // form.reset is stable across renders; run once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [form, storageKey]);
 
   useEffect(() => {
     latestValuesRef.current = form.getValues();
-  }, [form, watchedValues]);
+  }, [form, storageKey, watchedValues]);
 
   // Debounced persistence driven by `useWatch`, which reliably tracks both
   // regular field edits and `useFieldArray` structural changes like remove().
@@ -163,7 +171,7 @@ export function useCvDraft(): UseCvDraftReturn {
       if (!storage || !hasHydratedRef.current) return;
       writeNow(storage, latestValuesRef.current);
     };
-  }, [form]);
+  }, [form, storageKey]);
 
   // Flush pending edits synchronously on tab close / hide so the 300ms
   // debounce doesn't drop the user's last keystroke.
@@ -183,13 +191,13 @@ export function useCvDraft(): UseCvDraftReturn {
       window.removeEventListener("pagehide", flush);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [form]);
+  }, [form, storageKey]);
 
   // Cross-tab awareness: another tab wrote to the same draft key. Soft-warn
   // only; don't auto-reset the user's in-memory form.
   useEffect(() => {
     function onStorage(e: StorageEvent) {
-      if (e.key !== DRAFT_STORAGE_KEY) return;
+      if (e.key !== storageKey) return;
       if (!e.newValue) return;
       try {
         const parsed = cvDataSchema.safeParse(JSON.parse(e.newValue));
@@ -204,7 +212,7 @@ export function useCvDraft(): UseCvDraftReturn {
     }
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, []);
+  }, [storageKey]);
 
   const resetDraft = () => {
     const empty = createEmptyCv();
@@ -213,7 +221,7 @@ export function useCvDraft(): UseCvDraftReturn {
     const storage = safeStorage();
     if (storage) {
       try {
-        storage.removeItem(DRAFT_STORAGE_KEY);
+        storage.removeItem(storageKey);
       } catch {
         /* ignore */
       }

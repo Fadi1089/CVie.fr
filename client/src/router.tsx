@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createBrowserRouter, Link } from "react-router";
+import { createBrowserRouter, Link, Navigate, useSearchParams } from "react-router";
 import { renderCvHtml, sampleCv } from "@cvie/shared";
 import { CvEditor } from "./features/editor";
 import { EditorErrorBoundary } from "./features/editor/components/EditorErrorBoundary";
@@ -7,23 +7,53 @@ import { TemplateBrowser } from "./features/templates";
 
 function HomePage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 px-6">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-cvie-primary-dark">CVie.fr</h1>
-        <p className="mt-2 text-gray-600">Free ATS-compatible CV platform</p>
+    <div className="atelier-paper relative min-h-screen overflow-hidden px-6 text-[var(--color-ink)]">
+      <div className="relative z-[1] mx-auto flex min-h-screen w-full max-w-7xl flex-col py-8 md:py-10">
+        <header className="pt-2">
+          <p className="font-mono-caps text-[10px] text-[var(--color-ink-soft)]">
+            CVie.fr · Bibliotheque CV
+          </p>
+        </header>
+
+        <main className="flex flex-1 items-center">
+          <section className="w-full max-w-6xl">
+            <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.16fr)_minmax(320px,390px)] lg:gap-12">
+              <div className="max-w-4xl">
+                <h1 className="font-display text-[52px] leading-[0.92] tracking-[-0.035em] text-[var(--color-ink)] sm:text-[72px] md:text-[92px] lg:text-[104px]">
+                  Le meilleur outil CV.
+                  <br />
+                  Gratuit. Sans paywall.
+                </h1>
+              </div>
+
+              <div className="flex max-w-[24rem] flex-col justify-start pt-2 lg:pt-5">
+                <p className="text-[15px] leading-relaxed text-[var(--color-ink-soft)] sm:text-[16px]">
+                  Plus efficace que les outils CV premium, sans frais caches. IA
+                  uniquement la ou elle est utile, compatibilite ATS garantie,
+                  et toutes vos versions dans un seul espace clair.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-10 flex flex-wrap items-center gap-4">
+              <Link
+                to="/home"
+                className="rounded-full bg-[var(--color-ink)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-ink)]/90 motion-reduce:transition-none"
+              >
+                Ouvrir ma bibliotheque
+              </Link>
+            </div>
+          </section>
+        </main>
+
+        <footer className="border-t border-[var(--color-rule)] pt-4">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 font-mono-caps text-[10px] text-[var(--color-ink-soft)]">
+            <span>Gratuit pour de vrai</span>
+            <span>IA utile</span>
+            <span>ATS garanti</span>
+          </div>
+        </footer>
       </div>
-      <Link
-        to="/templates"
-        className="rounded-md bg-cvie-primary-dark px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90 motion-reduce:transition-none"
-      >
-        Commencer mon CV
-      </Link>
-      <Link
-        to="/template-demo"
-        className="text-xs text-gray-500 underline-offset-2 hover:underline"
-      >
-        Aperçu développeur du template Classique →
-      </Link>
     </div>
   );
 }
@@ -190,16 +220,26 @@ function NotFoundPage() {
   );
 }
 
+function EditorRouteGate() {
+  const [params] = useSearchParams();
+  const cvId = params.get("cv");
+  if (!cvId || !cvId.trim()) {
+    return <Navigate to="/home" replace />;
+  }
+  return (
+    <EditorErrorBoundary>
+      <CvEditor />
+    </EditorErrorBoundary>
+  );
+}
+
 export const router = createBrowserRouter([
   { path: "/", element: <HomePage /> },
-  { path: "/templates", element: <TemplateBrowser /> },
+  { path: "/home", element: <TemplateBrowser /> },
+  { path: "/templates", element: <Navigate to="/home" replace /> },
   {
     path: "/editor",
-    element: (
-      <EditorErrorBoundary>
-        <CvEditor />
-      </EditorErrorBoundary>
-    ),
+    element: <EditorRouteGate />,
   },
   { path: "/template-demo", element: <TemplateDemoPage /> },
   { path: "*", element: <NotFoundPage /> },

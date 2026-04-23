@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FormProvider, useFormContext } from "react-hook-form";
 import { Link, useSearchParams } from "react-router";
 import {
@@ -9,6 +9,19 @@ import {
   type TemplateId,
 } from "@cvie/shared";
 import { cn } from "@/lib/utils";
+import {
+  readCvLibrary,
+  upsertCvRecord,
+  type CvLibraryRecord,
+} from "@/features/cv-library/storage";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { AutofillSyncContext, useAutofillSync } from "../hooks/useAutofillSync";
 import { useCvDraft, type PersistStatus } from "../hooks/useCvDraft";
 import {
@@ -101,7 +114,8 @@ function resolveTemplateId(queryParam: string | null): {
 }
 
 export function CvEditor() {
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
+  const cvId = params.get("cv")?.trim() ?? "";
   const { id: templateId, unknownQuery } = useMemo(
     () => resolveTemplateId(params.get("template")),
     [params],
@@ -111,17 +125,69 @@ export function CvEditor() {
     templateRegistry[0] ??
     SAFE_FALLBACK_META;
 
-  const { form, persistStatus, resetDraft } = useCvDraft();
+  const [cvRecord, setCvRecord] = useState<CvLibraryRecord | null>(null);
+  const [cvTitleInput, setCvTitleInput] = useState("Nouveau CV");
+  const { form, persistStatus, resetDraft } = useCvDraft(cvId);
   const { scale, setScale, resetScale } = useCvScale();
   const { overflowMode, setOverflowMode } = useCvOverflowMode();
   const [mobileTab, setMobileTab] = useState<EditorTab>("edit");
   const [unknownBannerDismissed, setUnknownBannerDismissed] = useState(false);
   const [resetNonce, setResetNonce] = useState(0);
 
+  useEffect(() => {
+    if (!cvId) return;
+    const existing = readCvLibrary().find((record) => record.id === cvId) ?? null;
+    const ensured =
+      existing ??
+      upsertCvRecord(cvId, {
+        title: "Nouveau CV",
+        templateId,
+      });
+    setCvRecord(ensured);
+  }, [cvId, templateId]);
+
+  useEffect(() => {
+    setCvTitleInput(cvRecord?.title ?? "Nouveau CV");
+  }, [cvRecord?.id, cvRecord?.title]);
+
   const handleReset = () => {
     resetDraft();
     setResetNonce((n) => n + 1);
   };
+
+  const handleTemplateChange = (nextTemplateId: TemplateId) => {
+    try {
+      window.localStorage.setItem(TEMPLATE_SELECTION_KEY, nextTemplateId);
+    } catch {
+      // ignore storage access issues
+    }
+    setParams((current) => {
+      const next = new URLSearchParams(current);
+      next.set("template", nextTemplateId);
+      return next;
+    });
+    if (cvId) {
+      const updated = upsertCvRecord(cvId, { templateId: nextTemplateId });
+      setCvRecord(updated);
+    }
+  };
+
+  const handleCvTitleInputChange = useCallback((nextTitle: string) => {
+    setCvTitleInput(nextTitle);
+  }, []);
+
+  const handleCvTitleCommit = useCallback(
+    (rawTitle?: string) => {
+      const source = typeof rawTitle === "string" ? rawTitle : cvTitleInput;
+      const normalized = source.trim() || "Nouveau CV";
+      setCvTitleInput(normalized);
+      if (!cvId) return;
+      if (cvRecord?.title === normalized) return;
+      const updated = upsertCvRecord(cvId, { title: normalized });
+      setCvRecord(updated);
+    },
+    [cvId, cvRecord?.title, cvTitleInput],
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -149,6 +215,7 @@ export function CvEditor() {
       <EditorShell
         templateId={templateId}
         templateName={templateMeta.name}
+        cvTitle={cvTitleInput}
         persistStatus={persistStatus}
         unknownQuery={unknownQuery}
         unknownBannerDismissed={unknownBannerDismissed}
@@ -161,6 +228,9 @@ export function CvEditor() {
         overflowMode={overflowMode}
         setOverflowMode={setOverflowMode}
         resetDraft={handleReset}
+        onTemplateChange={handleTemplateChange}
+        onCvTitleChange={handleCvTitleInputChange}
+        onCvTitleCommit={handleCvTitleCommit}
         resetNonce={resetNonce}
       />
     </FormProvider>
@@ -170,6 +240,7 @@ export function CvEditor() {
 type EditorShellProps = {
   templateId: TemplateId;
   templateName: string;
+  cvTitle: string;
   persistStatus: PersistStatus;
   unknownQuery: boolean;
   unknownBannerDismissed: boolean;
@@ -182,12 +253,16 @@ type EditorShellProps = {
   overflowMode: OverflowMode;
   setOverflowMode: (next: OverflowMode) => void;
   resetDraft: () => void;
+  onTemplateChange: (nextTemplateId: TemplateId) => void;
+  onCvTitleChange: (nextTitle: string) => void;
+  onCvTitleCommit: (rawTitle?: string) => void;
   resetNonce: number;
 };
 
 function EditorShell({
   templateId,
   templateName,
+  cvTitle,
   persistStatus,
   unknownQuery,
   unknownBannerDismissed,
@@ -200,6 +275,9 @@ function EditorShell({
   overflowMode,
   setOverflowMode,
   resetDraft,
+  onTemplateChange,
+  onCvTitleChange,
+  onCvTitleCommit,
   resetNonce,
 }: EditorShellProps) {
   const autofillSync = useAutofillSync<CvData>();
@@ -311,6 +389,7 @@ function EditorShell({
         <EditorHeader
           templateId={templateId}
           templateName={templateName}
+          cvTitle={cvTitle}
           persistStatus={persistStatus}
           scale={scale}
           setScale={setScale}
@@ -318,6 +397,9 @@ function EditorShell({
           overflowMode={overflowMode}
           setOverflowMode={setOverflowMode}
           resetDraft={resetDraft}
+          onTemplateChange={onTemplateChange}
+          onCvTitleChange={onCvTitleChange}
+          onCvTitleCommit={onCvTitleCommit}
         />
 
         {unknownQuery && !unknownBannerDismissed ? (
@@ -424,6 +506,7 @@ function FormSections({
 function EditorHeader({
   templateId,
   templateName,
+  cvTitle,
   persistStatus,
   scale,
   setScale,
@@ -431,9 +514,13 @@ function EditorHeader({
   overflowMode,
   setOverflowMode,
   resetDraft,
+  onTemplateChange,
+  onCvTitleChange,
+  onCvTitleCommit,
 }: {
   templateId: TemplateId;
   templateName: string;
+  cvTitle: string;
   persistStatus: PersistStatus;
   scale: number;
   setScale: (next: number) => void;
@@ -441,6 +528,9 @@ function EditorHeader({
   overflowMode: OverflowMode;
   setOverflowMode: (next: OverflowMode) => void;
   resetDraft: () => void;
+  onTemplateChange: (nextTemplateId: TemplateId) => void;
+  onCvTitleChange: (nextTitle: string) => void;
+  onCvTitleCommit: (rawTitle?: string) => void;
 }) {
   const persistText =
     persistStatus === "failed"
@@ -450,10 +540,10 @@ function EditorHeader({
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-[var(--color-rule)] bg-[var(--color-paper)]/85 px-6 backdrop-blur">
       <div className="flex min-w-0 items-baseline gap-3">
         <Link
-          to="/templates"
+          to="/home"
           className="text-[13px] font-medium text-[var(--color-ink-soft)] transition-colors hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/30 motion-reduce:transition-none"
         >
-          ← Retour aux templates
+          ← Retour a Home
         </Link>
         <span aria-hidden="true" className="text-[var(--color-ink-soft)]/40">
           /
@@ -461,6 +551,21 @@ function EditorHeader({
         <h1 className="font-display truncate text-[18px] font-medium text-[var(--color-ink)]">
           Éditeur · {templateName}
         </h1>
+        <input
+          type="text"
+          value={cvTitle}
+          onChange={(event) => onCvTitleChange(event.target.value)}
+          onBlur={(event) => onCvTitleCommit(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              onCvTitleCommit((event.target as HTMLInputElement).value);
+              (event.target as HTMLInputElement).blur();
+            }
+          }}
+          className="h-8 w-[13rem] rounded-md border border-[var(--color-rule)] bg-white/72 px-2.5 text-[12px] text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/30"
+          aria-label="Titre du CV"
+        />
       </div>
       <div className="flex items-center gap-3">
         <span
@@ -476,6 +581,10 @@ function EditorHeader({
         </span>
         <ScaleSlider scale={scale} setScale={setScale} resetScale={resetScale} />
         <OverflowModeSelector value={overflowMode} onChange={setOverflowMode} />
+        <TemplateDrawerButton
+          currentTemplateId={templateId}
+          onTemplateChange={onTemplateChange}
+        />
         <CvImportButton />
         <CvResetButton onReset={resetDraft} />
         <ExportPdfButton
@@ -485,6 +594,100 @@ function EditorHeader({
         />
       </div>
     </header>
+  );
+}
+
+function TemplateDrawerButton({
+  currentTemplateId,
+  onTemplateChange,
+}: {
+  currentTemplateId: TemplateId;
+  onTemplateChange: (nextTemplateId: TemplateId) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const currentTemplateName =
+    templateRegistry.find((template) => template.id === currentTemplateId)?.name ??
+    "Classique";
+
+  const handleSelect = (templateId: TemplateId) => {
+    onTemplateChange(templateId);
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
+        render={
+          <button
+            type="button"
+            className="inline-flex min-h-9 items-center rounded-md border border-[var(--color-rule)] bg-white/70 px-3 py-1.5 text-[12px] font-medium text-[var(--color-ink)] transition-colors hover:bg-white motion-reduce:transition-none"
+          >
+            Templates
+          </button>
+        }
+      />
+      <DialogContent
+        showCloseButton={false}
+        className="editor-template-drawer left-0 top-auto bottom-0 grid h-[min(76vh,38rem)] w-full max-w-none translate-x-0 translate-y-0 gap-0 rounded-t-3xl rounded-b-none border border-[var(--color-rule)] bg-white/68 p-0 text-[var(--color-ink)] shadow-[0_20px_44px_-24px_rgba(10,10,10,0.62)] backdrop-blur-2xl sm:left-1/2 sm:bottom-6 sm:h-[min(72vh,40rem)] sm:w-[min(calc(100vw-3rem),36rem)] sm:max-w-none sm:-translate-x-1/2 sm:rounded-3xl md:top-0 md:right-0 md:bottom-0 md:left-auto md:h-screen md:w-[28rem] md:translate-x-0 md:translate-y-0 md:rounded-none md:border-l md:border-t-0 md:border-r-0"
+      >
+        <DialogHeader className="border-b border-[var(--color-rule)] px-5 py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-mono-caps text-[10px] text-[var(--color-ink-soft)]">
+                Bibliotheque templates
+              </p>
+              <DialogTitle className="font-display mt-2 text-[29px] font-medium text-[var(--color-ink)]">
+                {currentTemplateName}
+              </DialogTitle>
+            </div>
+            <DialogClose
+              render={
+                <button
+                  type="button"
+                  aria-label="Fermer le panneau templates"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-rule)] bg-white/70 text-[18px] text-[var(--color-ink-soft)] transition-colors hover:text-[var(--color-ink)]"
+                >
+                  ×
+                </button>
+              }
+            />
+          </div>
+        </DialogHeader>
+        <div className="overflow-y-auto p-4">
+          <div className="grid gap-2.5">
+            {templateRegistry.map((template) => {
+              const isActive = template.id === currentTemplateId;
+              return (
+                <button
+                  key={template.id}
+                  type="button"
+                  onClick={() => handleSelect(template.id)}
+                  className={cn(
+                    "group rounded-2xl border p-4 text-left transition-all duration-200 motion-reduce:transition-none",
+                    "bg-white/82 hover:bg-white",
+                    isActive
+                      ? "border-[var(--color-ink)] shadow-[0_10px_24px_-20px_rgba(10,10,10,0.8)]"
+                      : "border-[var(--color-rule)]",
+                  )}
+                  aria-pressed={isActive}
+                >
+                  <div className="font-mono-caps flex items-center justify-between text-[10px] text-[var(--color-ink-soft)]">
+                    <span>{template.id}</span>
+                    {isActive ? <span>Actif</span> : <span>Appliquer</span>}
+                  </div>
+                  <h3 className="font-display mt-2 text-[25px] leading-none text-[var(--color-ink)]">
+                    {template.name}
+                  </h3>
+                  <p className="mt-2 text-[13px] leading-snug text-[var(--color-ink-soft)]">
+                    {template.description}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

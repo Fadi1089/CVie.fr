@@ -1,81 +1,139 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import {
+  cvDataSchema,
   templateRegistry,
-  type TemplateId,
-  type TemplateMeta,
+  type CvData,
+  type OverflowMode,
 } from "@cvie/shared";
-import { TemplateCard } from "./TemplateCard";
+import { TemplatePreviewFrame } from "./TemplatePreviewFrame";
+import { CvFirstPagePreview } from "./CvFirstPagePreview";
+import {
+  createCvRecord,
+  formatUpdatedAt,
+  readCvLibrary,
+  type CvLibraryRecord,
+} from "@/features/cv-library/storage";
 
 const STORAGE_KEY = "cvie.template.selected";
-
-function readStoredSelection(): TemplateId | null {
-  if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (!raw) return null;
-  const match = templateRegistry.find((t) => t.id === raw);
-  if (!match) {
-    window.localStorage.removeItem(STORAGE_KEY);
-    return null;
-  }
-  return match.id;
-}
-
-function TemplateSkeletonCard({ index }: { index: number }) {
-  return (
-    <div
-      aria-hidden="true"
-      style={{ ["--tpl-index" as string]: index }}
-      className="tpl-card-reveal flex flex-col overflow-hidden rounded-[20px] border border-[var(--color-rule)] bg-white"
-    >
-      <div className="flex items-center justify-between border-b border-[var(--color-rule)] px-6 pt-4 pb-3">
-        <span className="h-3 w-14 animate-pulse rounded bg-[var(--color-paper-deep)] motion-reduce:animate-none" />
-        <span className="flex gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-paper-deep)]" />
-          <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-paper-deep)]" />
-          <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-paper-deep)]" />
-        </span>
-      </div>
-      <div className="aspect-[1/1.4142] animate-pulse bg-[var(--color-paper-deep)] motion-reduce:animate-none" />
-      <div className="flex flex-col gap-3 border-t border-[var(--color-rule)] px-6 pt-4 pb-5">
-        <div className="h-6 w-32 animate-pulse rounded bg-[var(--color-paper-deep)] motion-reduce:animate-none" />
-        <div className="h-3 w-full animate-pulse rounded bg-[var(--color-paper-deep)] motion-reduce:animate-none" />
-        <div className="mt-auto h-6 w-28 animate-pulse rounded-full bg-[var(--color-paper-deep)] motion-reduce:animate-none" />
-      </div>
-    </div>
-  );
-}
+const OVERFLOW_MODE_STORAGE_KEY = "cvie.cv.overflow-mode";
+const CV_SCALE_STORAGE_KEY = "cvie.cv.scale";
 
 export function TemplateBrowser() {
   const navigate = useNavigate();
-  const [loaded, setLoaded] = useState(false);
-  const [selected, setSelected] = useState<TemplateId | null>(null);
+  const [library, setLibrary] = useState<CvLibraryRecord[]>(() => readCvLibrary());
+  const [activeCvId, setActiveCvId] = useState<string>(library[0]?.id ?? "");
+  const [previewCvId, setPreviewCvId] = useState<string>(library[0]?.id ?? "");
+  const [activeCvDraft, setActiveCvDraft] = useState<CvData | null>(null);
+  const [overflowMode, setOverflowMode] = useState<OverflowMode>("section");
+  const [cvScale, setCvScale] = useState<number>(1);
 
   useEffect(() => {
-    setSelected(readStoredSelection());
-    // Skeleton rehearsal — real data is synchronous today, but this simulates
-    // the network path used in later stories (TanStack Query, Story 2.2+).
-    const t = setTimeout(() => setLoaded(true), 200);
-    return () => clearTimeout(t);
+    setLibrary(readCvLibrary());
   }, []);
 
-  const handleSelect = useCallback(
-    (id: TemplateId) => {
-      try {
-        window.localStorage.setItem(STORAGE_KEY, id);
-      } catch {
-        // Quota exceeded / storage disabled — selection still works via URL.
+  useEffect(() => {
+    if (!library.length) return;
+    if (!library.some((cv) => cv.id === activeCvId)) {
+      setActiveCvId(library[0].id);
+    }
+    if (!library.some((cv) => cv.id === previewCvId)) {
+      setPreviewCvId(library[0].id);
+    }
+  }, [activeCvId, library, previewCvId]);
+
+  const activeCv = useMemo(
+    () =>
+      library.find((cv) => cv.id === previewCvId) ??
+      library.find((cv) => cv.id === activeCvId) ??
+      library[0],
+    [activeCvId, library, previewCvId],
+  );
+
+  const activeTemplate = useMemo(
+    () =>
+      templateRegistry.find((template) => template.id === activeCv?.templateId) ??
+      templateRegistry[0],
+    [activeCv],
+  );
+
+  useEffect(() => {
+    if (!activeCv?.id) {
+      setActiveCvDraft(null);
+      return;
+    }
+    try {
+      const raw = window.localStorage.getItem(`cvie.cv.draft.${activeCv.id}`);
+      if (!raw) {
+        setActiveCvDraft(null);
+        return;
       }
-      navigate(`/editor?template=${id}`);
+      const parsed = cvDataSchema.safeParse(JSON.parse(raw));
+      setActiveCvDraft(parsed.success ? parsed.data : null);
+    } catch {
+      setActiveCvDraft(null);
+    }
+  }, [activeCv?.id]);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(OVERFLOW_MODE_STORAGE_KEY);
+      setOverflowMode(stored === "element" ? "element" : "section");
+    } catch {
+      setOverflowMode("section");
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(CV_SCALE_STORAGE_KEY);
+      if (raw !== null) {
+        const parsed = parseFloat(raw);
+        if (Number.isFinite(parsed) && parsed > 0) {
+          setCvScale(Math.min(1, Math.max(0.5, parsed)));
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleOpenCv = useCallback(
+    (cv: CvLibraryRecord) => {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, cv.templateId);
+      } catch {
+        // ignore storage access issues
+      }
+      navigate(`/editor?template=${cv.templateId}&cv=${encodeURIComponent(cv.id)}`);
     },
     [navigate],
   );
 
+  const handleCreateCv = useCallback(() => {
+    const templateId = activeTemplate?.id ?? "classique";
+    const newCv = createCvRecord(templateId);
+    setLibrary(readCvLibrary());
+    setActiveCvId(newCv.id);
+    setPreviewCvId(newCv.id);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, templateId);
+    } catch {
+      // ignore storage access issues
+    }
+    navigate(`/editor?template=${templateId}&cv=${encodeURIComponent(newCv.id)}&new=1`);
+  }, [activeTemplate, navigate]);
+
+  const handleHoverPreview = useCallback((cvId: string) => {
+    // Avoid redundant state updates while moving inside the same card.
+    setActiveCvId((prev) => (prev === cvId ? prev : cvId));
+    setPreviewCvId((prev) => (prev === cvId ? prev : cvId));
+  }, []);
+
   return (
-    <div className="atelier-paper relative min-h-screen text-[var(--color-ink)]">
-      {/* Sticky top chrome — breadcrumb + atelier label.
-         Layered above the vignette but below any modals (z=5). */}
-      <header className="sticky top-0 z-10 border-b border-[var(--color-rule)] bg-[rgba(250,250,247,0.82)] px-6 py-3 backdrop-blur-md">
+    <div className="atelier-paper relative flex min-h-screen flex-col text-[var(--color-ink)]">
+      <header className="sticky top-0 z-20 border-b border-[var(--color-rule)] bg-[rgba(250,250,247,0.82)] px-6 py-3 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="flex items-baseline gap-3">
             <Link
@@ -86,98 +144,125 @@ export function TemplateBrowser() {
             </Link>
             <span className="text-[var(--color-dot)]">/</span>
             <span className="font-mono-caps text-[10px] text-[var(--color-ink)]">
-              Bibliothèque
+              CV Library
             </span>
           </div>
-          <span className="hidden font-mono-caps text-[10px] text-[var(--color-ink-soft)] sm:inline">
-            {templateRegistry.length} templates · Mise à jour 2026
-          </span>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="relative z-[1] mx-auto max-w-7xl px-6 pt-16 pb-12 md:pt-24 md:pb-16">
-        <div
-          style={{ ["--tpl-hero-delay" as string]: "0ms" }}
-          className="tpl-hero-reveal font-mono-caps text-[10px] text-[var(--color-ink-soft)]"
-        >
-          Nº 01 — Bibliothèque de templates
+      <section className="relative z-[1] mx-auto flex w-full max-w-7xl flex-1 px-6 py-3 xl:items-center">
+        <div className="tpl-hero-reveal atelier-library-grid w-full">
+          <div className="atelier-surface-panel wallet-folder atelier-library-panel relative flex flex-col overflow-hidden rounded-[32px] p-4 sm:p-5">
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <p className="mt-2 text-[21px] font-medium tracking-[-0.045em] text-[var(--color-ink)]">
+                  CV Library
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCreateCv}
+                className="inline-flex min-w-[12rem] items-center justify-center gap-2 rounded-full border border-[var(--color-rule)] bg-white/80 px-4 py-2.5 text-sm font-medium text-[var(--color-ink)] transition hover:border-[var(--color-ink-soft)] hover:bg-white motion-reduce:transition-none"
+              >
+                <Plus className="h-4 w-4" aria-hidden />
+                Ajouter un nouveau CV
+              </button>
+            </div>
+
+            <div className="mx-auto min-h-0 w-full max-w-[520px] flex-1 space-y-3 overflow-y-auto pr-1">
+              {library.map((cv, index) => {
+                const isActive = cv.id === activeCvId;
+                const templateName =
+                  templateRegistry.find((template) => template.id === cv.templateId)?.name ??
+                  "Classique";
+                return (
+                  <button
+                    key={cv.id}
+                    type="button"
+                    onMouseEnter={() => handleHoverPreview(cv.id)}
+                    onFocus={() => handleHoverPreview(cv.id)}
+                    onClick={() => handleOpenCv(cv)}
+                    aria-label={`Ouvrir ${cv.title} dans l'editeur`}
+                    className={`wallet-cv-card-v2 group relative block h-[170px] w-full rounded-[28px] p-4 text-left outline-none transition focus-visible:ring-2 focus-visible:ring-white/45 ${
+                      isActive ? "ring-2 ring-[var(--color-ink-soft)]/35" : ""
+                    }`}
+                  >
+                    <div className="wallet-cv-bg">
+                      <TemplatePreviewFrame
+                        templateId={cv.templateId}
+                        className="h-full w-full"
+                        iframeClassName="wallet-cv-bg-iframe"
+                      />
+                    </div>
+                    <div className="absolute left-4 top-3 z-[3]">
+                      <span className="font-mono-caps text-[10px] text-[var(--color-ink-soft)]">
+                        CV {String(index + 1).padStart(2, "0")}
+                      </span>
+                    </div>
+                    <h3 className="relative z-[2] mt-4 text-[26px] font-medium leading-none tracking-[-0.05em] text-[var(--color-ink)]">
+                      {cv.title}
+                    </h3>
+                    <p className="relative z-[2] mt-1.5 text-[13px] leading-snug text-[var(--color-ink-soft)]">
+                      Template: {templateName}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-auto border-t border-[var(--color-rule)] pt-3 grid content-start gap-2">
+              <div className="rounded-[22px] border border-[var(--color-rule)] bg-white/72 p-4">
+                <div className="grid gap-2.5 text-[13px]">
+                  <div className="border-b border-[var(--color-rule)] pb-2">
+                    <p className="font-mono-caps text-[10px] text-[var(--color-ink-soft)]">
+                      Derniere revision
+                    </p>
+                    <p className="mt-1 text-[14px] text-[var(--color-ink)]">
+                      {activeCv ? formatUpdatedAt(activeCv.updatedAt) : "—"}
+                    </p>
+                  </div>
+                  <div className="border-b border-[var(--color-rule)] pb-2">
+                    <p className="font-mono-caps text-[10px] text-[var(--color-ink-soft)]">
+                      Template actif
+                    </p>
+                    <p className="mt-1 text-[14px] text-[var(--color-ink)]">
+                      {activeTemplate?.name ?? "Classique"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => activeCv && handleOpenCv(activeCv)}
+                className="inline-flex w-full items-center justify-center rounded-full bg-[var(--color-ink)] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-ink)]/90 motion-reduce:transition-none"
+              >
+                Ouvrir ce CV
+              </button>
+            </div>
+          </div>
+
+          <aside className="atelier-preview-panel">
+            {activeCvDraft ? (
+              <CvFirstPagePreview
+                templateId={activeTemplate?.id ?? "classique"}
+                cvData={activeCvDraft}
+                overflowMode={overflowMode}
+                cvScale={cvScale}
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-center">
+                <div>
+                  <p className="font-mono-caps text-[10px] text-[var(--color-ink-soft)]">
+                    Apercu
+                  </p>
+                  <p className="mt-2 text-[15px] text-[var(--color-ink-soft)]">
+                    CV pas encore conçu
+                  </p>
+                </div>
+              </div>
+            )}
+          </aside>
         </div>
-
-        <h1
-          style={{ ["--tpl-hero-delay" as string]: "80ms" }}
-          className="tpl-hero-reveal font-display mt-6 max-w-4xl text-[44px] leading-[0.95] font-normal tracking-[-0.02em] text-[var(--color-ink)] sm:text-[56px] md:text-[72px] lg:text-[88px]"
-        >
-          Choisissez votre
-          <span
-            className="italic"
-            style={{ fontVariationSettings: '"opsz" 144, "SOFT" 60, "WONK" 1' }}
-          >
-            {" "}signature
-          </span>
-          .
-        </h1>
-
-        <p
-          style={{ ["--tpl-hero-delay" as string]: "160ms" }}
-          className="tpl-hero-reveal mt-8 max-w-[36rem] text-[15px] leading-relaxed text-[var(--color-ink-soft)]"
-        >
-          Trois fondations éditoriales — toutes compatibles ATS, toutes
-          modifiables à volonté. Choisissez un style, commencez à rédiger. Vous
-          changerez d’avis sans perdre une ligne.
-        </p>
-
-        {/* Meta rail — print-style specimen card */}
-        <div
-          style={{ ["--tpl-hero-delay" as string]: "240ms" }}
-          className="tpl-hero-reveal mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-[var(--color-rule)] pt-5 font-mono-caps text-[10px] text-[var(--color-ink-soft)]"
-        >
-          <span>
-            <span className="text-[var(--color-ink)]">ATS</span> Workday ·
-            Greenhouse · Taleez · SAP · Lever
-          </span>
-          <span>
-            <span className="text-[var(--color-ink)]">Format</span> A4 · 210 × 297 mm
-          </span>
-          <span>
-            <span className="text-[var(--color-ink)]">PDF</span> &lt; 3 s
-          </span>
-          <span>
-            <span className="text-[var(--color-ink)]">Coût</span> 0 €. Toujours.
-          </span>
-        </div>
-      </section>
-
-      {/* Gallery */}
-      <section className="relative z-[1] mx-auto max-w-7xl px-6 pb-24">
-        <div className="mb-6 flex items-baseline justify-between border-b border-[var(--color-rule)] pb-3">
-          <h2 className="font-mono-caps text-[10px] text-[var(--color-ink)]">
-            La collection
-          </h2>
-          <span className="font-mono-caps text-[10px] text-[var(--color-ink-soft)]">
-            {loaded ? `${templateRegistry.length} pièces` : "chargement…"}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
-          {loaded
-            ? templateRegistry.map((template: TemplateMeta, i) => (
-                <TemplateCard
-                  key={template.id}
-                  template={template}
-                  index={i}
-                  total={templateRegistry.length}
-                  onSelect={handleSelect}
-                  isSelected={template.id === selected}
-                />
-              ))
-            : [0, 1, 2].map((i) => <TemplateSkeletonCard key={i} index={i} />)}
-        </div>
-
-        <p className="mt-10 max-w-[28rem] font-mono-caps text-[10px] leading-relaxed text-[var(--color-ink-soft)]">
-          Vous cherchez un style spécifique ? D’autres variantes arrivent.
-          Votre contenu reste intact entre les templates.
-        </p>
       </section>
     </div>
   );

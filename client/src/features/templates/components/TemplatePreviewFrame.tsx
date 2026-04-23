@@ -1,8 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import { renderCvHtml, sampleCv, type TemplateId } from "@cvie/shared";
+import {
+  renderCvHtml,
+  sampleCv,
+  type CvData,
+  type OverflowMode,
+  type TemplateId,
+} from "@cvie/shared";
+import { cn } from "@/lib/utils";
 
 type Props = {
   templateId: TemplateId;
+  cvData?: CvData;
+  overflowMode?: OverflowMode;
+  firstPageOnly?: boolean;
+  className?: string;
+  iframeClassName?: string;
 };
 
 /**
@@ -15,11 +27,33 @@ type Props = {
  * iframe fully transparent to keyboard + screen reader users; the parent
  * button is the single a11y target.
  */
-export function TemplatePreviewFrame({ templateId }: Props) {
-  const html = useMemo(
-    () => renderCvHtml(sampleCv, templateId),
-    [templateId],
-  );
+export function TemplatePreviewFrame({
+  templateId,
+  cvData,
+  overflowMode = "section",
+  firstPageOnly = false,
+  className,
+  iframeClassName,
+}: Props) {
+  const html = useMemo(() => {
+    const rendered = renderCvHtml(cvData ?? sampleCv, templateId, 1, overflowMode);
+    const firstPageReset = firstPageOnly
+      ? `
+.cv-canvas,
+.cv-paginated{max-height:1123px!important;overflow:hidden!important;}
+.cv-page-bg:nth-of-type(n+2),
+.cv-page-advisory{display:none!important;}
+`
+      : "";
+    const reset = `<style>
+html,body{margin:0!important;padding:0!important;}
+.cv-canvas{padding:0!important;background:#fff!important;}
+${firstPageReset}
+</style>`;
+    return rendered.includes("</head>")
+      ? rendered.replace("</head>", `${reset}</head>`)
+      : `${reset}${rendered}`;
+  }, [cvData, firstPageOnly, overflowMode, templateId]);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -49,14 +83,14 @@ export function TemplatePreviewFrame({ templateId }: Props) {
   }, []);
 
   return (
-    <div className="preview-frame">
+    <div className={cn("preview-frame", className)}>
       {ready ? (
         <iframe
           srcDoc={html}
           aria-hidden="true"
           tabIndex={-1}
           title=""
-          className="preview-iframe"
+          className={cn("preview-iframe", iframeClassName)}
           /* Defense-in-depth: the srcdoc already renders only escaped content,
              but `sandbox` walls the iframe off from same-origin access, form
              submission, and top-navigation. `allow-scripts` is required so
