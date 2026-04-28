@@ -31,7 +31,7 @@ export const defaultPalettes = {
   minimaliste: {
     accent: "#111111",
     ink: "#111111",
-    soft: "#555555",
+    soft: "#333333",
     rule: "#111111",
     canvas: "#ECECEC",
   },

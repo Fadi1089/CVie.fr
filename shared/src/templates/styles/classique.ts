@@ -1,4 +1,4 @@
-import { s, sText, sMedia, sSpace, sLine } from "./_scaled";
+import { s } from "./_scaled";
 
 /**
  * @generated from Figma template Classique.
@@ -14,7 +14,7 @@ export const classiqueCss = `
 }
 
 .cv-canvas {
-  background: var(--cv-canvas, #E6E4D8);
+  background: #E6E4D8;
   padding: 24px 0 8px;
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
 }
@@ -53,7 +53,7 @@ export const classiqueCss = `
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
   font-size: 9pt;
   line-height: 1.5;
-  color: var(--cv-soft, #5E5D59);
+  color: #5E5D59;
   text-align: center;
   padding: 0 14mm;
 }
@@ -78,7 +78,7 @@ export const classiqueCss = `
 
 .cv-page-advisory .cv-page-advisory-text strong {
   font-weight: 700;
-  color: var(--cv-accent, #1B365D);
+  color: #1B365D;
   text-transform: uppercase;
   letter-spacing: 0.16em;
   font-size: 8pt;
@@ -91,11 +91,12 @@ export const classiqueCss = `
   box-sizing: border-box;
   width: 210mm;
   min-height: 297mm;
+  padding: 0.25in;
   background: transparent;
-  color: var(--cv-ink, #141413);
+  color: #141413;
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${sText(10, "pt", "paragraph")};
-  line-height: ${sLine(1.5)};
+  font-size: ${s(10, "pt")};
+  line-height: 1.5;
   orphans: 3;
   widows: 3;
 }
@@ -107,9 +108,9 @@ export const classiqueCss = `
 }
 
 .cv a {
-  color: var(--cv-accent, #1B365D);
+  color: #1B365D;
   text-decoration: none;
-  text-decoration-color: var(--cv-accent, #1B365D);
+  text-decoration-color: #1B365D;
   text-decoration-thickness: ${s(0.5, "pt")};
   text-underline-offset: ${s(2, "px")};
 }
@@ -125,9 +126,9 @@ export const classiqueCss = `
 
 .cv header {
   position: relative;
-  margin-bottom: ${sSpace(2.6458, "mm", "section")};
+  margin-bottom: ${s(2.6458, "mm")};
   padding-bottom: ${s(3.9688, "mm")};
-  border-bottom: ${s(0.75, "pt")} solid var(--cv-rule, #D4D2CC);
+  border-bottom: ${s(0.75, "pt")} solid #D4D2CC;
 }
 
 .cv header .header-top {
@@ -139,10 +140,6 @@ export const classiqueCss = `
 
 .cv header:not(.has-photo) .header-top {
   gap: 0;
-}
-
-.cv header.has-photo .header-top {
-  align-items: flex-start;
 }
 
 .cv header .header-identity {
@@ -159,36 +156,30 @@ export const classiqueCss = `
   top: 0;
   bottom: 0;
   width: ${s(2.5, "pt")};
-  background: var(--cv-accent, #1B365D);
+  background: #1B365D;
   border-radius: ${s(0.5292, "mm")} ${s(0, "mm")} ${s(0, "mm")} ${s(0.5292, "mm")};
-}
-
-.cv header.has-photo .header-identity::before {
-  top: 0;
-  bottom: auto;
-  height: ${sMedia(28, "mm")};
 }
 
 .cv header .photo {
   flex-shrink: 0;
-  width: ${sMedia(28, "mm")};
-  height: ${sMedia(28, "mm")};
+  width: ${s(28, "mm")};
+  height: ${s(28, "mm")};
   object-fit: cover;
   object-position: center 22%;
   border-radius: ${s(1.5, "mm")};
   display: block;
   background: #E8E6DC;
   box-sizing: border-box;
-  border: ${s(1.5, "pt")} solid var(--cv-accent, #1B365D);
+  border: ${s(1.5, "pt")} solid #1B365D;
 }
 
 .cv .portfolio-qr-box {
-  width: ${sMedia(28, "mm")};
-  height: ${sMedia(28, "mm")};
+  width: ${s(28, "mm")};
+  height: ${s(28, "mm")};
   border-radius: ${s(1.5, "mm")};
   background: #E8E6DC;
   box-sizing: border-box;
-  border: ${s(1.5, "pt")} solid var(--cv-accent, #1B365D);
+  border: ${s(1.5, "pt")} solid #1B365D;
   overflow: hidden;
 }
 
@@ -200,37 +191,37 @@ export const classiqueCss = `
 
 .cv .portfolio-qr-label {
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${sText(7.5, "pt", "paragraph")};
+  font-size: ${s(7.5, "pt")};
   font-weight: 400;
-  line-height: ${sLine(1.2102)};
+  line-height: 1.2102;
   letter-spacing: 0em;
-  color: var(--cv-soft, #5E5D59);
+  color: #5E5D59;
   text-transform: none;
 }
 
 .cv header h1 {
   margin: 0 0 ${s(5.2917, "mm")} 0;
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${sText(24, "pt", "title")};
+  font-size: ${s(24, "pt")};
   font-weight: 500;
-  color: var(--cv-ink, #141413);
+  color: #141413;
   letter-spacing: -0.01em;
-  line-height: ${sLine(1.08)};
+  line-height: 1.08;
   font-style: normal;
-  min-height: ${s(6.6146, "mm")};
+  height: ${s(6.6146, "mm")};
   overflow: visible;
 }
 
 .cv header .job-title {
   margin: 0 0 ${s(5.2917, "mm")} 0;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${sText(18, "pt", "header")};
+  font-size: ${s(18, "pt")};
   font-weight: 500;
-  color: var(--cv-accent, #1B365D);
+  color: #1B365D;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  line-height: ${sLine(1.2102)};
-  min-height: ${s(6.6146, "mm")};
+  line-height: 1.2102;
+  height: ${s(6.6146, "mm")};
   overflow: visible;
 }
 
@@ -239,9 +230,9 @@ export const classiqueCss = `
   padding: 0;
   list-style: none;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${sText(9, "pt", "paragraph")};
-  color: var(--cv-soft, #5E5D59);
-  line-height: ${sLine(1.2102)};
+  font-size: ${s(9, "pt")};
+  color: #5E5D59;
+  line-height: 1.2102;
   letter-spacing: 0em;
 }
 
@@ -255,22 +246,22 @@ export const classiqueCss = `
 }
 
 .cv header .contact a {
-  color: var(--cv-ink, #141413);
+  color: #141413;
 }
 
 .cv header .summary {
   margin: ${s(4, "mm")} 0 0 0;
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${sText(10, "pt", "paragraph")};
-  line-height: ${sLine(1.55)};
-  color: var(--cv-ink, #141413);
+  font-size: ${s(10, "pt")};
+  line-height: 1.55;
+  color: #141413;
   font-style: normal;
 }
 
 .cv section {
-  margin-bottom: ${sSpace(2.6458, "mm", "section")};
-  padding-bottom: ${sSpace(2.6458, "mm", "section")};
-  border-bottom: ${s(0.5, "pt")} solid var(--cv-rule, #D4D2CC);
+  margin-bottom: ${s(2.6458, "mm")};
+  padding-bottom: ${s(2.6458, "mm")};
+  border-bottom: ${s(0.5, "pt")} solid #D4D2CC;
 }
 
 .cv section:last-of-type {
@@ -284,11 +275,11 @@ export const classiqueCss = `
   margin: 0 0 ${s(2.6458, "mm")} 0;
   padding: ${s(0.4, "mm")} ${s(0, "mm")} ${s(0.4, "mm")} ${s(3, "mm")};
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${sText(15, "pt", "header")};
+  font-size: ${s(15, "pt")};
   font-weight: 800;
-  color: var(--cv-ink, #141413);
+  color: #141413;
   letter-spacing: 0em;
-  line-height: ${sLine(1)};
+  line-height: 1;
   font-style: normal;
   
   page-break-after: avoid;
@@ -302,12 +293,12 @@ export const classiqueCss = `
   top: 0;
   bottom: 0;
   width: ${s(2.5, "pt")};
-  background: var(--cv-accent, #1B365D);
+  background: #1B365D;
   border-radius: ${s(0.5292, "mm")} ${s(0, "mm")} ${s(0, "mm")} ${s(0.5292, "mm")};
 }
 
 .cv article {
-  margin-bottom: ${sSpace(2.6458, "mm", "item")};
+  margin-bottom: ${s(2.6458, "mm")};
   page-break-inside: avoid;
   break-inside: avoid;
 }
@@ -332,33 +323,33 @@ export const classiqueCss = `
   min-width: 0;
   overflow-wrap: anywhere;
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${sText(11, "pt", "header")};
+  font-size: ${s(11, "pt")};
   font-weight: 700;
-  color: var(--cv-ink, #141413);
+  color: #141413;
   letter-spacing: 0em;
-  line-height: ${sLine(1.3)};
+  line-height: 1.3;
 }
 
 .cv article .entry-meta {
   margin: 0;
   flex-shrink: 0;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${sText(9, "pt", "header")};
+  font-size: ${s(9, "pt")};
   font-weight: 400;
   color: #87867F;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
-  line-height: ${sLine(1.3)};
+  line-height: 1.3;
   font-style: normal;
 }
 
 .cv article .entry-sub {
   margin: 0 0 ${s(0.6, "mm")} 0;
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${sText(10, "pt", "paragraph")};
-  color: var(--cv-soft, #5E5D59);
-  line-height: ${sLine(1.45)};
+  font-size: ${s(10, "pt")};
+  color: #5E5D59;
+  line-height: 1.45;
   font-style: normal;
   page-break-after: avoid;
   break-after: avoid;
@@ -368,9 +359,9 @@ export const classiqueCss = `
 .cv article p,
 .cv article li {
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${sText(9.5, "pt", "paragraph")};
-  color: var(--cv-ink, #141413);
-  line-height: ${sLine(1.45)};
+  font-size: ${s(9.5, "pt")};
+  color: #141413;
+  line-height: 1.45;
 }
 
 .cv article .entry-description {
@@ -385,29 +376,29 @@ export const classiqueCss = `
 
 .cv .skills-grouped li {
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${sText(9.8, "pt", "paragraph")};
+  font-size: ${s(9.8, "pt")};
   margin: 0;
-  line-height: ${sLine(1.5)};
-  color: var(--cv-ink, #141413);
+  line-height: 1.5;
+  color: #141413;
 }
 
 .cv .skills-grouped li + li {
-  margin-top: ${sSpace(0.6, "mm", "item")};
+  margin-top: ${s(0.6, "mm")};
 }
 
 .cv .skills-grouped .skill-category {
   font-weight: 700;
-  color: var(--cv-ink, #141413);
+  color: #141413;
 }
 
 .cv .skills-grouped .skill-name {
-  color: var(--cv-ink, #141413);
+  color: #141413;
 }
 
 .cv .skills-grouped .skill-level {
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  color: var(--cv-soft, #5E5D59);
-  font-size: ${sText(8.5, "pt", "paragraph")};
+  color: #5E5D59;
+  font-size: ${s(8.5, "pt")};
   margin-left: 0.2em;
   letter-spacing: 0.02em;
 }
@@ -418,10 +409,10 @@ export const classiqueCss = `
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: ${sSpace(1.5, "mm", "item")} ${sSpace(7, "mm", "item")};
+  gap: ${s(1.5, "mm")} ${s(7, "mm")};
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${sText(9.8, "pt", "paragraph")};
-  line-height: ${sLine(1.5)};
+  font-size: ${s(9.8, "pt")};
+  line-height: 1.5;
 }
 
 .cv .languages-list li {
@@ -435,7 +426,7 @@ export const classiqueCss = `
 }
 
 .cv .languages-list .lang-level {
-  color: var(--cv-soft, #5E5D59);
+  color: #5E5D59;
 }
 
 .cv .interests-list {
@@ -444,10 +435,10 @@ export const classiqueCss = `
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: ${sSpace(1.5, "mm", "item")} ${sSpace(4, "mm", "item")};
+  gap: ${s(1.5, "mm")} ${s(4, "mm")};
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${sText(9.8, "pt", "paragraph")};
-  line-height: ${sLine(1.5)};
+  font-size: ${s(9.8, "pt")};
+  line-height: 1.5;
 }
 
 .cv .interests-list li {
@@ -465,14 +456,14 @@ export const classiqueCss = `
 .cv article ul li::marker {
   content: "•  ";
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${sText(14.25, "pt", "paragraph")};
-  color: var(--cv-ink, #141413);
+  font-size: ${s(14.25, "pt")};
+  color: #141413;
 }
 .cv .skills-grouped li::marker {
   content: "•  ";
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${sText(14.7, "pt", "paragraph")};
-  color: var(--cv-ink, #141413);
+  font-size: ${s(14.7, "pt")};
+  color: #141413;
 }
 
 `;

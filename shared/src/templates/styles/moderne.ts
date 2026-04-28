@@ -1,4 +1,4 @@
-import { s, sText, sMedia, sSpace, sLine } from "./_scaled";
+import { s } from "./_scaled";
 
 /**
  * @generated from Figma template Moderne.
@@ -14,7 +14,7 @@ export const moderneCss = `
 }
 
 .cv-canvas {
-  background: var(--cv-canvas, #E9E6E0);
+  background: #E9E6E0;
   padding: 24px 0 8px;
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
@@ -53,7 +53,7 @@ export const moderneCss = `
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 9pt;
   line-height: 1.5;
-  color: var(--cv-soft, #3A3A3A);
+  color: #3A3A3A;
   text-align: center;
   padding: 0 14mm;
 }
@@ -78,7 +78,7 @@ export const moderneCss = `
 
 .cv-page-advisory .cv-page-advisory-text strong {
   font-weight: 700;
-  color: var(--cv-accent, #A8421E);
+  color: #A8421E;
   text-transform: uppercase;
   letter-spacing: 0.16em;
   font-size: 8pt;
@@ -91,11 +91,12 @@ export const moderneCss = `
   box-sizing: border-box;
   width: 210mm;
   min-height: 297mm;
+  padding: 0.25in;
   background: transparent;
-  color: var(--cv-ink, #111111);
+  color: #111111;
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${sText(10.5, "pt", "paragraph")};
-  line-height: ${sLine(1.5)};
+  font-size: ${s(10.5, "pt")};
+  line-height: 1.5;
   orphans: 3;
   widows: 3;
 }
@@ -107,9 +108,9 @@ export const moderneCss = `
 }
 
 .cv a {
-  color: var(--cv-ink, #111111);
+  color: #111111;
   text-decoration: underline;
-  text-decoration-color: var(--cv-accent, #A8421E);
+  text-decoration-color: #A8421E;
   text-decoration-thickness: ${s(0.5, "pt")};
   text-underline-offset: ${s(2, "px")};
 }
@@ -125,9 +126,9 @@ export const moderneCss = `
 
 .cv header {
   position: relative;
-  margin-bottom: ${sSpace(5, "mm", "section")};
+  margin-bottom: ${s(5, "mm")};
   padding-bottom: ${s(3, "mm")};
-  border-bottom: ${s(0.75, "pt")} solid var(--cv-rule, #A8421E);
+  border-bottom: ${s(0.75, "pt")} solid #A8421E;
 }
 
 .cv header .header-top {
@@ -155,30 +156,30 @@ export const moderneCss = `
   top: 0;
   bottom: 0;
   width: ${s(0.75, "pt")};
-  background: var(--cv-accent, #A8421E);
+  background: #A8421E;
   border-radius: ${s(0, "mm")} ${s(0, "mm")} ${s(0, "mm")} ${s(0, "mm")};
 }
 
 .cv header .photo {
   flex-shrink: 0;
-  width: ${sMedia(26, "mm")};
-  height: ${sMedia(26, "mm")};
+  width: ${s(26, "mm")};
+  height: ${s(26, "mm")};
   object-fit: cover;
   object-position: center top;
   border-radius: ${s(0, "mm")};
   display: block;
   background: #F3F0EA;
   box-sizing: border-box;
-  border: ${s(1.5, "pt")} solid var(--cv-ink, #111111);
+  border: ${s(1.5, "pt")} solid #111111;
 }
 
 .cv .portfolio-qr-box {
-  width: ${sMedia(26, "mm")};
-  height: ${sMedia(26, "mm")};
+  width: ${s(26, "mm")};
+  height: ${s(26, "mm")};
   border-radius: ${s(0, "mm")};
   background: #F3F0EA;
   box-sizing: border-box;
-  border: ${s(1.5, "pt")} solid var(--cv-ink, #111111);
+  border: ${s(1.5, "pt")} solid #111111;
   overflow: hidden;
 }
 
@@ -190,36 +191,36 @@ export const moderneCss = `
 
 .cv .portfolio-qr-label {
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${sText(7.5, "pt", "paragraph")};
+  font-size: ${s(7.5, "pt")};
   font-weight: 400;
-  line-height: ${sLine(1.3)};
+  line-height: 1.3;
   letter-spacing: 0em;
-  color: var(--cv-soft, #3A3A3A);
+  color: #3A3A3A;
   text-transform: none;
 }
 
 .cv header h1 {
   margin: 0 0 ${s(1.5, "mm")} 0;
   font-family: "Fraunces", "Newsreader", Georgia, serif;
-  font-size: ${sText(32, "pt", "title")};
+  font-size: ${s(32, "pt")};
   font-weight: 400;
-  color: var(--cv-ink, #111111);
+  color: #111111;
   letter-spacing: -0.01em;
-  line-height: ${sLine(1.05)};
+  line-height: 1.05;
   font-style: normal;
-  min-height: ${s(13.7583, "mm")};
+  height: ${s(13.7583, "mm")};
   overflow: visible;
 }
 
 .cv header .job-title {
   margin: 0 0 ${s(1.5, "mm")} 0;
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${sText(10.5, "pt", "header")};
+  font-size: ${s(10.5, "pt")};
   font-weight: 700;
-  color: var(--cv-soft, #3A3A3A);
+  color: #3A3A3A;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  line-height: ${sLine(1.3)};
+  line-height: 1.3;
 }
 
 .cv header .contact {
@@ -227,9 +228,9 @@ export const moderneCss = `
   padding: 0;
   list-style: none;
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${sText(9, "pt", "paragraph")};
-  color: var(--cv-soft, #3A3A3A);
-  line-height: ${sLine(1.3)};
+  font-size: ${s(9, "pt")};
+  color: #3A3A3A;
+  line-height: 1.3;
   letter-spacing: 0.02em;
 }
 
@@ -243,21 +244,21 @@ export const moderneCss = `
 }
 
 .cv header .contact a {
-  color: var(--cv-ink, #111111);
+  color: #111111;
 }
 
 .cv header .summary {
   margin: ${s(3.5, "mm")} 0 0 0;
   font-family: "Fraunces", "Newsreader", Georgia, serif;
-  font-size: ${sText(10.5, "pt", "paragraph")};
-  line-height: ${sLine(1.55)};
+  font-size: ${s(10.5, "pt")};
+  line-height: 1.55;
   color: #222222;
   font-style: normal;
 }
 
 .cv section {
-  margin-bottom: ${sSpace(5, "mm", "section")};
-
+  margin-bottom: ${s(5, "mm")};
+  
 }
 
 .cv section:last-of-type {
@@ -271,13 +272,13 @@ export const moderneCss = `
   margin: 0 0 ${s(2.5, "mm")} 0;
   padding: ${s(0, "mm")} ${s(0, "mm")} ${s(1, "mm")} ${s(0, "mm")};
   font-family: "Fraunces", "Newsreader", Georgia, serif;
-  font-size: ${sText(13, "pt", "header")};
+  font-size: ${s(13, "pt")};
   font-weight: 700;
-  color: var(--cv-ink, #111111);
+  color: #111111;
   letter-spacing: 0.01em;
-  line-height: ${sLine(1.5)};
+  line-height: 1.5;
   font-style: italic;
-  border-bottom: ${s(0.5, "pt")} solid var(--cv-rule, #A8421E);
+  border-bottom: ${s(0.5, "pt")} solid #A8421E;
   page-break-after: avoid;
   break-after: avoid;
 }
@@ -285,7 +286,7 @@ export const moderneCss = `
 
 
 .cv article {
-  margin-bottom: ${sSpace(2.5, "mm", "item")};
+  margin-bottom: ${s(2.5, "mm")};
   page-break-inside: avoid;
   break-inside: avoid;
 }
@@ -310,33 +311,33 @@ export const moderneCss = `
   min-width: 0;
   overflow-wrap: anywhere;
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${sText(11, "pt", "header")};
+  font-size: ${s(11, "pt")};
   font-weight: 600;
-  color: var(--cv-ink, #111111);
+  color: #111111;
   letter-spacing: 0.005em;
-  line-height: ${sLine(1.3)};
+  line-height: 1.3;
 }
 
 .cv article .entry-meta {
   margin: 0;
   flex-shrink: 0;
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${sText(9, "pt", "header")};
+  font-size: ${s(9, "pt")};
   font-weight: 400;
   color: #6A5A52;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
-  line-height: ${sLine(1.3)};
+  line-height: 1.3;
   font-style: normal;
 }
 
 .cv article .entry-sub {
   margin: 0 0 ${s(0.6, "mm")} 0;
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${sText(10, "pt", "paragraph")};
-  color: var(--cv-soft, #3A3A3A);
-  line-height: ${sLine(1.5)};
+  font-size: ${s(10, "pt")};
+  color: #3A3A3A;
+  line-height: 1.5;
   font-style: normal;
   page-break-after: avoid;
   break-after: avoid;
@@ -346,9 +347,9 @@ export const moderneCss = `
 .cv article p,
 .cv article li {
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${sText(10, "pt", "paragraph")};
+  font-size: ${s(10, "pt")};
   color: #2A2A2A;
-  line-height: ${sLine(1.5)};
+  line-height: 1.5;
 }
 
 .cv article .entry-description {
@@ -363,29 +364,29 @@ export const moderneCss = `
 
 .cv .skills-grouped li {
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${sText(10, "pt", "paragraph")};
+  font-size: ${s(10, "pt")};
   margin: 0;
-  line-height: ${sLine(1.5)};
-  color: var(--cv-ink, #111111);
+  line-height: 1.5;
+  color: #111111;
 }
 
 .cv .skills-grouped li + li {
-  margin-top: ${sSpace(0.6, "mm", "item")};
+  margin-top: ${s(0.6, "mm")};
 }
 
 .cv .skills-grouped .skill-category {
   font-weight: 700;
-  color: var(--cv-ink, #111111);
+  color: #111111;
 }
 
 .cv .skills-grouped .skill-name {
-  color: var(--cv-ink, #111111);
+  color: #111111;
 }
 
 .cv .skills-grouped .skill-level {
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  color: var(--cv-soft, #3A3A3A);
-  font-size: ${sText(8.7, "pt", "paragraph")};
+  color: #3A3A3A;
+  font-size: ${s(8.7, "pt")};
   margin-left: 0.2em;
   letter-spacing: 0.02em;
 }
@@ -396,10 +397,10 @@ export const moderneCss = `
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: ${sSpace(1.5, "mm", "item")} ${sSpace(7, "mm", "item")};
+  gap: ${s(1.5, "mm")} ${s(7, "mm")};
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${sText(10, "pt", "paragraph")};
-  line-height: ${sLine(1.5)};
+  font-size: ${s(10, "pt")};
+  line-height: 1.5;
 }
 
 .cv .languages-list li {
@@ -413,7 +414,7 @@ export const moderneCss = `
 }
 
 .cv .languages-list .lang-level {
-  color: var(--cv-soft, #3A3A3A);
+  color: #3A3A3A;
 }
 
 .cv .interests-list {
@@ -422,10 +423,10 @@ export const moderneCss = `
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: ${sSpace(1.5, "mm", "item")} ${sSpace(4, "mm", "item")};
+  gap: ${s(1.5, "mm")} ${s(4, "mm")};
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${sText(10, "pt", "paragraph")};
-  line-height: ${sLine(1.5)};
+  font-size: ${s(10, "pt")};
+  line-height: 1.5;
 }
 
 .cv .interests-list li {
@@ -436,14 +437,14 @@ export const moderneCss = `
 .cv article ul li::marker {
   content: "—  ";
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${sText(15, "pt", "paragraph")};
+  font-size: ${s(15, "pt")};
   color: #000000;
 }
 .cv .skills-grouped li::marker {
   content: "•  ";
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${sText(15, "pt", "paragraph")};
-  color: var(--cv-ink, #111111);
+  font-size: ${s(15, "pt")};
+  color: #111111;
 }
 
 `;

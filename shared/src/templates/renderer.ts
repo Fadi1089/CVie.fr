@@ -167,6 +167,10 @@ const BASE_PAGE_CSS = `
   padding-right: 24mm;
 }
 
+.cv header .job-title {
+  white-space: nowrap;
+}
+
 .cv .portfolio-qr {
   position: absolute;
   top: 0;
@@ -470,11 +474,34 @@ const PAGINATION_SCRIPT = `
     return el;
   }
 
+  // Header job-title sits in a fixed-width Figma slot. Long titles overflow
+  // horizontally and visually collide with the contact strip below. Shrink
+  // font-size in 0.5px steps until the (white-space: nowrap) text fits. The
+  // inline override resets at the start of every paginate() so density-scale
+  // and text-delta changes get a fresh measurement instead of compounding.
+  function fitJobTitle() {
+    var el = document.querySelector('.cv header .job-title');
+    if (!el) return;
+    el.style.fontSize = '';
+    void el.offsetWidth;
+    var maxPx = parseFloat(getComputedStyle(el).fontSize);
+    if (!isFinite(maxPx) || maxPx <= 0) return;
+    if (el.scrollWidth <= el.clientWidth + 0.5) return;
+    var minPx = Math.max(6, maxPx * 0.5);
+    var size = maxPx;
+    var guard = 80;
+    while (el.scrollWidth > el.clientWidth + 0.5 && size > minPx && guard-- > 0) {
+      size -= 0.5;
+      el.style.fontSize = size + 'px';
+    }
+  }
+
   function paginate() {
     var wrap = document.querySelector('.cv-paginated');
     var cv = document.querySelector('.cv');
     if (!wrap || !cv) return;
 
+    fitJobTitle();
     resetPushes(cv);
     clearChrome(wrap);
     // Reset wrap height BEFORE measuring. A previous paginate() at higher
