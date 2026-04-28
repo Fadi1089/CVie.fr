@@ -1,4 +1,4 @@
-import { s } from "./_scaled";
+import { s, sText, sMedia } from "./_scaled";
 
 /**
  * @generated from Figma template Classique.
@@ -95,7 +95,7 @@ export const classiqueCss = `
   background: transparent;
   color: var(--cv-ink, #141413);
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${s(10, "pt")};
+  font-size: ${sText(10, "pt", "paragraph")};
   line-height: 1.5;
   orphans: 3;
   widows: 3;
@@ -162,8 +162,8 @@ export const classiqueCss = `
 
 .cv header .photo {
   flex-shrink: 0;
-  width: ${s(28, "mm")};
-  height: ${s(28, "mm")};
+  width: ${sMedia(28, "mm")};
+  height: ${sMedia(28, "mm")};
   object-fit: cover;
   object-position: center 22%;
   border-radius: ${s(1.5, "mm")};
@@ -174,8 +174,8 @@ export const classiqueCss = `
 }
 
 .cv .portfolio-qr-box {
-  width: ${s(28, "mm")};
-  height: ${s(28, "mm")};
+  width: ${sMedia(28, "mm")};
+  height: ${sMedia(28, "mm")};
   border-radius: ${s(1.5, "mm")};
   background: #E8E6DC;
   box-sizing: border-box;
@@ -191,7 +191,7 @@ export const classiqueCss = `
 
 .cv .portfolio-qr-label {
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${s(7.5, "pt")};
+  font-size: ${sText(7.5, "pt", "paragraph")};
   font-weight: 400;
   line-height: 1.2102;
   letter-spacing: 0em;
@@ -202,7 +202,7 @@ export const classiqueCss = `
 .cv header h1 {
   margin: 0 0 ${s(5.2917, "mm")} 0;
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${s(24, "pt")};
+  font-size: ${sText(24, "pt", "title")};
   font-weight: 500;
   color: var(--cv-ink, #141413);
   letter-spacing: -0.01em;
@@ -215,7 +215,7 @@ export const classiqueCss = `
 .cv header .job-title {
   margin: 0 0 ${s(5.2917, "mm")} 0;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${s(18, "pt")};
+  font-size: ${sText(18, "pt", "header")};
   font-weight: 500;
   color: var(--cv-accent, #1B365D);
   text-transform: uppercase;
@@ -230,7 +230,7 @@ export const classiqueCss = `
   padding: 0;
   list-style: none;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${s(9, "pt")};
+  font-size: ${sText(9, "pt", "paragraph")};
   color: var(--cv-soft, #5E5D59);
   line-height: 1.2102;
   letter-spacing: 0em;
@@ -252,7 +252,7 @@ export const classiqueCss = `
 .cv header .summary {
   margin: ${s(4, "mm")} 0 0 0;
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${s(10, "pt")};
+  font-size: ${sText(10, "pt", "title")};
   line-height: 1.55;
   color: var(--cv-ink, #141413);
   font-style: normal;
@@ -275,7 +275,7 @@ export const classiqueCss = `
   margin: 0 0 ${s(2.6458, "mm")} 0;
   padding: ${s(0.4, "mm")} ${s(0, "mm")} ${s(0.4, "mm")} ${s(3, "mm")};
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${s(15, "pt")};
+  font-size: ${sText(15, "pt", "header")};
   font-weight: 800;
   color: var(--cv-ink, #141413);
   letter-spacing: 0em;
@@ -323,7 +323,7 @@ export const classiqueCss = `
   min-width: 0;
   overflow-wrap: anywhere;
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${s(11, "pt")};
+  font-size: ${sText(11, "pt", "header")};
   font-weight: 700;
   color: var(--cv-ink, #141413);
   letter-spacing: 0em;
@@ -334,7 +334,7 @@ export const classiqueCss = `
   margin: 0;
   flex-shrink: 0;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${s(9, "pt")};
+  font-size: ${sText(9, "pt", "header")};
   font-weight: 400;
   color: #87867F;
   white-space: nowrap;
@@ -347,7 +347,7 @@ export const classiqueCss = `
 .cv article .entry-sub {
   margin: 0 0 ${s(0.6, "mm")} 0;
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${s(10, "pt")};
+  font-size: ${sText(10, "pt", "paragraph")};
   color: var(--cv-soft, #5E5D59);
   line-height: 1.45;
   font-style: normal;
@@ -359,7 +359,7 @@ export const classiqueCss = `
 .cv article p,
 .cv article li {
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${s(9.5, "pt")};
+  font-size: ${sText(9.5, "pt", "paragraph")};
   color: var(--cv-ink, #141413);
   line-height: 1.45;
 }
@@ -376,7 +376,7 @@ export const classiqueCss = `
 
 .cv .skills-grouped li {
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${s(9.8, "pt")};
+  font-size: ${sText(9.8, "pt", "paragraph")};
   margin: 0;
   line-height: 1.5;
   color: var(--cv-ink, #141413);
@@ -398,7 +398,7 @@ export const classiqueCss = `
 .cv .skills-grouped .skill-level {
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   color: var(--cv-soft, #5E5D59);
-  font-size: ${s(8.5, "pt")};
+  font-size: ${sText(8.5, "pt", "paragraph")};
   margin-left: 0.2em;
   letter-spacing: 0.02em;
 }
@@ -411,7 +411,7 @@ export const classiqueCss = `
   flex-wrap: wrap;
   gap: ${s(1.5, "mm")} ${s(7, "mm")};
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${s(9.8, "pt")};
+  font-size: ${sText(9.8, "pt", "paragraph")};
   line-height: 1.5;
 }
 
@@ -437,7 +437,7 @@ export const classiqueCss = `
   flex-wrap: wrap;
   gap: ${s(1.5, "mm")} ${s(4, "mm")};
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${s(9.8, "pt")};
+  font-size: ${sText(9.8, "pt", "paragraph")};
   line-height: 1.5;
 }
 
@@ -456,13 +456,13 @@ export const classiqueCss = `
 .cv article ul li::marker {
   content: "•  ";
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${s(14.25, "pt")};
+  font-size: ${sText(14.25, "pt", "paragraph")};
   color: var(--cv-ink, #141413);
 }
 .cv .skills-grouped li::marker {
   content: "•  ";
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${s(14.7, "pt")};
+  font-size: ${sText(14.7, "pt", "paragraph")};
   color: var(--cv-ink, #141413);
 }
 
