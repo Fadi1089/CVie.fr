@@ -207,7 +207,7 @@ export const moderneCss = `
   letter-spacing: -0.01em;
   line-height: ${sLine(1.05)};
   font-style: normal;
-  height: ${s(13.7583, "mm")};
+  min-height: ${s(13.7583, "mm")};
   overflow: visible;
 }
 

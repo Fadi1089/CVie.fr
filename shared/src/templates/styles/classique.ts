@@ -207,7 +207,7 @@ export const classiqueCss = `
   letter-spacing: -0.01em;
   line-height: ${sLine(1.08)};
   font-style: normal;
-  height: ${s(6.6146, "mm")};
+  min-height: ${s(6.6146, "mm")};
   overflow: visible;
 }
 
@@ -220,7 +220,7 @@ export const classiqueCss = `
   text-transform: uppercase;
   letter-spacing: 0.02em;
   line-height: ${sLine(1.2102)};
-  height: ${s(6.6146, "mm")};
+  min-height: ${s(6.6146, "mm")};
   overflow: visible;
 }
 
