@@ -1,4 +1,4 @@
-import { s } from "./_scaled";
+import { s, sText, sMedia } from "./_scaled";
 
 /**
  * @generated from Figma template Moderne.
@@ -95,7 +95,7 @@ export const moderneCss = `
   background: transparent;
   color: var(--cv-ink, #111111);
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${s(10.5, "pt")};
+  font-size: ${sText(10.5, "pt", "paragraph")};
   line-height: 1.5;
   orphans: 3;
   widows: 3;
@@ -162,8 +162,8 @@ export const moderneCss = `
 
 .cv header .photo {
   flex-shrink: 0;
-  width: ${s(26, "mm")};
-  height: ${s(26, "mm")};
+  width: ${sMedia(26, "mm")};
+  height: ${sMedia(26, "mm")};
   object-fit: cover;
   object-position: center top;
   border-radius: ${s(0, "mm")};
@@ -174,8 +174,8 @@ export const moderneCss = `
 }
 
 .cv .portfolio-qr-box {
-  width: ${s(26, "mm")};
-  height: ${s(26, "mm")};
+  width: ${sMedia(26, "mm")};
+  height: ${sMedia(26, "mm")};
   border-radius: ${s(0, "mm")};
   background: #F3F0EA;
   box-sizing: border-box;
@@ -191,7 +191,7 @@ export const moderneCss = `
 
 .cv .portfolio-qr-label {
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${s(7.5, "pt")};
+  font-size: ${sText(7.5, "pt", "paragraph")};
   font-weight: 400;
   line-height: 1.3;
   letter-spacing: 0em;
@@ -202,7 +202,7 @@ export const moderneCss = `
 .cv header h1 {
   margin: 0 0 ${s(1.5, "mm")} 0;
   font-family: "Fraunces", "Newsreader", Georgia, serif;
-  font-size: ${s(32, "pt")};
+  font-size: ${sText(32, "pt", "title")};
   font-weight: 400;
   color: var(--cv-ink, #111111);
   letter-spacing: -0.01em;
@@ -215,7 +215,7 @@ export const moderneCss = `
 .cv header .job-title {
   margin: 0 0 ${s(1.5, "mm")} 0;
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${s(10.5, "pt")};
+  font-size: ${sText(10.5, "pt", "header")};
   font-weight: 700;
   color: var(--cv-soft, #3A3A3A);
   text-transform: uppercase;
@@ -228,7 +228,7 @@ export const moderneCss = `
   padding: 0;
   list-style: none;
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${s(9, "pt")};
+  font-size: ${sText(9, "pt", "paragraph")};
   color: var(--cv-soft, #3A3A3A);
   line-height: 1.3;
   letter-spacing: 0.02em;
@@ -250,7 +250,7 @@ export const moderneCss = `
 .cv header .summary {
   margin: ${s(3.5, "mm")} 0 0 0;
   font-family: "Fraunces", "Newsreader", Georgia, serif;
-  font-size: ${s(10.5, "pt")};
+  font-size: ${sText(10.5, "pt", "title")};
   line-height: 1.55;
   color: #222222;
   font-style: normal;
@@ -272,7 +272,7 @@ export const moderneCss = `
   margin: 0 0 ${s(2.5, "mm")} 0;
   padding: ${s(0, "mm")} ${s(0, "mm")} ${s(1, "mm")} ${s(0, "mm")};
   font-family: "Fraunces", "Newsreader", Georgia, serif;
-  font-size: ${s(13, "pt")};
+  font-size: ${sText(13, "pt", "header")};
   font-weight: 700;
   color: var(--cv-ink, #111111);
   letter-spacing: 0.01em;
@@ -311,7 +311,7 @@ export const moderneCss = `
   min-width: 0;
   overflow-wrap: anywhere;
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${s(11, "pt")};
+  font-size: ${sText(11, "pt", "header")};
   font-weight: 600;
   color: var(--cv-ink, #111111);
   letter-spacing: 0.005em;
@@ -322,7 +322,7 @@ export const moderneCss = `
   margin: 0;
   flex-shrink: 0;
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${s(9, "pt")};
+  font-size: ${sText(9, "pt", "header")};
   font-weight: 400;
   color: #6A5A52;
   white-space: nowrap;
@@ -335,7 +335,7 @@ export const moderneCss = `
 .cv article .entry-sub {
   margin: 0 0 ${s(0.6, "mm")} 0;
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${s(10, "pt")};
+  font-size: ${sText(10, "pt", "paragraph")};
   color: var(--cv-soft, #3A3A3A);
   line-height: 1.5;
   font-style: normal;
@@ -347,7 +347,7 @@ export const moderneCss = `
 .cv article p,
 .cv article li {
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${s(10, "pt")};
+  font-size: ${sText(10, "pt", "paragraph")};
   color: #2A2A2A;
   line-height: 1.5;
 }
@@ -364,7 +364,7 @@ export const moderneCss = `
 
 .cv .skills-grouped li {
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${s(10, "pt")};
+  font-size: ${sText(10, "pt", "paragraph")};
   margin: 0;
   line-height: 1.5;
   color: var(--cv-ink, #111111);
@@ -386,7 +386,7 @@ export const moderneCss = `
 .cv .skills-grouped .skill-level {
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   color: var(--cv-soft, #3A3A3A);
-  font-size: ${s(8.7, "pt")};
+  font-size: ${sText(8.7, "pt", "paragraph")};
   margin-left: 0.2em;
   letter-spacing: 0.02em;
 }
@@ -399,7 +399,7 @@ export const moderneCss = `
   flex-wrap: wrap;
   gap: ${s(1.5, "mm")} ${s(7, "mm")};
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${s(10, "pt")};
+  font-size: ${sText(10, "pt", "paragraph")};
   line-height: 1.5;
 }
 
@@ -425,7 +425,7 @@ export const moderneCss = `
   flex-wrap: wrap;
   gap: ${s(1.5, "mm")} ${s(4, "mm")};
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${s(10, "pt")};
+  font-size: ${sText(10, "pt", "paragraph")};
   line-height: 1.5;
 }
 
@@ -437,13 +437,13 @@ export const moderneCss = `
 .cv article ul li::marker {
   content: "—  ";
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${s(15, "pt")};
+  font-size: ${sText(15, "pt", "paragraph")};
   color: #000000;
 }
 .cv .skills-grouped li::marker {
   content: "•  ";
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${s(15, "pt")};
+  font-size: ${sText(15, "pt", "paragraph")};
   color: var(--cv-ink, #111111);
 }
 
