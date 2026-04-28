@@ -26,6 +26,25 @@ const SIZE_CONTROLS: ReadonlyArray<SizeControl> = [
   { kind: "media", label: "Photo et QR", hint: "Taille du portrait et du code QR", min: -8, max: 12, step: 0.5, unit: "mm" },
 ];
 
+type SpaceRole = "pageMargin" | "sectionGap" | "itemGap" | "lineHeight";
+
+type SpacingControl = {
+  role: SpaceRole;
+  label: string;
+  hint: string;
+  min: number;
+  max: number;
+  step: number;
+  unit: "mm" | "";
+};
+
+const SPACING_CONTROLS: ReadonlyArray<SpacingControl> = [
+  { role: "pageMargin", label: "Marge de page", hint: "Espace autour du contenu", min: -6, max: 8, step: 1, unit: "mm" },
+  { role: "sectionGap", label: "Espacement des sections", hint: "Entre les blocs principaux", min: -3, max: 8, step: 1, unit: "mm" },
+  { role: "itemGap", label: "Espacement des éléments", hint: "Entre les entrées d'une section", min: -2, max: 6, step: 1, unit: "mm" },
+  { role: "lineHeight", label: "Interligne", hint: "Hauteur des lignes de texte", min: -0.2, max: 0.4, step: 0.05, unit: "" },
+];
+
 export function DesignPanel({ templateId }: { templateId: TemplateId }) {
   const { control, setValue } = useFormContext<CvData>();
   const meta = templateRegistry.find((t) => t.id === templateId) ?? templateRegistry[0]!;
@@ -92,6 +111,39 @@ export function DesignPanel({ templateId }: { templateId: TemplateId }) {
   const sizesAreCustom =
     (textSizes && (textSizes.paragraph !== undefined || textSizes.header !== undefined || textSizes.title !== undefined)) ||
     typeof mediaSize === "number";
+
+  const spacing = useWatch({ control, name: "appearance.spacing" });
+
+  const updateSpacing = useCallback(
+    (role: SpaceRole, value: number) => {
+      const next = { ...(spacing ?? {}), [role]: value };
+      if (next[role] === 0) delete next[role];
+      const isEmpty =
+        next.pageMargin === undefined &&
+        next.sectionGap === undefined &&
+        next.itemGap === undefined &&
+        next.lineHeight === undefined;
+      setValue("appearance.spacing", isEmpty ? undefined : next, {
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+    },
+    [spacing, setValue],
+  );
+
+  const resetSpacing = useCallback(() => {
+    setValue("appearance.spacing", undefined, {
+      shouldDirty: true,
+      shouldTouch: true,
+    });
+  }, [setValue]);
+
+  const spacingIsCustom =
+    spacing !== undefined &&
+    (spacing.pageMargin !== undefined ||
+      spacing.sectionGap !== undefined ||
+      spacing.itemGap !== undefined ||
+      spacing.lineHeight !== undefined);
 
   return (
     <div
@@ -283,6 +335,95 @@ export function DesignPanel({ templateId }: { templateId: TemplateId }) {
           className="inline-flex min-h-9 items-center rounded-md border border-[var(--color-rule)] bg-white/80 px-3 py-1.5 text-[12px] font-medium text-[var(--color-ink)] transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/30 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none"
         >
           Réinitialiser tailles
+        </button>
+      </div>
+
+      <header className="mt-4 flex items-baseline justify-between gap-3 border-b border-[var(--color-rule)] pb-2">
+        <div>
+          <p className="font-mono-caps text-[10px] tracking-[0.14em] text-[var(--color-ink-soft)]">
+            Espacements
+          </p>
+          <h2 className="font-display mt-1 text-[18px] font-medium text-[var(--color-ink)]">
+            Aération du contenu
+          </h2>
+        </div>
+        <span className="font-mono-caps text-[10px] text-[var(--color-ink-soft)]">
+          Δ par défaut
+        </span>
+      </header>
+
+      <p className="text-[12px] leading-snug text-[var(--color-ink-soft)]">
+        Ajustez les marges, l'espacement des sections et l'interligne. Zéro
+        correspond au modèle Figma d'origine.
+      </p>
+
+      <ul className="flex flex-col divide-y divide-[var(--color-rule)] rounded-md border border-[var(--color-rule)] bg-white/75">
+        {SPACING_CONTROLS.map((ctrl) => {
+          const value = spacing?.[ctrl.role] ?? 0;
+          const id = `space-${ctrl.role}`;
+          const formatted =
+            ctrl.unit === "mm"
+              ? `${value > 0 ? "+" : ""}${value} mm`
+              : `${value > 0 ? "+" : ""}${value.toFixed(2)}`;
+          return (
+            <li key={id} className="flex items-center gap-3 px-3 py-2.5">
+              <label htmlFor={id} className="flex flex-1 flex-col gap-0.5">
+                <span className="text-[13px] font-medium text-[var(--color-ink)]">
+                  {ctrl.label}
+                </span>
+                <span className="text-[11px] leading-tight text-[var(--color-ink-soft)]">
+                  {ctrl.hint}
+                </span>
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  id={id}
+                  type="range"
+                  min={ctrl.min}
+                  max={ctrl.max}
+                  step={ctrl.step}
+                  value={value}
+                  onChange={(e) => {
+                    const next = Number.parseFloat(e.target.value);
+                    if (!Number.isFinite(next)) return;
+                    updateSpacing(ctrl.role, next);
+                  }}
+                  aria-label={`Espacement — ${ctrl.label}`}
+                  aria-valuemin={ctrl.min}
+                  aria-valuemax={ctrl.max}
+                  aria-valuenow={value}
+                  className={cn(
+                    "h-1 w-32 cursor-pointer appearance-none rounded-full bg-[var(--color-rule)]",
+                    "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--color-ink)] [&::-webkit-slider-thumb]:shadow",
+                    "[&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-[var(--color-ink)]",
+                    "focus-visible:outline-none focus-visible:[&::-webkit-slider-thumb]:ring-2 focus-visible:[&::-webkit-slider-thumb]:ring-[var(--color-ink)]/30",
+                  )}
+                />
+                <span className="font-mono-caps inline-flex h-8 w-[4.5rem] shrink-0 items-center justify-center rounded border border-[var(--color-rule)] bg-white px-2 text-[11px] tabular-nums text-[var(--color-ink)]">
+                  {formatted}
+                </span>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="flex items-center justify-between gap-3 pt-1">
+        <p
+          className={cn(
+            "font-mono-caps text-[10px] tracking-[0.14em]",
+            spacingIsCustom ? "text-[var(--color-ink)]" : "text-[var(--color-ink-soft)]",
+          )}
+        >
+          {spacingIsCustom ? "Espacements personnalisés" : "Espacements d'origine"}
+        </p>
+        <button
+          type="button"
+          onClick={resetSpacing}
+          disabled={!spacingIsCustom}
+          className="inline-flex min-h-9 items-center rounded-md border border-[var(--color-rule)] bg-white/80 px-3 py-1.5 text-[12px] font-medium text-[var(--color-ink)] transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/30 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none"
+        >
+          Réinitialiser espacements
         </button>
       </div>
     </div>
