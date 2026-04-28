@@ -172,9 +172,21 @@ export const paletteSchema = z.object({
 export const SUPPORTED_LOCALES = ["fr", "en", "de", "es", "nl"] as const;
 export const localeSchema = z.enum(SUPPORTED_LOCALES);
 
+const textSizesSchema = z
+  .object({
+    paragraph: z.number().min(-3).max(5).optional(),
+    header: z.number().min(-3).max(5).optional(),
+    title: z.number().min(-4).max(6).optional(),
+  })
+  .optional();
+
+const mediaSizeSchema = z.number().min(-8).max(12).optional();
+
 export const appearanceSchema = z.object({
   palette: paletteSchema.optional(),
   locale: localeSchema.optional(),
+  textSizes: textSizesSchema,
+  mediaSize: mediaSizeSchema,
 });
 
 export const cvDataSchema = z.object({
