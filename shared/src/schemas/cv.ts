@@ -184,11 +184,30 @@ const textSizesSchema = z
 /** Header media (photo + QR) size delta in mm. */
 const mediaSizeSchema = z.number().min(-8).max(12).optional();
 
+/**
+ * Layout spacing deltas from Figma-synced template baselines (units noted per field).
+ * A value of `0` or `undefined` means "use baseline". Negative values tighten,
+ * positive values loosen.
+ *   pageMargin  — mm, outer content padding
+ *   sectionGap  — mm, gap between major content blocks
+ *   itemGap     — mm, gap between entries inside a section
+ *   lineHeight  — unitless, additive to baseline line-height
+ */
+const spacingSchema = z
+  .object({
+    pageMargin: z.number().min(-6).max(8).optional(),
+    sectionGap: z.number().min(-3).max(8).optional(),
+    itemGap: z.number().min(-2).max(6).optional(),
+    lineHeight: z.number().min(-0.2).max(0.4).optional(),
+  })
+  .optional();
+
 export const appearanceSchema = z.object({
   palette: paletteSchema.optional(),
   locale: localeSchema.optional(),
   textSizes: textSizesSchema,
   mediaSize: mediaSizeSchema,
+  spacing: spacingSchema,
 });
 
 export const cvDataSchema = z.object({

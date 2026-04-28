@@ -27,3 +27,36 @@ describe("appearanceSchema sizes", () => {
     expect(parsed.success).toBe(true);
   });
 });
+
+describe("appearanceSchema spacing", () => {
+  it("accepts a fully populated spacing object", () => {
+    const parsed = appearanceSchema.safeParse({
+      spacing: { pageMargin: 2, sectionGap: -1, itemGap: 3, lineHeight: 0.1 },
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it("rejects out-of-range pageMargin", () => {
+    const parsed = appearanceSchema.safeParse({
+      spacing: { pageMargin: 99 },
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it("rejects out-of-range lineHeight", () => {
+    const parsed = appearanceSchema.safeParse({
+      spacing: { lineHeight: 1.5 },
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it("treats spacing as optional and accepts partial spacing object", () => {
+    const emptyParsed = appearanceSchema.safeParse({});
+    expect(emptyParsed.success).toBe(true);
+
+    const partialParsed = appearanceSchema.safeParse({
+      spacing: { itemGap: 1 },
+    });
+    expect(partialParsed.success).toBe(true);
+  });
+});
