@@ -159,6 +159,12 @@ export const classiqueCss = `
   border-radius: ${s(0.5292, "mm")} ${s(0, "mm")} ${s(0, "mm")} ${s(0.5292, "mm")};
 }
 
+.cv header.has-photo .header-identity::before {
+  top: calc((100% - ${sMedia(28, "mm")}) / 2);
+  bottom: auto;
+  height: ${sMedia(28, "mm")};
+}
+
 .cv header .photo {
   flex-shrink: 0;
   width: ${sMedia(28, "mm")};
