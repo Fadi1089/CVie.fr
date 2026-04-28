@@ -1,4 +1,4 @@
-import { s } from "./_scaled";
+import { s, sText, sMedia } from "./_scaled";
 
 /**
  * @generated from Figma template Minimaliste.
@@ -95,7 +95,7 @@ export const minimalisteCss = `
   background: transparent;
   color: var(--cv-ink, #111111);
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${s(10.5, "pt")};
+  font-size: ${sText(10.5, "pt", "paragraph")};
   line-height: 1.45;
   orphans: 3;
   widows: 3;
@@ -165,8 +165,8 @@ export const minimalisteCss = `
 }
 
 .cv .portfolio-qr-box {
-  width: ${s(22, "mm")};
-  height: ${s(22, "mm")};
+  width: ${sMedia(22, "mm")};
+  height: ${sMedia(22, "mm")};
   border-radius: ${s(1.5, "mm")};
   background: #FFFFFF;
   box-sizing: border-box;
@@ -182,7 +182,7 @@ export const minimalisteCss = `
 
 .cv .portfolio-qr-label {
   font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
-  font-size: ${s(7, "pt")};
+  font-size: ${sText(7, "pt", "paragraph")};
   font-weight: 400;
   line-height: 1.32;
   letter-spacing: 0em;
@@ -193,7 +193,7 @@ export const minimalisteCss = `
 .cv header h1 {
   margin: 0 0 ${s(2, "mm")} 0;
   font-family: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${s(22, "pt")};
+  font-size: ${sText(22, "pt", "title")};
   font-weight: 500;
   color: var(--cv-ink, #111111);
   letter-spacing: -0.02em;
@@ -204,7 +204,7 @@ export const minimalisteCss = `
 .cv header .job-title {
   margin: 0 0 ${s(2, "mm")} 0;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${s(9, "pt")};
+  font-size: ${sText(9, "pt", "header")};
   font-weight: 400;
   color: var(--cv-soft, #555555);
   text-transform: uppercase;
@@ -217,7 +217,7 @@ export const minimalisteCss = `
   padding: 0;
   list-style: none;
   font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
-  font-size: ${s(8, "pt")};
+  font-size: ${sText(8, "pt", "paragraph")};
   color: var(--cv-soft, #555555);
   line-height: 1.32;
   letter-spacing: 0.02em;
@@ -239,7 +239,7 @@ export const minimalisteCss = `
 .cv header .summary {
   margin: ${s(3.5, "mm")} 0 0 0;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${s(10, "pt")};
+  font-size: ${sText(10, "pt", "title")};
   line-height: 1.55;
   color: #2A2A2A;
   font-style: normal;
@@ -261,7 +261,7 @@ export const minimalisteCss = `
   margin: 0 0 ${s(3, "mm")} 0;
   padding: ${s(0.5, "mm")} ${s(0, "mm")} ${s(0.5, "mm")} ${s(4, "mm")};
   font-family: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${s(12, "pt")};
+  font-size: ${sText(12, "pt", "header")};
   font-weight: 600;
   color: var(--cv-ink, #111111);
   letter-spacing: 0.16em;
@@ -309,7 +309,7 @@ export const minimalisteCss = `
   min-width: 0;
   overflow-wrap: anywhere;
   font-family: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: ${s(11, "pt")};
+  font-size: ${sText(11, "pt", "header")};
   font-weight: 600;
   color: var(--cv-ink, #111111);
   letter-spacing: -0.005em;
@@ -320,7 +320,7 @@ export const minimalisteCss = `
   margin: 0;
   flex-shrink: 0;
   font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
-  font-size: ${s(8.5, "pt")};
+  font-size: ${sText(8.5, "pt", "header")};
   font-weight: 400;
   color: #6B6B6B;
   white-space: nowrap;
@@ -333,7 +333,7 @@ export const minimalisteCss = `
 .cv article .entry-sub {
   margin: 0 0 ${s(0.6, "mm")} 0;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${s(10, "pt")};
+  font-size: ${sText(10, "pt", "paragraph")};
   color: #333333;
   line-height: 1.5;
   font-style: normal;
@@ -345,7 +345,7 @@ export const minimalisteCss = `
 .cv article p,
 .cv article li {
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${s(10, "pt")};
+  font-size: ${sText(10, "pt", "paragraph")};
   color: #222222;
   line-height: 1.5;
 }
@@ -362,7 +362,7 @@ export const minimalisteCss = `
 
 .cv .skills-grouped li {
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${s(10, "pt")};
+  font-size: ${sText(10, "pt", "paragraph")};
   margin: 0;
   line-height: 1.5;
   color: var(--cv-ink, #111111);
@@ -384,7 +384,7 @@ export const minimalisteCss = `
 .cv .skills-grouped .skill-level {
   font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
   color: #333333;
-  font-size: ${s(8.7, "pt")};
+  font-size: ${sText(8.7, "pt", "paragraph")};
   margin-left: 0.2em;
   letter-spacing: 0.02em;
 }
@@ -397,7 +397,7 @@ export const minimalisteCss = `
   flex-wrap: wrap;
   gap: ${s(1.5, "mm")} ${s(7, "mm")};
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${s(10, "pt")};
+  font-size: ${sText(10, "pt", "paragraph")};
   line-height: 1.5;
 }
 
@@ -423,7 +423,7 @@ export const minimalisteCss = `
   flex-wrap: wrap;
   gap: ${s(1.5, "mm")} ${s(4, "mm")};
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${s(10, "pt")};
+  font-size: ${sText(10, "pt", "paragraph")};
   line-height: 1.5;
 }
 
@@ -435,13 +435,13 @@ export const minimalisteCss = `
 .cv article ul li::marker {
   content: "■  ";
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${s(15, "pt")};
+  font-size: ${sText(15, "pt", "paragraph")};
   color: #222222;
 }
 .cv .skills-grouped li::marker {
   content: "•  ";
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${s(15, "pt")};
+  font-size: ${sText(15, "pt", "paragraph")};
   color: var(--cv-ink, #111111);
 }
 
