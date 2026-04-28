@@ -26,6 +26,11 @@
  *   Every absolute-unit length that describes CONTENT typography or spacing:
  *     - font-size (pt)
  *     - margin, margin-*, padding, padding-*, gap
+ *       (for templates using the per-role spacing system, prefer
+ *       `sSpace(value, unit, role)` instead — classified as "page" for outer
+ *       page padding, "section" for gaps between top-level content blocks, or
+ *       "item" for gaps between entries inside a section. `s()` remains valid
+ *       for any site that doesn't fit a role bucket.)
  *     - border-width, border-radius
  *     - width/height of decorative elements (photo, avatar, icon, badge)
  *     - max-width of inline content
@@ -49,6 +54,9 @@
  *   nearest scaled font-size, so wrapping them would double-scale.
  *   Prefer unitless line-heights (`1.45`) and em-based inline paddings
  *   (`padding-left: 1.1em`) — they scale for free.
+ *   Exception: use `sLine(value)` on `line-height` declarations for content
+ *   text when you need a user-adjustable additive delta — `sLine()` is the
+ *   line-height equivalent of `sSpace()`.
  *
  * Rule 4 — RULE OF THUMB when you're not sure:
  *   If the value describes "how big is this piece of content?" → wrap.
@@ -95,4 +103,50 @@ export function sText(value: number, unit: AbsoluteUnit, role: TextRole): string
  */
 export function sMedia(value: number, unit: AbsoluteUnit): string {
   return `calc(${value}${unit} * var(--cv-scale, 1) + var(--cv-media-delta, 0mm))`;
+}
+
+export type SpaceRole = "page" | "section" | "item";
+
+/**
+ * Scale a spatial spacing value (margin, padding, gap) by both the global
+ * density (`--cv-scale`) AND a per-role mm delta
+ * (`--cv-space-<role>-delta`, default `0mm`). The delta lets users
+ * tighten or loosen a single spatial role from the Design tab without
+ * disturbing the rest of the document.
+ *
+ * Example:
+ *   margin-bottom: ${sSpace(5.2917, "mm", "section")};
+ *   → calc(5.2917mm * var(--cv-scale, 1) + var(--cv-space-section-delta, 0mm))
+ *
+ * Roles:
+ *   - "page"    — outer page padding (space between content and page edge)
+ *   - "section" — gaps between top-level content blocks
+ *   - "item"    — gaps between entries inside a section
+ *
+ * Use instead of `s()` wherever a margin/padding/gap value belongs to one
+ * of the three roles above. Keep `s()` for any spacing that doesn't fit a
+ * role bucket (decorative borders, avatar sizes, etc.).
+ */
+export function sSpace(value: number, unit: AbsoluteUnit, role: SpaceRole): string {
+  return `calc(${value}${unit} * var(--cv-scale, 1) + var(--cv-space-${role}-delta, 0mm))`;
+}
+
+/**
+ * Add a unitless additive delta to a baseline line-height value. The delta
+ * (`--cv-line-height-delta`, default `0`) lets users open up or compress
+ * line spacing across all content text from the Design tab.
+ *
+ * Example:
+ *   line-height: ${sLine(1.45)};
+ *   → calc(1.45 + var(--cv-line-height-delta, 0))
+ *
+ * Use only on `line-height` declarations on content text (paragraphs,
+ * section entries) — not on chrome elements (page header, page number,
+ * advisory overlays). Line-height baselines are unitless multipliers, so
+ * the delta is also unitless; do not append a unit.
+ *
+ * This is the line-height equivalent of `sSpace()`.
+ */
+export function sLine(value: number): string {
+  return `calc(${value} + var(--cv-line-height-delta, 0))`;
 }
