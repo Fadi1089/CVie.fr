@@ -70,7 +70,7 @@ export function renderCvHtml(
   const paletteCss = renderPaletteOverride(data.appearance?.palette);
 
   return `<!DOCTYPE html>
-<html lang="fr" style="--cv-scale: ${safeScale}">
+<html lang="fr" style="${renderRootStyle(safeScale, data.appearance?.textSizes, data.appearance?.mediaSize)}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -330,6 +330,64 @@ const PAGINATION_SCRIPT = `
       }
       lastPostedHeight = -1;
       schedule();
+      return;
+    }
+    if (data.type === 'cv-text-deltas') {
+      var roles = ['paragraph', 'header', 'title'];
+      var ranges = {
+        paragraph: [-3, 5],
+        header: [-3, 5],
+        title: [-4, 6],
+      };
+      var nextDeltas = data.deltas || {};
+      var changed = false;
+      for (var i = 0; i < roles.length; i++) {
+        var role = roles[i];
+        var raw = nextDeltas[role];
+        var prop = '--cv-text-' + role + '-delta';
+        if (typeof raw !== 'number' || !isFinite(raw)) {
+          if (document.documentElement.style.getPropertyValue(prop)) {
+            document.documentElement.style.removeProperty(prop);
+            changed = true;
+          }
+          continue;
+        }
+        var lo = ranges[role][0];
+        var hi = ranges[role][1];
+        if (raw < lo) raw = lo;
+        if (raw > hi) raw = hi;
+        var next = raw + 'pt';
+        if (document.documentElement.style.getPropertyValue(prop) !== next) {
+          document.documentElement.style.setProperty(prop, next);
+          changed = true;
+        }
+      }
+      if (changed) {
+        lastPostedHeight = -1;
+        schedule();
+      }
+      return;
+    }
+    if (data.type === 'cv-media-delta') {
+      var mediaRaw = Number(data.value);
+      var mediaProp = '--cv-media-delta';
+      if (!isFinite(mediaRaw)) {
+        if (document.documentElement.style.getPropertyValue(mediaProp)) {
+          document.documentElement.style.removeProperty(mediaProp);
+          lastPostedHeight = -1;
+          schedule();
+        }
+        return;
+      }
+      if (mediaRaw < -8) mediaRaw = -8;
+      if (mediaRaw > 12) mediaRaw = 12;
+      var nextMedia = mediaRaw + 'mm';
+      if (document.documentElement.style.getPropertyValue(mediaProp) !== nextMedia) {
+        document.documentElement.style.setProperty(mediaProp, nextMedia);
+        lastPostedHeight = -1;
+        schedule();
+      }
+      return;
     }
   });
 
@@ -587,6 +645,40 @@ const PAGINATION_SCRIPT = `
   );
 })();
 `;
+
+const TEXT_SIZE_RANGES: Record<"paragraph" | "header" | "title", { min: number; max: number }> = {
+  paragraph: { min: -3, max: 5 },
+  header: { min: -3, max: 5 },
+  title: { min: -4, max: 6 },
+};
+const MEDIA_SIZE_MIN = -8;
+const MEDIA_SIZE_MAX = 12;
+
+function clampNumber(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(max, Math.max(min, value));
+}
+
+function renderRootStyle(
+  scale: number,
+  textSizes: { paragraph?: number; header?: number; title?: number } | undefined,
+  mediaSize: number | undefined,
+): string {
+  const decls: string[] = [`--cv-scale: ${scale}`];
+  if (textSizes) {
+    for (const role of ["paragraph", "header", "title"] as const) {
+      const raw = textSizes[role];
+      if (Number.isFinite(raw)) {
+        const range = TEXT_SIZE_RANGES[role];
+        decls.push(`--cv-text-${role}-delta: ${clampNumber(raw as number, range.min, range.max)}pt`);
+      }
+    }
+  }
+  if (Number.isFinite(mediaSize)) {
+    decls.push(`--cv-media-delta: ${clampNumber(mediaSize as number, MEDIA_SIZE_MIN, MEDIA_SIZE_MAX)}mm`);
+  }
+  return decls.join("; ");
+}
 
 /**
  * Build a `:root` selector that overrides the palette CSS variables when the

@@ -278,3 +278,51 @@ describe("formatMonth", () => {
     expect(formatMonth("<script>")).toBe("&lt;script&gt;");
   });
 });
+
+describe("renderCvHtml — appearance.textSizes / mediaSize", () => {
+  // The pagination script also references these var names, so a whole-document
+  // search would always match. Pull just the inline `style` attribute on
+  // <html> — that's the only place the renderer should emit them.
+  const rootStyle = (html: string): string => {
+    const m = html.match(/<html lang="fr" style="([^"]*)"/);
+    return m?.[1] ?? "";
+  };
+
+  it("emits text-size delta CSS vars on <html> when set", () => {
+    const html = renderCvHtml(
+      {
+        ...sampleCv,
+        appearance: {
+          textSizes: { paragraph: 1, header: -0.5, title: 2 },
+          mediaSize: 3,
+        },
+      },
+      "classique",
+    );
+    const style = rootStyle(html);
+    expect(style).toContain("--cv-text-paragraph-delta: 1pt");
+    expect(style).toContain("--cv-text-header-delta: -0.5pt");
+    expect(style).toContain("--cv-text-title-delta: 2pt");
+    expect(style).toContain("--cv-media-delta: 3mm");
+  });
+
+  it("omits delta vars when appearance is undefined", () => {
+    const style = rootStyle(renderCvHtml(sampleCv, "classique"));
+    expect(style).not.toContain("--cv-text-paragraph-delta");
+    expect(style).not.toContain("--cv-media-delta");
+  });
+
+  it("clamps deltas defensively at render time", () => {
+    const html = renderCvHtml(
+      {
+        ...sampleCv,
+        // @ts-expect-error — deliberately out-of-range to exercise clamp
+        appearance: { textSizes: { paragraph: 999 }, mediaSize: 999 },
+      },
+      "classique",
+    );
+    const style = rootStyle(html);
+    expect(style).toContain("--cv-text-paragraph-delta: 5pt");
+    expect(style).toContain("--cv-media-delta: 12mm");
+  });
+});
