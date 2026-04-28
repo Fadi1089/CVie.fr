@@ -141,6 +141,10 @@ export const classiqueCss = `
   gap: 0;
 }
 
+.cv header.has-photo .header-top {
+  align-items: flex-start;
+}
+
 .cv header .header-identity {
   position: relative;
   flex: 1;
@@ -160,7 +164,7 @@ export const classiqueCss = `
 }
 
 .cv header.has-photo .header-identity::before {
-  top: calc((100% - ${sMedia(28, "mm")}) / 2);
+  top: 0;
   bottom: auto;
   height: ${sMedia(28, "mm")};
 }
