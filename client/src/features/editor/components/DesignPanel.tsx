@@ -247,6 +247,7 @@ export function DesignPanel({ templateId }: { templateId: TemplateId }) {
                     if (ctrl.kind === "text") updateTextSize(ctrl.role, next);
                     else updateMediaSize(next);
                   }}
+                  aria-label={`Taille — ${ctrl.label}`}
                   aria-valuemin={ctrl.min}
                   aria-valuemax={ctrl.max}
                   aria-valuenow={value}
