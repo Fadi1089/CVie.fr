@@ -96,6 +96,7 @@ export function EditorPreviewPane({
   const watchedValues = useWatch({ control });
   const textSizes = useWatch({ control, name: "appearance.textSizes" });
   const mediaSize = useWatch({ control, name: "appearance.mediaSize" });
+  const spacing = useWatch({ control, name: "appearance.spacing" });
   const prefersReducedMotion = useReducedMotion();
   const [html, setHtml] = useState<string | null>(null);
   const [phase, setPhase] = useState<PreviewPhase>("idle");
@@ -112,6 +113,7 @@ export function EditorPreviewPane({
   const overflowModeRef = useRef<OverflowMode>(overflowMode);
   const textSizesRef = useRef<typeof textSizes>(textSizes);
   const mediaSizeRef = useRef<typeof mediaSize>(mediaSize);
+  const spacingRef = useRef<typeof spacing>(spacing);
   const [viewZoom, setViewZoom] = useState<number>(VIEW_ZOOM_DEFAULT);
   const viewZoomRef = useRef<number>(viewZoom);
   const [containerWidth, setContainerWidth] = useState<number>(0);
@@ -137,6 +139,9 @@ export function EditorPreviewPane({
   useEffect(() => {
     mediaSizeRef.current = mediaSize;
   }, [mediaSize]);
+  useEffect(() => {
+    spacingRef.current = spacing;
+  }, [spacing]);
   useEffect(() => {
     viewZoomRef.current = viewZoom;
   }, [viewZoom]);
@@ -245,6 +250,28 @@ export function EditorPreviewPane({
     target.postMessage({ type: "cv-media-delta", value }, "*");
   }, []);
 
+  const postSpaceDeltas = useCallback(
+    (deltas: { pageMargin?: number; sectionGap?: number; itemGap?: number; lineHeight?: number } | undefined) => {
+      const target = iframeRef.current?.contentWindow;
+      if (!target) return;
+      const spaceOnly = deltas
+        ? {
+            pageMargin: deltas.pageMargin,
+            sectionGap: deltas.sectionGap,
+            itemGap: deltas.itemGap,
+          }
+        : {};
+      target.postMessage({ type: "cv-space-deltas", deltas: spaceOnly }, "*");
+    },
+    [],
+  );
+
+  const postLineHeightDelta = useCallback((value: number | undefined) => {
+    const target = iframeRef.current?.contentWindow;
+    if (!target) return;
+    target.postMessage({ type: "cv-line-height-delta", value }, "*");
+  }, []);
+
   // Push scale changes into the iframe.
   useEffect(() => {
     if (!html) return;
@@ -267,6 +294,16 @@ export function EditorPreviewPane({
     if (!html) return;
     postMediaDelta(mediaSize);
   }, [mediaSize, html, postMediaDelta]);
+
+  useEffect(() => {
+    if (!html) return;
+    postSpaceDeltas(spacing);
+  }, [spacing, html, postSpaceDeltas]);
+
+  useEffect(() => {
+    if (!html) return;
+    postLineHeightDelta(spacing?.lineHeight);
+  }, [spacing, html, postLineHeightDelta]);
 
   useEffect(() => {
     setMessage(null);
@@ -578,6 +615,8 @@ export function EditorPreviewPane({
                     postOverflowMode(overflowModeRef.current);
                     postTextDeltas(textSizesRef.current);
                     postMediaDelta(mediaSizeRef.current);
+                    postSpaceDeltas(spacingRef.current);
+                    postLineHeightDelta(spacingRef.current?.lineHeight);
                   }}
                 />
               </div>
