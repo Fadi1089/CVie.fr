@@ -113,7 +113,7 @@ describe("renderCvHtml", () => {
     const html = renderCvHtml(sampleCv, "classique");
     expect(html).toContain("@page");
     expect(html).toContain("size: A4");
-    expect(html).toContain("padding: 0.25in");
+    expect(html).toContain("padding: calc(0.25in + var(--cv-space-page-delta, 0mm))");
     expect(html).toContain("width: 210mm");
     expect(html).toContain("min-height: 297mm");
   });

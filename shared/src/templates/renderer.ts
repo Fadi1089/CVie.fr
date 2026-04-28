@@ -103,7 +103,7 @@ const BASE_PAGE_CSS = `
 /* ==== renderer-owned page geometry (cascade last, template-independent) ==== */
 @page {
   size: A4;
-  margin: 0.25in;
+  margin: calc(0.25in + var(--cv-space-page-delta, 0mm));
 }
 .cv-canvas {
   background: transparent;
@@ -112,7 +112,7 @@ const BASE_PAGE_CSS = `
 .cv {
   width: 210mm;
   min-height: 297mm;
-  padding: 0.25in;
+  padding: calc(0.25in + var(--cv-space-page-delta, 0mm));
   box-sizing: border-box;
 }
 
