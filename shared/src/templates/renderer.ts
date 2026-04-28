@@ -4,6 +4,7 @@ import type {
   Formation,
   Interest,
   Language,
+  Palette,
   PersonalInfo,
   Skill,
 } from "../types/cv";
@@ -66,6 +67,7 @@ export function renderCvHtml(
       : 1;
 
   const safeMode = normalizeOverflowMode(overflowMode);
+  const paletteCss = renderPaletteOverride(data.appearance?.palette);
 
   return `<!DOCTYPE html>
 <html lang="fr" style="--cv-scale: ${safeScale}">
@@ -74,7 +76,7 @@ export function renderCvHtml(
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${title}</title>
 <style>${css}
-${BASE_PAGE_CSS}</style>
+${BASE_PAGE_CSS}${paletteCss}</style>
 </head>
 <body style="margin:0">
 <div class="cv-canvas">
@@ -102,6 +104,10 @@ const BASE_PAGE_CSS = `
 @page {
   size: A4;
   margin: 0.25in;
+}
+.cv-canvas {
+  background: transparent;
+  padding: 5px 0 0;
 }
 .cv {
   width: 210mm;
@@ -157,8 +163,7 @@ const BASE_PAGE_CSS = `
   position: relative;
 }
 
-.cv header.has-portfolio-qr .header-top,
-.cv header.has-portfolio-qr .summary {
+.cv header.has-portfolio-qr .header-top {
   padding-right: 24mm;
 }
 
@@ -167,18 +172,14 @@ const BASE_PAGE_CSS = `
   top: 0;
   right: 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: row-reverse;
   align-items: center;
-  gap: 1.2mm;
+  gap: 1.5mm;
 }
 
 .cv .portfolio-qr-label {
-  display: inline-block;
   margin: 0;
-  font-family: "Inter", -apple-system, "Helvetica Neue", Arial, sans-serif;
-  font-size: 7.5pt;
-  line-height: 1.1;
-  color: #5e5d59;
+  writing-mode: sideways-lr;
   text-align: center;
   user-select: none;
   -webkit-user-select: none;
@@ -543,13 +544,36 @@ const PAGINATION_SCRIPT = `
     window.parent.postMessage(payload, '*');
   });
 
-  // Scroll-bridge: when the preview iframe captures wheel events, the outer
-  // editor scroller can appear to "stall" mid-way. Forward wheel deltas to
-  // the parent so the host pane keeps scrolling smoothly.
+  // Pinch-to-zoom bridge: trackpad pinch fires wheel + ctrlKey. Intercept
+  // those before the browser zooms the iframe document and forward the delta
+  // to the parent so it can adjust the density scale.
   window.addEventListener(
     'wheel',
     function (event) {
-      if (!event) return;
+      if (!event || !event.ctrlKey) return;
+      event.preventDefault();
+      window.parent.postMessage(
+        {
+          type: 'cv-pinch',
+          deltaY: event.deltaY,
+          deltaMode: event.deltaMode,
+          x: event.clientX,
+          y: event.clientY,
+        },
+        '*',
+      );
+    },
+    { passive: false },
+  );
+
+  // Scroll-bridge: when the preview iframe captures wheel events, the outer
+  // editor scroller can appear to "stall" mid-way. Forward wheel deltas to
+  // the parent so the host pane keeps scrolling smoothly. Skip when ctrlKey
+  // is held — that's pinch territory, handled above.
+  window.addEventListener(
+    'wheel',
+    function (event) {
+      if (!event || event.ctrlKey) return;
       window.parent.postMessage(
         {
           type: 'cv-wheel',
@@ -563,6 +587,19 @@ const PAGINATION_SCRIPT = `
   );
 })();
 `;
+
+/**
+ * Build a `:root` selector that overrides the palette CSS variables when the
+ * user has customized the template colors. Returns "" when no override exists
+ * — the template's baked-in defaults take effect via `var(--cv-X, #hex)`.
+ *
+ * Each hex is validated against `^#[0-9a-fA-F]{6}$` upstream by the schema,
+ * so by the time we hit this function the value is safe to interpolate.
+ */
+function renderPaletteOverride(palette: Palette | undefined): string {
+  if (!palette) return "";
+  return `\n:root{--cv-accent:${palette.accent};--cv-ink:${palette.ink};--cv-soft:${palette.soft};--cv-rule:${palette.rule};--cv-canvas:${palette.canvas};}`;
+}
 
 function getTemplateCss(template: TemplateId): string {
   switch (template) {

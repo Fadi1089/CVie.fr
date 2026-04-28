@@ -21,6 +21,10 @@
 		"lint": "turbo lint",
 		"type-check": "turbo type-check",
 		"test": "turbo test",
+		"sync:figma-templates": "bun run scripts/sync-figma-templates.ts",
+		"generate:template-css": "bun run scripts/generate-template-css.ts",
+		"check:template-css": "bun run scripts/generate-template-css.ts --check",
+		"smoke:template-previews": "bun run scripts/smoke-template-previews.ts",
 		"postinstall": "turbo build --filter=@cvie/shared && bunx playwright install chromium"
 	},
 	"devDependencies": {

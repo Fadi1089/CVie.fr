@@ -1,46 +1,22 @@
 import { s } from "./_scaled";
 
 /**
- * Minimaliste CV template — "Ligne Claire".
- *
- * Swiss-grid / brutalist-minimal: pure ink on paper, zero ornament, 3-col
- * entry grid (date / title / place), mono dates for tabular alignment,
- * section headings anchored by a 2px left border (no absolute-positioned
- * spines, no CSS counters, no pseudo-element text). Photo hidden —
- * consistent with FR anti-discrimination recommendations and the
- * typography-only aesthetic.
- *
- * Display: Archivo (Google Fonts) — variable sans with narrow optical size
- *   for section headings.
- * Body: Inter Tight (Google Fonts) — tighter counterpart to Inter for
- *   denser body rhythm.
- * Mono: JetBrains Mono (Google Fonts) — dates only, gives the entry grid
- *   a tabular anchor no proportional font can match.
- *
- * Density scaling: content-owned absolute lengths are wrapped in `s()` so
- * the editor's density slider rescales them uniformly. Page geometry
- * (`@page`, `.cv`, `.cv-paginated`, `.cv-page-bg`, `.cv-canvas`,
- * `.cv-page-advisory`) stays literal — owned by the renderer. See
- * `_scaled.ts` for the full authoring rules.
- *
- * Contract — MUST match renderer.ts:
- *   - Selectors scoped under .cv / .cv-canvas / .cv-paginated / .cv-page-bg
- *   - @page A4 / margin 0 preserved for PDF pipeline
- *   - Screen and print use identical .cv padding (no compensation resets)
- *   - ATS: no position:absolute text, no pseudo-element text content
+ * @generated from Figma template Minimaliste.
+ * Do not edit by hand; run `bun run generate:template-css`.
  */
 export const minimalisteCss = `
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @page {
   size: A4;
   margin: 0;
+  background: #FFFFFF;
 }
 
 .cv-canvas {
-  background: #ececec;
+  background: var(--cv-canvas, #ECECEC);
   padding: 24px 0 8px;
-  font-family: "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
 }
 
 .cv-paginated {
@@ -55,9 +31,9 @@ export const minimalisteCss = `
   left: 0;
   width: 210mm;
   height: 297mm;
-  background: #ffffff;
+  background: #FFFFFF;
   box-shadow:
-    0 0 0 0.5pt rgba(17, 17, 17, 0.18),
+    0 0 0 0.5pt rgba(17, 17, 17, 0.16),
     0 1px 2px rgba(10, 10, 10, 0.05),
     0 4mm 10mm -2mm rgba(10, 10, 10, 0.10),
     0 8mm 20mm -6mm rgba(10, 10, 10, 0.08);
@@ -74,10 +50,10 @@ export const minimalisteCss = `
   justify-content: center;
   pointer-events: none;
   z-index: 2;
-  font-family: "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   font-size: 9pt;
   line-height: 1.5;
-  color: #555555;
+  color: #333333;
   text-align: center;
   padding: 0 14mm;
 }
@@ -96,17 +72,15 @@ export const minimalisteCss = `
 }
 
 .cv-page-advisory .cv-page-advisory-text {
-  font-style: italic;
   letter-spacing: 0.01em;
   white-space: nowrap;
 }
 
 .cv-page-advisory .cv-page-advisory-text strong {
   font-weight: 700;
-  font-style: normal;
-  color: #111111;
+  color: var(--cv-ink, #111111);
   text-transform: uppercase;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
   font-size: 8pt;
   margin-right: 1.5mm;
 }
@@ -119,8 +93,8 @@ export const minimalisteCss = `
   min-height: 297mm;
   padding: 0.25in;
   background: transparent;
-  color: #111111;
-  font-family: "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: var(--cv-ink, #111111);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   font-size: ${s(10.5, "pt")};
   line-height: 1.45;
   orphans: 3;
@@ -134,8 +108,9 @@ export const minimalisteCss = `
 }
 
 .cv a {
-  color: #111111;
+  color: var(--cv-ink, #111111);
   text-decoration: underline;
+  text-decoration-color: var(--cv-accent, #111111);
   text-decoration-thickness: ${s(0.4, "pt")};
   text-underline-offset: ${s(2, "px")};
 }
@@ -149,19 +124,18 @@ export const minimalisteCss = `
   margin-bottom: 0.2em;
 }
 
-/* Header — name left, job title right-aligned on same baseline.
-   Single hairline rule. Contact row in tracked uppercase 8pt. */
 .cv header {
-  margin-bottom: ${s(6, "mm")};
+  position: relative;
+  margin-bottom: ${s(5, "mm")};
   padding-bottom: ${s(3, "mm")};
-  border-bottom: ${s(0.5, "pt")} solid #111111;
+  border-bottom: ${s(0.75, "pt")} solid var(--cv-rule, #111111);
 }
 
 .cv header .header-top {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: ${s(6, "mm")};
+  gap: ${s(1.5, "mm")};
 }
 
 .cv header:not(.has-photo) .header-top {
@@ -169,11 +143,23 @@ export const minimalisteCss = `
 }
 
 .cv header .header-identity {
+  position: relative;
   flex: 1;
   min-width: 0;
+  padding: ${s(0, "mm")} ${s(0, "mm")} ${s(0, "mm")} ${s(0, "mm")};
 }
 
-/* Photo hidden — minimalist + anti-discrimination-friendly */
+.cv header .header-identity::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: ${s(0.75, "pt")};
+  background: var(--cv-accent, #111111);
+  border-radius: ${s(0, "mm")} ${s(0, "mm")} ${s(0, "mm")} ${s(0, "mm")};
+}
+
 .cv header .photo {
   display: none;
 }
@@ -181,10 +167,10 @@ export const minimalisteCss = `
 .cv .portfolio-qr-box {
   width: ${s(22, "mm")};
   height: ${s(22, "mm")};
-  border-radius: ${s(1, "mm")};
-  background: #ffffff;
+  border-radius: ${s(1.5, "mm")};
+  background: #FFFFFF;
   box-sizing: border-box;
-  border: ${s(0.5, "pt")} solid #111111;
+  border: ${s(0.75, "pt")} solid var(--cv-accent, #111111);
   overflow: hidden;
 }
 
@@ -194,34 +180,46 @@ export const minimalisteCss = `
   display: block;
 }
 
+.cv .portfolio-qr-label {
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: ${s(7, "pt")};
+  font-weight: 400;
+  line-height: 1.32;
+  letter-spacing: 0em;
+  color: var(--cv-soft, #555555);
+  text-transform: none;
+}
+
 .cv header h1 {
-  margin: 0 0 ${s(1.5, "mm")} 0;
+  margin: 0 0 ${s(2, "mm")} 0;
   font-family: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: ${s(22, "pt")};
   font-weight: 500;
-  color: #111111;
+  color: var(--cv-ink, #111111);
   letter-spacing: -0.02em;
   line-height: 1.05;
+  font-style: normal;
 }
 
 .cv header .job-title {
   margin: 0 0 ${s(2, "mm")} 0;
-  font-family: "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   font-size: ${s(9, "pt")};
   font-weight: 400;
-  color: #555555;
+  color: var(--cv-soft, #555555);
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  line-height: 1.2102;
 }
 
 .cv header .contact {
   margin: 0;
   padding: 0;
   list-style: none;
-  font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
   font-size: ${s(8, "pt")};
-  color: #555555;
-  font-weight: 400;
+  color: var(--cv-soft, #555555);
+  line-height: 1.32;
   letter-spacing: 0.02em;
 }
 
@@ -234,37 +232,55 @@ export const minimalisteCss = `
   content: none;
 }
 
+.cv header .contact a {
+  color: var(--cv-ink, #111111);
+}
+
 .cv header .summary {
-  /* Description/summary must span full content width, respecting only the
-     renderer-owned page margins. No max-width cap. */
   margin: ${s(3.5, "mm")} 0 0 0;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   font-size: ${s(10, "pt")};
   line-height: 1.55;
-  color: #2a2a2a;
+  color: #2A2A2A;
+  font-style: normal;
 }
 
 .cv section {
   margin-bottom: ${s(5, "mm")};
+  
 }
 
-/* H2 — Archivo uppercase with left 2px rule.
-   12pt keeps clear hierarchy vs 10.5pt body — fixes the size-collapse
-   flagged in review. Border-left replaces the absolute-positioned spine
-   and CSS counter from the prior revision. */
+.cv section:last-of-type {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
 .cv section h2 {
+  position: relative;
   margin: 0 0 ${s(3, "mm")} 0;
-  padding: ${s(0.5, "mm")} 0 ${s(0.5, "mm")} ${s(4, "mm")};
+  padding: ${s(0.5, "mm")} ${s(0, "mm")} ${s(0.5, "mm")} ${s(4, "mm")};
   font-family: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: ${s(12, "pt")};
   font-weight: 600;
-  color: #111111;
-  text-transform: uppercase;
+  color: var(--cv-ink, #111111);
   letter-spacing: 0.16em;
-  border-left: ${s(2, "pt")} solid #111111;
+  line-height: 1.5;
+  font-style: normal;
+  
   page-break-after: avoid;
-  page-break-inside: avoid;
   break-after: avoid;
-  break-inside: avoid;
+}
+
+.cv section h2::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: ${s(2, "pt")};
+  background: var(--cv-accent, #111111);
+  border-radius: ${s(0, "mm")} ${s(0, "mm")} ${s(0, "mm")} ${s(0, "mm")};
 }
 
 .cv article {
@@ -277,86 +293,79 @@ export const minimalisteCss = `
   margin-bottom: 0;
 }
 
-/* Entry header — 2-col grid: title/place row flex.
-   Date in mono, italic for hierarchy. */
 .cv article .entry-header {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: ${s(4, "mm")};
-  margin-bottom: ${s(0.5, "mm")};
+  margin-bottom: ${s(0.6, "mm")};
   page-break-after: avoid;
   break-after: avoid;
 }
 
 .cv article h3 {
   margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-family: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: ${s(11, "pt")};
   font-weight: 600;
-  color: #111111;
+  color: var(--cv-ink, #111111);
   letter-spacing: -0.005em;
+  line-height: 1.088;
 }
 
 .cv article .entry-meta {
   margin: 0;
-  font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  flex-shrink: 0;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
   font-size: ${s(8.5, "pt")};
   font-weight: 400;
-  color: #6b6b6b;
+  color: #6B6B6B;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
+  line-height: 1.32;
+  font-style: normal;
 }
 
 .cv article .entry-sub {
-  margin: 0 0 ${s(1, "mm")} 0;
+  margin: 0 0 ${s(0.6, "mm")} 0;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   font-size: ${s(10, "pt")};
   color: #333333;
-  font-style: italic;
+  line-height: 1.5;
+  font-style: normal;
   page-break-after: avoid;
   break-after: avoid;
 }
 
-.cv article .entry-description {
-  /* Full content width, inherits .cv padding as margin */
-  margin: ${s(1, "mm")} 0 0 0;
+.cv article .entry-description,
+.cv article p,
+.cv article li {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   font-size: ${s(10, "pt")};
   color: #222222;
+  line-height: 1.5;
 }
 
-.cv article ul {
-  list-style: none;
-  padding-left: 0;
+.cv article .entry-description {
+  margin: ${s(1, "mm")} 0 0 0;
 }
 
-.cv article li {
-  position: relative;
-  padding-left: ${s(3.5, "mm")};
-}
-
-.cv article li::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0.55em;
-  width: ${s(1.4, "mm")};
-  height: ${s(1.4, "mm")};
-  background: #111111;
-}
-
-/* Skills — disc-bulleted list grouped per category. Minimal palette:
-   black category label, neutral names, muted level hint. */
 .cv .skills-grouped {
   list-style: disc;
   margin: 0;
   padding-left: ${s(5, "mm")};
-  font-size: ${s(10, "pt")};
-  line-height: 1.55;
 }
 
 .cv .skills-grouped li {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  font-size: ${s(10, "pt")};
   margin: 0;
-  color: #111111;
+  line-height: 1.5;
+  color: var(--cv-ink, #111111);
 }
 
 .cv .skills-grouped li + li {
@@ -365,83 +374,75 @@ export const minimalisteCss = `
 
 .cv .skills-grouped .skill-category {
   font-weight: 700;
-  color: #111111;
+  color: var(--cv-ink, #111111);
 }
 
 .cv .skills-grouped .skill-name {
-  font-weight: 500;
-  color: #111111;
+  color: var(--cv-ink, #111111);
 }
 
 .cv .skills-grouped .skill-level {
-  color: #6b6b6b;
-  font-style: italic;
-  font-size: ${s(9.5, "pt")};
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  color: #333333;
+  font-size: ${s(8.7, "pt")};
   margin-left: 0.2em;
+  letter-spacing: 0.02em;
 }
 
 .cv .languages-list {
   list-style: none;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${s(1.5, "mm")} ${s(7, "mm")};
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   font-size: ${s(10, "pt")};
-  line-height: 1.7;
+  line-height: 1.5;
 }
 
 .cv .languages-list li {
-  display: inline;
+  display: inline-flex;
+  gap: 0.4em;
   margin: 0;
 }
 
-.cv .languages-list li + li::before {
-  content: ", ";
-  color: #6b6b6b;
-}
-
 .cv .languages-list .lang-name {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .cv .languages-list .lang-level {
-  color: #6b6b6b;
-  font-style: italic;
-  margin-left: 0.3em;
+  color: #333333;
 }
 
 .cv .interests-list {
   list-style: none;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${s(1.5, "mm")} ${s(4, "mm")};
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   font-size: ${s(10, "pt")};
+  line-height: 1.5;
 }
 
 .cv .interests-list li {
-  display: inline;
   margin: 0;
 }
 
-.cv .interests-list li + li::before {
-  content: ", ";
-  color: #6b6b6b;
+
+.cv article ul li::marker {
+  content: "■  ";
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  font-size: ${s(15, "pt")};
+  color: #222222;
+}
+.cv .skills-grouped li::marker {
+  content: "•  ";
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  font-size: ${s(15, "pt")};
+  color: var(--cv-ink, #111111);
 }
 
-@media print {
-  .cv-canvas {
-    background: #ffffff;
-    padding: 0;
-  }
-  .cv-page-bg,
-  .cv-page-advisory {
-    display: none;
-  }
-  .cv-paginated,
-  .cv {
-    margin: 0;
-    box-shadow: none;
-    background: #ffffff;
-  }
-  .cv [data-page-push] {
-    padding-top: 0 !important;
-  }
-}
 `;

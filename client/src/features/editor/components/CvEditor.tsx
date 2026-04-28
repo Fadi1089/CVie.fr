@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FormProvider, useFormContext } from "react-hook-form";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 import {
   cvDataSchema,
   templateRegistry,
@@ -14,6 +14,9 @@ import {
   upsertCvRecord,
   type CvLibraryRecord,
 } from "@/features/cv-library/storage";
+import { EditorSidebar, useSidebarCollapsed } from "./EditorSidebar";
+import { EditorSplitter } from "./EditorSplitter";
+import { useEditorSplit } from "../hooks/useEditorSplit";
 import {
   Dialog,
   DialogClose,
@@ -32,7 +35,6 @@ import {
   useCvScale,
 } from "../hooks/useCvScale";
 import { useCvOverflowMode } from "../hooks/useCvOverflowMode";
-import { OverflowModeSelector } from "./OverflowModeSelector";
 import { EditorPreviewPane } from "./EditorPreviewPane";
 import { ExperiencesSection } from "./ExperiencesSection";
 import { FormationsSection } from "./FormationsSection";
@@ -40,6 +42,9 @@ import { InterestsSection } from "./InterestsSection";
 import { LanguagesSection } from "./LanguagesSection";
 import { CvImportButton } from "./CvImportButton";
 import { CvResetButton } from "./CvResetButton";
+import { DesignPanel } from "./DesignPanel";
+import { EditorTabs, type EditorTabKey } from "./EditorTabs";
+import { LanguagePanel } from "./LanguagePanel";
 import { MobileTabBar, type EditorTab } from "./MobileTabBar";
 import { PersonalInfoForm } from "./PersonalInfoForm";
 import { SkillsSection } from "./SkillsSection";
@@ -127,12 +132,19 @@ export function CvEditor() {
 
   const [cvRecord, setCvRecord] = useState<CvLibraryRecord | null>(null);
   const [cvTitleInput, setCvTitleInput] = useState("Nouveau CV");
-  const { form, persistStatus, resetDraft } = useCvDraft(cvId);
+  const handleDraftPersisted = useCallback(() => {
+    if (!cvId) return;
+    upsertCvRecord(cvId, {});
+  }, [cvId]);
+  const { form, persistStatus, resetDraft } = useCvDraft(cvId, {
+    onPersisted: handleDraftPersisted,
+  });
   const { scale, setScale, resetScale } = useCvScale();
   const { overflowMode, setOverflowMode } = useCvOverflowMode();
   const [mobileTab, setMobileTab] = useState<EditorTab>("edit");
   const [unknownBannerDismissed, setUnknownBannerDismissed] = useState(false);
   const [resetNonce, setResetNonce] = useState(0);
+  const [sidebarCollapsed, setSidebarCollapsed] = useSidebarCollapsed();
 
   useEffect(() => {
     if (!cvId) return;
@@ -213,6 +225,7 @@ export function CvEditor() {
   return (
     <FormProvider {...form}>
       <EditorShell
+        cvId={cvId}
         templateId={templateId}
         templateName={templateMeta.name}
         cvTitle={cvTitleInput}
@@ -232,12 +245,15 @@ export function CvEditor() {
         onCvTitleChange={handleCvTitleInputChange}
         onCvTitleCommit={handleCvTitleCommit}
         resetNonce={resetNonce}
+        sidebarCollapsed={sidebarCollapsed}
+        setSidebarCollapsed={setSidebarCollapsed}
       />
     </FormProvider>
   );
 }
 
 type EditorShellProps = {
+  cvId: string;
   templateId: TemplateId;
   templateName: string;
   cvTitle: string;
@@ -257,9 +273,12 @@ type EditorShellProps = {
   onCvTitleChange: (nextTitle: string) => void;
   onCvTitleCommit: (rawTitle?: string) => void;
   resetNonce: number;
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: (next: boolean) => void;
 };
 
 function EditorShell({
+  cvId,
   templateId,
   templateName,
   cvTitle,
@@ -279,8 +298,12 @@ function EditorShell({
   onCvTitleChange,
   onCvTitleCommit,
   resetNonce,
+  sidebarCollapsed,
+  setSidebarCollapsed,
 }: EditorShellProps) {
   const autofillSync = useAutofillSync<CvData>();
+  const { ratio, setRatio, resetRatio } = useEditorSplit();
+  const splitContainerRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<EditorSectionId, HTMLElement | null>>({
     personalInfo: null,
     formations: null,
@@ -294,6 +317,7 @@ function EditorShell({
   const [highlightedSection, setHighlightedSection] = useState<EditorSectionId | null>(null);
   const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
   const itemRefs = useRef<Record<string, HTMLElement | null>>({});
+  const [editorTab, setEditorTab] = useState<EditorTabKey>("cv");
 
   useEffect(() => {
     return () => {
@@ -384,8 +408,15 @@ function EditorShell({
           autofillSync.formRef.current = node;
         }}
         onBlurCapture={autofillSync.onBlurCapture}
-        className="atelier-paper min-h-screen text-[var(--color-ink)]"
+        className="atelier-paper flex min-h-screen text-[var(--color-ink)]"
       >
+        <EditorSidebar
+          activeCvId={cvId}
+          activeTemplateId={templateId}
+          collapsed={sidebarCollapsed}
+          onCollapsedChange={setSidebarCollapsed}
+        />
+        <div className="flex min-w-0 flex-1 flex-col">
         <EditorHeader
           templateId={templateId}
           templateName={templateName}
@@ -394,7 +425,6 @@ function EditorShell({
           setScale={setScale}
           resetScale={resetScale}
           overflowMode={overflowMode}
-          setOverflowMode={setOverflowMode}
           resetDraft={resetDraft}
         />
 
@@ -405,57 +435,83 @@ function EditorShell({
           />
         ) : null}
 
-        <div className="md:grid md:grid-cols-[minmax(480px,1fr)_minmax(420px,1fr)]">
+        <div
+          ref={splitContainerRef}
+          className="relative md:flex md:min-w-0 md:flex-1"
+        >
           <section
             role="tabpanel"
             id="editor-panel-edit"
             aria-labelledby="editor-tab-edit"
-            className={cn("md:block", mobileTab === "preview" ? "hidden" : "block")}
+            style={{ flexBasis: `${ratio * 100}%` }}
+            className={cn(
+              "md:min-w-0 md:shrink-0 md:grow-0",
+              mobileTab === "preview" ? "hidden md:block" : "block",
+            )}
           >
             <form
               noValidate
               onSubmit={(e) => e.preventDefault()}
-              className="px-4 pt-4 pb-24 md:h-[calc(100vh-64px)] md:overflow-y-auto md:border-r md:border-[var(--color-rule)] md:px-8 md:py-8"
+              className="px-4 pt-4 pb-24 md:h-[calc(100vh-64px)] md:overflow-y-auto md:px-8 md:py-8"
               aria-label="Formulaire CV"
             >
-              <div className="mx-auto mb-6 max-w-[44rem] rounded-md border border-[var(--color-rule)] bg-white/75 p-3">
-                <label
-                  htmlFor="cv-title-input"
-                  className="font-mono-caps mb-2 block text-[10px] text-[var(--color-ink-soft)]"
-                >
-                  Nom du CV
-                </label>
-                <input
-                  id="cv-title-input"
-                  type="text"
-                  value={cvTitle}
-                  onChange={(event) => onCvTitleChange(event.target.value)}
-                  onBlur={(event) => onCvTitleCommit(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      onCvTitleCommit((event.target as HTMLInputElement).value);
-                      (event.target as HTMLInputElement).blur();
-                    }
-                  }}
-                  className="h-9 w-full rounded-md border border-[var(--color-rule)] bg-white px-3 text-[13px] text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/30"
-                  aria-label="Titre du CV"
-                />
-              </div>
-              <FormSections
-                highlightedSection={highlightedSection}
-                highlightedItemId={highlightedItemId}
-                setSectionRef={setSectionRef}
-                setItemRef={setItemRef}
-              />
+              <EditorTabs value={editorTab} onChange={setEditorTab} />
+              {editorTab === "cv" ? (
+                <>
+                  <div className="mb-6 w-full rounded-md border border-[var(--color-rule)] bg-white/75 p-3">
+                    <label
+                      htmlFor="cv-title-input"
+                      className="font-mono-caps mb-2 block text-[10px] text-[var(--color-ink-soft)]"
+                    >
+                      Nom du CV
+                    </label>
+                    <input
+                      id="cv-title-input"
+                      type="text"
+                      value={cvTitle}
+                      onChange={(event) => onCvTitleChange(event.target.value)}
+                      onBlur={(event) => onCvTitleCommit(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          onCvTitleCommit((event.target as HTMLInputElement).value);
+                          (event.target as HTMLInputElement).blur();
+                        }
+                      }}
+                      className="h-9 w-full rounded-md border border-[var(--color-rule)] bg-white px-3 text-[13px] text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/30"
+                      aria-label="Titre du CV"
+                    />
+                  </div>
+                  <FormSections
+                    highlightedSection={highlightedSection}
+                    highlightedItemId={highlightedItemId}
+                    setSectionRef={setSectionRef}
+                    setItemRef={setItemRef}
+                  />
+                </>
+              ) : editorTab === "design" ? (
+                <DesignPanel templateId={templateId} />
+              ) : (
+                <LanguagePanel />
+              )}
             </form>
           </section>
+
+          <EditorSplitter
+            ratio={ratio}
+            onChange={setRatio}
+            onReset={resetRatio}
+            containerRef={splitContainerRef}
+          />
 
           <section
             role="tabpanel"
             id="editor-panel-preview"
             aria-labelledby="editor-tab-preview"
-            className={cn("md:block", mobileTab === "edit" ? "hidden" : "block")}
+            className={cn(
+              "md:min-w-0 md:flex-1",
+              mobileTab === "edit" ? "hidden md:block" : "block",
+            )}
           >
             <aside
               className="px-4 pt-4 pb-24 md:sticky md:top-[64px] md:h-[calc(100vh-64px)] md:overflow-hidden md:px-0 md:pt-0 md:pb-0"
@@ -483,6 +539,7 @@ function EditorShell({
         <div className="md:hidden">
           <MobileTabBar active={mobileTab} onChange={setMobileTab} />
         </div>
+        </div>
       </div>
     </AutofillSyncContext.Provider>
   );
@@ -503,7 +560,7 @@ function FormSections({
     cn("scroll-mt-24 rounded-md transition-colors", highlightedSection === id && "editor-jump-highlight");
 
   return (
-    <div className="mx-auto flex max-w-[44rem] flex-col gap-10">
+    <div className="flex w-full flex-col gap-10">
       <div ref={setSectionRef("personalInfo")} className={sectionClass("personalInfo")}>
         <PersonalInfoForm highlightedItemId={highlightedItemId} setItemRef={setItemRef} />
       </div>
@@ -537,7 +594,6 @@ function EditorHeader({
   setScale,
   resetScale,
   overflowMode,
-  setOverflowMode,
   resetDraft,
 }: {
   templateId: TemplateId;
@@ -547,7 +603,6 @@ function EditorHeader({
   setScale: (next: number) => void;
   resetScale: () => void;
   overflowMode: OverflowMode;
-  setOverflowMode: (next: OverflowMode) => void;
   resetDraft: () => void;
 }) {
   const persistText =
@@ -557,15 +612,6 @@ function EditorHeader({
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-[var(--color-rule)] bg-[var(--color-paper)]/85 px-6 backdrop-blur">
       <div className="flex min-w-0 items-baseline gap-3">
-        <Link
-          to="/home"
-          className="text-[13px] font-medium text-[var(--color-ink-soft)] transition-colors hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/30 motion-reduce:transition-none"
-        >
-          ← Retour a Home
-        </Link>
-        <span aria-hidden="true" className="text-[var(--color-ink-soft)]/40">
-          /
-        </span>
         <h1 className="font-display truncate text-[18px] font-medium text-[var(--color-ink)]">
           Éditeur · {templateName}
         </h1>
@@ -583,7 +629,6 @@ function EditorHeader({
           {persistText}
         </span>
         <ScaleSlider scale={scale} setScale={setScale} resetScale={resetScale} />
-        <OverflowModeSelector value={overflowMode} onChange={setOverflowMode} />
         <CvImportButton />
         <CvResetButton onReset={resetDraft} />
         <ExportPdfButton

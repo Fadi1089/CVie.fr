@@ -48,6 +48,20 @@ bun lint
 bun test
 ```
 
+## Figma Template Sync
+
+The CV templates are synced from the normalized Figma file into committed JSON
+and generated CSS artifacts.
+
+```bash
+FIGMA_ACCESS_TOKEN=... bun run sync:figma-templates
+bun run check:template-css
+bun run smoke:template-previews
+```
+
+`FIGMA_ACCESS_TOKEN` needs the `file_content:read` scope. `FIGMA_FILE_KEY` is
+optional and defaults to the CV templates file.
+
 ## Env
 
 See `.env.example`. Client vars must be prefixed `VITE_`.

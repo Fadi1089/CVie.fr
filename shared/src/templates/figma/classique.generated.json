@@ -1,0 +1,398 @@
+{
+  "schemaVersion": 1,
+  "id": "classique",
+  "name": "Classique",
+  "source": {
+    "fileKey": "25iovEf8CZdNuAlo8n9P1h",
+    "pageId": "0:1",
+    "pageName": "Classique",
+    "rootNodeId": "6:2"
+  },
+  "sourceNodeIds": {
+    "contact": [
+      "6:9"
+    ],
+    "contact.city": [
+      "24:15"
+    ],
+    "contact.email": [
+      "24:6"
+    ],
+    "contact.phone": [
+      "24:10"
+    ],
+    "contact.portfolio": [
+      "24:21"
+    ],
+    "entry": [
+      "7:5",
+      "7:11",
+      "7:20",
+      "7:28"
+    ],
+    "entry.body": [
+      "7:10",
+      "7:16"
+    ],
+    "entry.bullet": [
+      "7:25",
+      "7:26",
+      "7:27",
+      "7:33",
+      "7:34"
+    ],
+    "entry.date": [
+      "7:8",
+      "7:14",
+      "7:23",
+      "7:31"
+    ],
+    "entry.header": [
+      "7:6",
+      "7:12",
+      "7:21",
+      "7:29"
+    ],
+    "entry.meta": [
+      "7:9",
+      "7:15",
+      "7:24",
+      "7:32"
+    ],
+    "entry.title": [
+      "7:7",
+      "7:13",
+      "7:22",
+      "7:30"
+    ],
+    "header": [
+      "6:3"
+    ],
+    "header.identity": [
+      "6:6"
+    ],
+    "header.photo": [
+      "6:5"
+    ],
+    "header.top": [
+      "6:4"
+    ],
+    "interests.content": [
+      "8:19"
+    ],
+    "languages.content": [
+      "8:12"
+    ],
+    "languages.item": [
+      "8:13",
+      "8:14",
+      "8:15"
+    ],
+    "portfolio.qrBox": [
+      "82:2"
+    ],
+    "portfolio.qrLabel": [
+      "85:2"
+    ],
+    "section": [
+      "7:2",
+      "7:17",
+      "8:2",
+      "8:9",
+      "8:16"
+    ],
+    "section.rule": [
+      "33:5",
+      "33:4",
+      "33:3",
+      "33:2"
+    ],
+    "section.title": [
+      "7:4",
+      "7:19",
+      "8:4",
+      "8:11",
+      "8:18"
+    ],
+    "section.titleWrap": [
+      "7:3",
+      "7:18",
+      "8:3",
+      "8:10",
+      "8:17"
+    ],
+    "skills.item": [
+      "18:3",
+      "18:4",
+      "18:5",
+      "18:6"
+    ],
+    "skills.list": [
+      "18:2"
+    ],
+    "template": [
+      "6:2"
+    ],
+    "text.headline": [
+      "6:8"
+    ],
+    "text.name": [
+      "6:7"
+    ],
+    "text.summary": [
+      "6:14"
+    ]
+  },
+  "page": {
+    "widthPx": 793.7008056640625,
+    "heightPx": 1122.5196533203125
+  },
+  "colors": {
+    "canvasBackground": "#e6e4d8",
+    "pageBackground": "#ffffff",
+    "text": "#141413",
+    "muted": "#5e5d59",
+    "accent": "#1b365d",
+    "rule": "#d4d2cc",
+    "photoBackground": "#e8e6dc",
+    "photoBorder": "#1b365d",
+    "portfolioQrBackground": "#e8e6dc",
+    "portfolioQrBorder": "#1b365d"
+  },
+  "typography": {
+    "body": {
+      "nodeId": "6:14",
+      "fontFamily": "Newsreader",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 10,
+      "lineHeight": 1.5,
+      "letterSpacingEm": 0,
+      "color": "#141413",
+      "textTransform": "none"
+    },
+    "name": {
+      "nodeId": "6:7",
+      "fontFamily": "Newsreader",
+      "fontStyle": "Regular",
+      "fontWeight": 500,
+      "fontSizePt": 24,
+      "lineHeight": 1.08,
+      "letterSpacingEm": -0.01,
+      "color": "#141413",
+      "textTransform": "none",
+      "frameHeightMm": 6.6146
+    },
+    "headline": {
+      "nodeId": "6:8",
+      "fontFamily": "Inter",
+      "fontStyle": "Regular",
+      "fontWeight": 500,
+      "fontSizePt": 18,
+      "lineHeight": 1.2102,
+      "letterSpacingEm": 0.02,
+      "color": "#1b365d",
+      "textTransform": "uppercase",
+      "frameHeightMm": 6.6146
+    },
+    "contact": {
+      "nodeId": "24:6",
+      "fontFamily": "Inter",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 9,
+      "lineHeight": 1.2102,
+      "letterSpacingEm": 0,
+      "color": "#5e5d59",
+      "textTransform": "none"
+    },
+    "summary": {
+      "nodeId": "6:14",
+      "fontFamily": "Newsreader",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 10,
+      "lineHeight": 1.55,
+      "letterSpacingEm": 0,
+      "color": "#141413",
+      "textTransform": "none"
+    },
+    "sectionTitle": {
+      "nodeId": "7:4",
+      "fontFamily": "Newsreader",
+      "fontStyle": "ExtraBold",
+      "fontWeight": 800,
+      "fontSizePt": 15,
+      "lineHeight": 1,
+      "letterSpacingEm": 0,
+      "color": "#141413",
+      "textTransform": "none"
+    },
+    "entryTitle": {
+      "nodeId": "7:7",
+      "fontFamily": "Newsreader",
+      "fontStyle": "Bold",
+      "fontWeight": 700,
+      "fontSizePt": 11,
+      "lineHeight": 1.3,
+      "letterSpacingEm": 0,
+      "color": "#141413",
+      "textTransform": "none"
+    },
+    "entryDate": {
+      "nodeId": "7:8",
+      "fontFamily": "Inter",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 9,
+      "lineHeight": 1.3,
+      "letterSpacingEm": 0.01,
+      "color": "#87867f",
+      "textTransform": "none"
+    },
+    "entryMeta": {
+      "nodeId": "7:9",
+      "fontFamily": "Newsreader",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 10,
+      "lineHeight": 1.45,
+      "letterSpacingEm": 0,
+      "color": "#5e5d59",
+      "textTransform": "none"
+    },
+    "entryBody": {
+      "nodeId": "7:10",
+      "fontFamily": "Newsreader",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 9.5,
+      "lineHeight": 1.45,
+      "letterSpacingEm": 0,
+      "color": "#141413",
+      "textTransform": "none"
+    },
+    "listItem": {
+      "nodeId": "18:3",
+      "fontFamily": "Newsreader",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 9.8,
+      "lineHeight": 1.5,
+      "letterSpacingEm": 0,
+      "color": "#141413",
+      "textTransform": "none"
+    },
+    "portfolioQrLabel": {
+      "nodeId": "85:2",
+      "fontFamily": "Inter",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 7.5,
+      "lineHeight": 1.2102,
+      "letterSpacingEm": 0,
+      "color": "#5e5d59",
+      "textTransform": "none",
+      "frameHeightMm": 16.6687
+    }
+  },
+  "layout": {
+    "pagePaddingMm": {
+      "top": 6.35,
+      "right": 6.35,
+      "bottom": 6.35,
+      "left": 6.35
+    },
+    "rootGapMm": 2.6458,
+    "headerGapMm": 5.2917,
+    "headerPaddingBottomMm": 3.9688,
+    "headerMarginBottomMm": 2.6458,
+    "headerBorderBottomWeightPt": 0.75,
+    "headerIdentityBorderLeftWeightPt": 2.5,
+    "headerIdentityBorderRadiiMm": {
+      "topLeft": 0.5292,
+      "topRight": 0,
+      "bottomLeft": 0.5292,
+      "bottomRight": 0
+    },
+    "headerIdentityPaddingMm": {
+      "top": 0,
+      "right": 0,
+      "bottom": 0,
+      "left": 4
+    },
+    "headerIdentityItemSpacingMm": 5.2917,
+    "headerSummaryGapMm": 4,
+    "photoSizeMm": {
+      "width": 28,
+      "height": 28
+    },
+    "photoStrokeWeightPt": 1.5,
+    "photoBorderRadiusMm": 1.5,
+    "portfolioQrSizeMm": {
+      "width": 28,
+      "height": 28
+    },
+    "portfolioQrStrokeWeightPt": 1.5,
+    "portfolioQrRadiusMm": 1.5,
+    "sectionGapMm": 2.6458,
+    "sectionPaddingBottomMm": 2.6458,
+    "sectionTitleBorderWeightPt": 2.5,
+    "sectionTitleBorderRadiiMm": {
+      "topLeft": 0.5292,
+      "topRight": 0,
+      "bottomLeft": 0.5292,
+      "bottomRight": 0
+    },
+    "sectionTitleMarginBottomMm": 2.6458,
+    "sectionTitlePaddingMm": {
+      "top": 0.4,
+      "right": 0,
+      "bottom": 0.4,
+      "left": 3
+    },
+    "entryGapMm": 2.6458,
+    "entryHeaderGapMm": 4
+  },
+  "bullets": {
+    "entry": {
+      "glyph": "•",
+      "fontFamily": "Newsreader",
+      "fontSizePt": 14.25,
+      "color": "#141413"
+    },
+    "skills": {
+      "glyph": "•",
+      "fontFamily": "Newsreader",
+      "fontSizePt": 14.7,
+      "color": "#141413"
+    }
+  },
+  "sections": [
+    {
+      "id": "formations",
+      "nodeId": "7:2",
+      "titleNodeId": "7:4"
+    },
+    {
+      "id": "experiences",
+      "nodeId": "7:17",
+      "titleNodeId": "7:19"
+    },
+    {
+      "id": "skills",
+      "nodeId": "8:2",
+      "titleNodeId": "8:4"
+    },
+    {
+      "id": "languages",
+      "nodeId": "8:9",
+      "titleNodeId": "8:11"
+    },
+    {
+      "id": "interests",
+      "nodeId": "8:16",
+      "titleNodeId": "8:18"
+    }
+  ]
+}

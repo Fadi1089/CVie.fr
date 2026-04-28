@@ -1,0 +1,373 @@
+{
+  "schemaVersion": 1,
+  "id": "minimaliste",
+  "name": "Minimaliste",
+  "source": {
+    "fileKey": "25iovEf8CZdNuAlo8n9P1h",
+    "pageId": "5:3",
+    "pageName": "Minimaliste",
+    "rootNodeId": "12:2"
+  },
+  "sourceNodeIds": {
+    "contact.email": [
+      "26:6"
+    ],
+    "contact.phone": [
+      "26:10"
+    ],
+    "entry": [
+      "13:5",
+      "13:11",
+      "13:20",
+      "13:28"
+    ],
+    "entry.body": [
+      "13:10",
+      "13:16"
+    ],
+    "entry.bullet": [
+      "13:25",
+      "13:26",
+      "13:27",
+      "13:33",
+      "13:34"
+    ],
+    "entry.date": [
+      "13:8",
+      "13:14",
+      "13:23",
+      "13:31"
+    ],
+    "entry.header": [
+      "13:6",
+      "13:12",
+      "13:21",
+      "13:29"
+    ],
+    "entry.meta": [
+      "13:9",
+      "13:15",
+      "13:24",
+      "13:32"
+    ],
+    "entry.title": [
+      "13:7",
+      "13:13",
+      "13:22",
+      "13:30"
+    ],
+    "header": [
+      "12:3"
+    ],
+    "header.identity": [
+      "12:7"
+    ],
+    "header.top": [
+      "12:4"
+    ],
+    "interests.content": [
+      "14:16"
+    ],
+    "languages.content": [
+      "14:12"
+    ],
+    "portfolio.qrBox": [
+      "82:4"
+    ],
+    "portfolio.qrLabel": [
+      "85:4"
+    ],
+    "section": [
+      "13:2",
+      "13:17",
+      "14:2",
+      "14:9",
+      "14:13"
+    ],
+    "section.title": [
+      "13:4",
+      "13:19",
+      "14:4",
+      "14:11",
+      "14:15"
+    ],
+    "section.titleWrap": [
+      "13:3",
+      "13:18",
+      "14:3",
+      "14:10",
+      "14:14"
+    ],
+    "skills.item": [
+      "20:3",
+      "20:4",
+      "20:5",
+      "20:6"
+    ],
+    "skills.list": [
+      "20:2"
+    ],
+    "template": [
+      "12:2"
+    ],
+    "text.headline": [
+      "12:6"
+    ],
+    "text.name": [
+      "12:5"
+    ],
+    "text.summary": [
+      "12:12"
+    ]
+  },
+  "page": {
+    "widthPx": 793.7008056640625,
+    "heightPx": 1122.5196533203125
+  },
+  "colors": {
+    "canvasBackground": "#ececec",
+    "pageBackground": "#ffffff",
+    "text": "#111111",
+    "muted": "#333333",
+    "accent": "#111111",
+    "rule": "#111111",
+    "photoBackground": "#ffffff",
+    "photoBorder": "#111111",
+    "portfolioQrBackground": "#ffffff",
+    "portfolioQrBorder": "#111111"
+  },
+  "typography": {
+    "body": {
+      "nodeId": "12:12",
+      "fontFamily": "Inter",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 10.5,
+      "lineHeight": 1.45,
+      "letterSpacingEm": 0,
+      "color": "#2a2a2a",
+      "textTransform": "none"
+    },
+    "name": {
+      "nodeId": "12:5",
+      "fontFamily": "Archivo",
+      "fontStyle": "Regular",
+      "fontWeight": 500,
+      "fontSizePt": 22,
+      "lineHeight": 1.05,
+      "letterSpacingEm": -0.02,
+      "color": "#111111",
+      "textTransform": "none"
+    },
+    "headline": {
+      "nodeId": "12:6",
+      "fontFamily": "Inter",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 9,
+      "lineHeight": 1.2102,
+      "letterSpacingEm": 0.02,
+      "color": "#555555",
+      "textTransform": "uppercase"
+    },
+    "contact": {
+      "nodeId": "26:6",
+      "fontFamily": "JetBrains Mono",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 8,
+      "lineHeight": 1.32,
+      "letterSpacingEm": 0.02,
+      "color": "#555555",
+      "textTransform": "none"
+    },
+    "summary": {
+      "nodeId": "12:12",
+      "fontFamily": "Inter",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 10,
+      "lineHeight": 1.55,
+      "letterSpacingEm": 0,
+      "color": "#2a2a2a",
+      "textTransform": "none"
+    },
+    "sectionTitle": {
+      "nodeId": "13:4",
+      "fontFamily": "Archivo",
+      "fontStyle": "Regular",
+      "fontWeight": 600,
+      "fontSizePt": 12,
+      "lineHeight": 1.5,
+      "letterSpacingEm": 0.16,
+      "color": "#111111",
+      "textTransform": "none"
+    },
+    "entryTitle": {
+      "nodeId": "13:7",
+      "fontFamily": "Archivo",
+      "fontStyle": "Regular",
+      "fontWeight": 600,
+      "fontSizePt": 11,
+      "lineHeight": 1.088,
+      "letterSpacingEm": -0.005,
+      "color": "#111111",
+      "textTransform": "none"
+    },
+    "entryDate": {
+      "nodeId": "13:8",
+      "fontFamily": "JetBrains Mono",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 8.5,
+      "lineHeight": 1.32,
+      "letterSpacingEm": 0.01,
+      "color": "#6b6b6b",
+      "textTransform": "none"
+    },
+    "entryMeta": {
+      "nodeId": "13:9",
+      "fontFamily": "Inter",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 10,
+      "lineHeight": 1.5,
+      "letterSpacingEm": 0,
+      "color": "#333333",
+      "textTransform": "none"
+    },
+    "entryBody": {
+      "nodeId": "13:10",
+      "fontFamily": "Inter",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 10,
+      "lineHeight": 1.5,
+      "letterSpacingEm": 0,
+      "color": "#222222",
+      "textTransform": "none"
+    },
+    "listItem": {
+      "nodeId": "20:3",
+      "fontFamily": "Inter",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 10,
+      "lineHeight": 1.5,
+      "letterSpacingEm": 0,
+      "color": "#111111",
+      "textTransform": "none"
+    },
+    "portfolioQrLabel": {
+      "nodeId": "85:4",
+      "fontFamily": "JetBrains Mono",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 7,
+      "lineHeight": 1.32,
+      "letterSpacingEm": 0,
+      "color": "#555555",
+      "textTransform": "none",
+      "frameHeightMm": 20.9021
+    }
+  },
+  "layout": {
+    "pagePaddingMm": {
+      "top": 6.35,
+      "right": 6.35,
+      "bottom": 6.35,
+      "left": 6.35
+    },
+    "rootGapMm": 5,
+    "headerGapMm": 1.5,
+    "headerPaddingBottomMm": 3,
+    "headerMarginBottomMm": 5,
+    "headerBorderBottomWeightPt": 0.75,
+    "headerIdentityBorderLeftWeightPt": 0.75,
+    "headerIdentityBorderRadiiMm": {
+      "topLeft": 0,
+      "topRight": 0,
+      "bottomLeft": 0,
+      "bottomRight": 0
+    },
+    "headerIdentityPaddingMm": {
+      "top": 0,
+      "right": 0,
+      "bottom": 0,
+      "left": 0
+    },
+    "headerIdentityItemSpacingMm": 2,
+    "headerSummaryGapMm": 3.5,
+    "photoSizeMm": {
+      "width": 22,
+      "height": 22
+    },
+    "photoStrokeWeightPt": 0.75,
+    "photoBorderRadiusMm": 1.5,
+    "portfolioQrSizeMm": {
+      "width": 22,
+      "height": 22
+    },
+    "portfolioQrStrokeWeightPt": 0.75,
+    "portfolioQrRadiusMm": 1.5,
+    "sectionGapMm": 5,
+    "sectionPaddingBottomMm": 0,
+    "sectionTitleBorderWeightPt": 2,
+    "sectionTitleBorderRadiiMm": {
+      "topLeft": 0,
+      "topRight": 0,
+      "bottomLeft": 0,
+      "bottomRight": 0
+    },
+    "sectionTitleMarginBottomMm": 3,
+    "sectionTitlePaddingMm": {
+      "top": 0.5,
+      "right": 0,
+      "bottom": 0.5,
+      "left": 4
+    },
+    "entryGapMm": 3,
+    "entryHeaderGapMm": 4
+  },
+  "bullets": {
+    "entry": {
+      "glyph": "■",
+      "fontFamily": "Inter",
+      "fontSizePt": 15,
+      "color": "#222222"
+    },
+    "skills": {
+      "glyph": "•",
+      "fontFamily": "Inter",
+      "fontSizePt": 15,
+      "color": "#111111"
+    }
+  },
+  "sections": [
+    {
+      "id": "formations",
+      "nodeId": "13:2",
+      "titleNodeId": "13:4"
+    },
+    {
+      "id": "experiences",
+      "nodeId": "13:17",
+      "titleNodeId": "13:19"
+    },
+    {
+      "id": "skills",
+      "nodeId": "14:2",
+      "titleNodeId": "14:4"
+    },
+    {
+      "id": "languages",
+      "nodeId": "14:9",
+      "titleNodeId": "14:11"
+    },
+    {
+      "id": "interests",
+      "nodeId": "14:13",
+      "titleNodeId": "14:15"
+    }
+  ]
+}

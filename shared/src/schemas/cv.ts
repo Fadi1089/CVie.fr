@@ -157,6 +157,26 @@ export const interestSchema = z.object({
   name: z.string().max(MAX_SHORT),
 });
 
+const hexColorSchema = z
+  .string()
+  .regex(/^#[0-9a-fA-F]{6}$/i, { message: "Format couleur invalide (#RRGGBB)" });
+
+export const paletteSchema = z.object({
+  accent: hexColorSchema,
+  ink: hexColorSchema,
+  soft: hexColorSchema,
+  rule: hexColorSchema,
+  canvas: hexColorSchema,
+});
+
+export const SUPPORTED_LOCALES = ["fr", "en", "de", "es", "nl"] as const;
+export const localeSchema = z.enum(SUPPORTED_LOCALES);
+
+export const appearanceSchema = z.object({
+  palette: paletteSchema.optional(),
+  locale: localeSchema.optional(),
+});
+
 export const cvDataSchema = z.object({
   personalInfo: personalInfoSchema,
   formations: z.array(formationSchema).max(MAX_ARRAY).default([]),
@@ -164,4 +184,5 @@ export const cvDataSchema = z.object({
   skills: z.array(skillSchema).max(MAX_ARRAY).default([]),
   languages: z.array(languageSchema).max(MAX_ARRAY).default([]),
   interests: z.array(interestSchema).max(MAX_ARRAY).default([]),
+  appearance: appearanceSchema.optional(),
 });
