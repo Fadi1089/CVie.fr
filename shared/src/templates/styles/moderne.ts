@@ -1,4 +1,4 @@
-import { s, sText, sMedia } from "./_scaled";
+import { s, sText, sMedia, sSpace, sLine } from "./_scaled";
 
 /**
  * @generated from Figma template Moderne.
@@ -91,12 +91,11 @@ export const moderneCss = `
   box-sizing: border-box;
   width: 210mm;
   min-height: 297mm;
-  padding: 0.25in;
   background: transparent;
   color: var(--cv-ink, #111111);
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: ${sText(10.5, "pt", "paragraph")};
-  line-height: 1.5;
+  line-height: ${sLine(1.5)};
   orphans: 3;
   widows: 3;
 }
@@ -126,7 +125,7 @@ export const moderneCss = `
 
 .cv header {
   position: relative;
-  margin-bottom: ${s(5, "mm")};
+  margin-bottom: ${sSpace(5, "mm", "section")};
   padding-bottom: ${s(3, "mm")};
   border-bottom: ${s(0.75, "pt")} solid var(--cv-rule, #A8421E);
 }
@@ -193,7 +192,7 @@ export const moderneCss = `
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: ${sText(7.5, "pt", "paragraph")};
   font-weight: 400;
-  line-height: 1.3;
+  line-height: ${sLine(1.3)};
   letter-spacing: 0em;
   color: var(--cv-soft, #3A3A3A);
   text-transform: none;
@@ -206,7 +205,7 @@ export const moderneCss = `
   font-weight: 400;
   color: var(--cv-ink, #111111);
   letter-spacing: -0.01em;
-  line-height: 1.05;
+  line-height: ${sLine(1.05)};
   font-style: normal;
   height: ${s(13.7583, "mm")};
   overflow: visible;
@@ -220,7 +219,7 @@ export const moderneCss = `
   color: var(--cv-soft, #3A3A3A);
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  line-height: 1.3;
+  line-height: ${sLine(1.3)};
 }
 
 .cv header .contact {
@@ -230,7 +229,7 @@ export const moderneCss = `
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: ${sText(9, "pt", "paragraph")};
   color: var(--cv-soft, #3A3A3A);
-  line-height: 1.3;
+  line-height: ${sLine(1.3)};
   letter-spacing: 0.02em;
 }
 
@@ -251,14 +250,14 @@ export const moderneCss = `
   margin: ${s(3.5, "mm")} 0 0 0;
   font-family: "Fraunces", "Newsreader", Georgia, serif;
   font-size: ${sText(10.5, "pt", "title")};
-  line-height: 1.55;
+  line-height: ${sLine(1.55)};
   color: #222222;
   font-style: normal;
 }
 
 .cv section {
-  margin-bottom: ${s(5, "mm")};
-  
+  margin-bottom: ${sSpace(5, "mm", "section")};
+
 }
 
 .cv section:last-of-type {
@@ -276,7 +275,7 @@ export const moderneCss = `
   font-weight: 700;
   color: var(--cv-ink, #111111);
   letter-spacing: 0.01em;
-  line-height: 1.5;
+  line-height: ${sLine(1.5)};
   font-style: italic;
   border-bottom: ${s(0.5, "pt")} solid var(--cv-rule, #A8421E);
   page-break-after: avoid;
@@ -286,7 +285,7 @@ export const moderneCss = `
 
 
 .cv article {
-  margin-bottom: ${s(2.5, "mm")};
+  margin-bottom: ${sSpace(2.5, "mm", "item")};
   page-break-inside: avoid;
   break-inside: avoid;
 }
@@ -315,7 +314,7 @@ export const moderneCss = `
   font-weight: 600;
   color: var(--cv-ink, #111111);
   letter-spacing: 0.005em;
-  line-height: 1.3;
+  line-height: ${sLine(1.3)};
 }
 
 .cv article .entry-meta {
@@ -328,7 +327,7 @@ export const moderneCss = `
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
-  line-height: 1.3;
+  line-height: ${sLine(1.3)};
   font-style: normal;
 }
 
@@ -337,7 +336,7 @@ export const moderneCss = `
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: ${sText(10, "pt", "paragraph")};
   color: var(--cv-soft, #3A3A3A);
-  line-height: 1.5;
+  line-height: ${sLine(1.5)};
   font-style: normal;
   page-break-after: avoid;
   break-after: avoid;
@@ -349,7 +348,7 @@ export const moderneCss = `
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: ${sText(10, "pt", "paragraph")};
   color: #2A2A2A;
-  line-height: 1.5;
+  line-height: ${sLine(1.5)};
 }
 
 .cv article .entry-description {
@@ -366,12 +365,12 @@ export const moderneCss = `
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: ${sText(10, "pt", "paragraph")};
   margin: 0;
-  line-height: 1.5;
+  line-height: ${sLine(1.5)};
   color: var(--cv-ink, #111111);
 }
 
 .cv .skills-grouped li + li {
-  margin-top: ${s(0.6, "mm")};
+  margin-top: ${sSpace(0.6, "mm", "item")};
 }
 
 .cv .skills-grouped .skill-category {
@@ -397,10 +396,10 @@ export const moderneCss = `
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: ${s(1.5, "mm")} ${s(7, "mm")};
+  gap: ${sSpace(1.5, "mm", "item")} ${sSpace(7, "mm", "item")};
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: ${sText(10, "pt", "paragraph")};
-  line-height: 1.5;
+  line-height: ${sLine(1.5)};
 }
 
 .cv .languages-list li {
@@ -423,10 +422,10 @@ export const moderneCss = `
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: ${s(1.5, "mm")} ${s(4, "mm")};
+  gap: ${sSpace(1.5, "mm", "item")} ${sSpace(4, "mm", "item")};
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: ${sText(10, "pt", "paragraph")};
-  line-height: 1.5;
+  line-height: ${sLine(1.5)};
 }
 
 .cv .interests-list li {
