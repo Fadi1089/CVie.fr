@@ -310,6 +310,8 @@ describe("renderCvHtml — appearance.textSizes / mediaSize", () => {
     const style = rootStyle(renderCvHtml(sampleCv, "classique"));
     expect(style).not.toContain("--cv-text-paragraph-delta");
     expect(style).not.toContain("--cv-media-delta");
+    expect(style).not.toContain("--cv-space-page-delta");
+    expect(style).not.toContain("--cv-line-height-delta");
   });
 
   it("clamps deltas defensively at render time", () => {
@@ -324,5 +326,36 @@ describe("renderCvHtml — appearance.textSizes / mediaSize", () => {
     const style = rootStyle(html);
     expect(style).toContain("--cv-text-paragraph-delta: 5pt");
     expect(style).toContain("--cv-media-delta: 12mm");
+  });
+
+  it("emits spacing delta CSS vars on <html> when set", () => {
+    const html = renderCvHtml(
+      {
+        ...sampleCv,
+        appearance: {
+          spacing: { pageMargin: 2, sectionGap: -1, itemGap: 3, lineHeight: 0.1 },
+        },
+      },
+      "classique",
+    );
+    const style = rootStyle(html);
+    expect(style).toContain("--cv-space-page-delta: 2mm");
+    expect(style).toContain("--cv-space-section-delta: -1mm");
+    expect(style).toContain("--cv-space-item-delta: 3mm");
+    expect(style).toContain("--cv-line-height-delta: 0.1");
+  });
+
+  it("clamps spacing deltas defensively at render time", () => {
+    const html = renderCvHtml(
+      {
+        ...sampleCv,
+        // @ts-expect-error — deliberately out-of-range to exercise clamp
+        appearance: { spacing: { pageMargin: 999, lineHeight: 99 } },
+      },
+      "classique",
+    );
+    const style = rootStyle(html);
+    expect(style).toContain("--cv-space-page-delta: 8mm");
+    expect(style).toContain("--cv-line-height-delta: 0.4");
   });
 });

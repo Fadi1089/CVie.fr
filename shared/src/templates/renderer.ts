@@ -70,7 +70,7 @@ export function renderCvHtml(
   const paletteCss = renderPaletteOverride(data.appearance?.palette);
 
   return `<!DOCTYPE html>
-<html lang="fr" style="${renderRootStyle(safeScale, data.appearance?.textSizes, data.appearance?.mediaSize)}">
+<html lang="fr" style="${renderRootStyle(safeScale, data.appearance?.textSizes, data.appearance?.mediaSize, data.appearance?.spacing)}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -389,6 +389,59 @@ const PAGINATION_SCRIPT = `
       }
       return;
     }
+    if (data.type === 'cv-space-deltas') {
+      var spaceMap = [
+        { key: 'pageMargin', prop: '--cv-space-page-delta', lo: -6, hi: 8 },
+        { key: 'sectionGap', prop: '--cv-space-section-delta', lo: -3, hi: 8 },
+        { key: 'itemGap', prop: '--cv-space-item-delta', lo: -2, hi: 6 },
+      ];
+      var spaceDeltas = data.deltas || {};
+      var spaceChanged = false;
+      for (var si = 0; si < spaceMap.length; si++) {
+        var entry = spaceMap[si];
+        var spaceRaw = spaceDeltas[entry.key];
+        if (typeof spaceRaw !== 'number' || !isFinite(spaceRaw)) {
+          if (document.documentElement.style.getPropertyValue(entry.prop)) {
+            document.documentElement.style.removeProperty(entry.prop);
+            spaceChanged = true;
+          }
+          continue;
+        }
+        if (spaceRaw < entry.lo) spaceRaw = entry.lo;
+        if (spaceRaw > entry.hi) spaceRaw = entry.hi;
+        var spaceNext = spaceRaw + 'mm';
+        if (document.documentElement.style.getPropertyValue(entry.prop) !== spaceNext) {
+          document.documentElement.style.setProperty(entry.prop, spaceNext);
+          spaceChanged = true;
+        }
+      }
+      if (spaceChanged) {
+        lastPostedHeight = -1;
+        schedule();
+      }
+      return;
+    }
+    if (data.type === 'cv-line-height-delta') {
+      var lhRaw = Number(data.value);
+      var lhProp = '--cv-line-height-delta';
+      if (!isFinite(lhRaw)) {
+        if (document.documentElement.style.getPropertyValue(lhProp)) {
+          document.documentElement.style.removeProperty(lhProp);
+          lastPostedHeight = -1;
+          schedule();
+        }
+        return;
+      }
+      if (lhRaw < -0.2) lhRaw = -0.2;
+      if (lhRaw > 0.4) lhRaw = 0.4;
+      var lhNext = String(lhRaw);
+      if (document.documentElement.style.getPropertyValue(lhProp) !== lhNext) {
+        document.documentElement.style.setProperty(lhProp, lhNext);
+        lastPostedHeight = -1;
+        schedule();
+      }
+      return;
+    }
   });
 
   function resetPushes(cv) {
@@ -653,6 +706,13 @@ const TEXT_SIZE_RANGES: Record<"paragraph" | "header" | "title", { min: number; 
 };
 const MEDIA_SIZE_MIN = -8;
 const MEDIA_SIZE_MAX = 12;
+const SPACE_RANGES: Record<"page" | "section" | "item", { min: number; max: number }> = {
+  page: { min: -6, max: 8 },
+  section: { min: -3, max: 8 },
+  item: { min: -2, max: 6 },
+};
+const LINE_HEIGHT_MIN = -0.2;
+const LINE_HEIGHT_MAX = 0.4;
 
 function clampNumber(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return 0;
@@ -663,6 +723,7 @@ function renderRootStyle(
   scale: number,
   textSizes: { paragraph?: number; header?: number; title?: number } | undefined,
   mediaSize: number | undefined,
+  spacing: { pageMargin?: number; sectionGap?: number; itemGap?: number; lineHeight?: number } | undefined,
 ): string {
   const decls: string[] = [`--cv-scale: ${scale}`];
   if (textSizes) {
@@ -676,6 +737,23 @@ function renderRootStyle(
   }
   if (Number.isFinite(mediaSize)) {
     decls.push(`--cv-media-delta: ${clampNumber(mediaSize as number, MEDIA_SIZE_MIN, MEDIA_SIZE_MAX)}mm`);
+  }
+  if (spacing) {
+    const spaceFields = [
+      { role: "page" as const, key: "pageMargin" as const },
+      { role: "section" as const, key: "sectionGap" as const },
+      { role: "item" as const, key: "itemGap" as const },
+    ];
+    for (const { role, key } of spaceFields) {
+      const raw = spacing[key];
+      if (Number.isFinite(raw)) {
+        const range = SPACE_RANGES[role];
+        decls.push(`--cv-space-${role}-delta: ${clampNumber(raw as number, range.min, range.max)}mm`);
+      }
+    }
+    if (Number.isFinite(spacing.lineHeight)) {
+      decls.push(`--cv-line-height-delta: ${clampNumber(spacing.lineHeight as number, LINE_HEIGHT_MIN, LINE_HEIGHT_MAX)}`);
+    }
   }
   return decls.join("; ");
 }
