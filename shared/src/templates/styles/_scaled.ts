@@ -66,3 +66,33 @@ type AbsoluteUnit = "pt" | "mm" | "in" | "px";
 export function s(value: number, unit: AbsoluteUnit): string {
   return `calc(${value}${unit} * var(--cv-scale, 1))`;
 }
+
+export type TextRole = "paragraph" | "header" | "title";
+
+/**
+ * Scale a text length by both the global density (`--cv-scale`) AND a
+ * per-role pt delta (`--cv-text-<role>-delta`, default `0pt`). The delta
+ * lets users grow/shrink a single typographic role from the Design tab
+ * without disturbing the rest of the document.
+ *
+ * Example:
+ *   font-size: ${sText(10, "pt", "paragraph")};
+ *   → calc(10pt * var(--cv-scale, 1) + var(--cv-text-paragraph-delta, 0pt))
+ *
+ * Use only on `font-size` declarations. Margins, line-heights, and
+ * decorative widths should keep using `s()` so they don't drift away
+ * from the surrounding rhythm when text grows.
+ */
+export function sText(value: number, unit: AbsoluteUnit, role: TextRole): string {
+  return `calc(${value}${unit} * var(--cv-scale, 1) + var(--cv-text-${role}-delta, 0pt))`;
+}
+
+/**
+ * Scale a media length (header photo, QR box) by density AND the user's
+ * mm delta. Wraps the SAME width AND height of any media element — never
+ * mix `sMedia()` for one axis and `s()` for the other; the photo/QR are
+ * intentionally square and the delta would skew them.
+ */
+export function sMedia(value: number, unit: AbsoluteUnit): string {
+  return `calc(${value}${unit} * var(--cv-scale, 1) + var(--cv-media-delta, 0mm))`;
+}
