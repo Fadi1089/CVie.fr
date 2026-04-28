@@ -172,6 +172,7 @@ export const paletteSchema = z.object({
 export const SUPPORTED_LOCALES = ["fr", "en", "de", "es", "nl"] as const;
 export const localeSchema = z.enum(SUPPORTED_LOCALES);
 
+/** Per-role font-size delta in pt. Title range is wider — headline carries more visual weight. */
 const textSizesSchema = z
   .object({
     paragraph: z.number().min(-3).max(5).optional(),
@@ -180,6 +181,7 @@ const textSizesSchema = z
   })
   .optional();
 
+/** Header media (photo + QR) size delta in mm. */
 const mediaSizeSchema = z.number().min(-8).max(12).optional();
 
 export const appearanceSchema = z.object({
