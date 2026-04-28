@@ -249,7 +249,7 @@ export const moderneCss = `
 .cv header .summary {
   margin: ${s(3.5, "mm")} 0 0 0;
   font-family: "Fraunces", "Newsreader", Georgia, serif;
-  font-size: ${sText(10.5, "pt", "title")};
+  font-size: ${sText(10.5, "pt", "paragraph")};
   line-height: ${sLine(1.55)};
   color: #222222;
   font-style: normal;

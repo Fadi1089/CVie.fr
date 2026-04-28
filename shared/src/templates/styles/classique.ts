@@ -251,7 +251,7 @@ export const classiqueCss = `
 .cv header .summary {
   margin: ${s(4, "mm")} 0 0 0;
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${sText(10, "pt", "title")};
+  font-size: ${sText(10, "pt", "paragraph")};
   line-height: ${sLine(1.55)};
   color: var(--cv-ink, #141413);
   font-style: normal;

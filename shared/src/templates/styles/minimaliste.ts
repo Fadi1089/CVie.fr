@@ -238,7 +238,7 @@ export const minimalisteCss = `
 .cv header .summary {
   margin: ${s(3.5, "mm")} 0 0 0;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${sText(10, "pt", "title")};
+  font-size: ${sText(10, "pt", "paragraph")};
   line-height: ${sLine(1.55)};
   color: #2A2A2A;
   font-style: normal;
