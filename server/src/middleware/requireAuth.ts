@@ -1,0 +1,14 @@
+import type { MiddlewareHandler } from "hono";
+
+export function requireAuth(): MiddlewareHandler {
+  return async (c, next) => {
+    const claims = c.get("userClaims");
+    if (!claims) {
+      return c.json(
+        { error: "Authentification requise.", code: "UNAUTHENTICATED" },
+        401,
+      );
+    }
+    await next();
+  };
+}
