@@ -1,3 +1,9 @@
+// Prisma lib/prisma.ts throws if DATABASE_URL is missing at module load time.
+// Provide a stub so the module initialises; tests mock the prisma export anyway.
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = "postgresql://test:test@localhost:5432/test";
+}
+
 // pdfjs-dist (used by pdf-parse v2) calls `new DOMMatrix()` at module init.
 // Bun has no DOM globals. This stub prevents the crash at load time.
 if (typeof globalThis.DOMMatrix === "undefined") {
