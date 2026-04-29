@@ -211,7 +211,7 @@
       "fontFamily": "Newsreader",
       "fontStyle": "Regular",
       "fontWeight": 400,
-      "fontSizePt": 10,
+      "fontSizePt": 10.75,
       "lineHeight": 1.55,
       "letterSpacingEm": 0,
       "color": "#141413",
@@ -255,7 +255,7 @@
       "fontFamily": "Newsreader",
       "fontStyle": "Regular",
       "fontWeight": 400,
-      "fontSizePt": 10,
+      "fontSizePt": 10.75,
       "lineHeight": 1.45,
       "letterSpacingEm": 0,
       "color": "#5e5d59",
@@ -266,7 +266,7 @@
       "fontFamily": "Newsreader",
       "fontStyle": "Regular",
       "fontWeight": 400,
-      "fontSizePt": 9.5,
+      "fontSizePt": 10.25,
       "lineHeight": 1.45,
       "letterSpacingEm": 0,
       "color": "#141413",
@@ -364,7 +364,7 @@
     "skills": {
       "glyph": "•",
       "fontFamily": "Newsreader",
-      "fontSizePt": 14.7,
+      "fontSizePt": 15.45,
       "color": "#141413"
     }
   },

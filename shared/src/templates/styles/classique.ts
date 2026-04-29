@@ -252,7 +252,7 @@ export const classiqueCss = `
 .cv header .summary {
   margin: ${s(4, "mm")} 0 0 0;
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${s(10, "pt")};
+  font-size: ${s(10.75, "pt")};
   line-height: 1.55;
   color: #141413;
   font-style: normal;
@@ -347,7 +347,7 @@ export const classiqueCss = `
 .cv article .entry-sub {
   margin: 0 0 ${s(0.6, "mm")} 0;
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${s(10, "pt")};
+  font-size: ${s(10.75, "pt")};
   color: #5E5D59;
   line-height: 1.45;
   font-style: normal;
@@ -359,7 +359,7 @@ export const classiqueCss = `
 .cv article p,
 .cv article li {
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${s(9.5, "pt")};
+  font-size: ${s(10.25, "pt")};
   color: #141413;
   line-height: 1.45;
 }
@@ -462,7 +462,7 @@ export const classiqueCss = `
 .cv .skills-grouped li::marker {
   content: "•  ";
   font-family: "Newsreader", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${s(14.7, "pt")};
+  font-size: ${s(15.45, "pt")};
   color: #141413;
 }
 

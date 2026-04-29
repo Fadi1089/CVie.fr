@@ -186,7 +186,7 @@
       "fontFamily": "Inter",
       "fontStyle": "Regular",
       "fontWeight": 400,
-      "fontSizePt": 10,
+      "fontSizePt": 10.75,
       "lineHeight": 1.55,
       "letterSpacingEm": 0,
       "color": "#2a2a2a",
@@ -230,7 +230,7 @@
       "fontFamily": "Inter",
       "fontStyle": "Regular",
       "fontWeight": 400,
-      "fontSizePt": 10,
+      "fontSizePt": 10.75,
       "lineHeight": 1.5,
       "letterSpacingEm": 0,
       "color": "#333333",
@@ -241,7 +241,7 @@
       "fontFamily": "Inter",
       "fontStyle": "Regular",
       "fontWeight": 400,
-      "fontSizePt": 10,
+      "fontSizePt": 10.75,
       "lineHeight": 1.5,
       "letterSpacingEm": 0,
       "color": "#222222",
@@ -339,7 +339,7 @@
     "skills": {
       "glyph": "•",
       "fontFamily": "Inter",
-      "fontSizePt": 15,
+      "fontSizePt": 15.75,
       "color": "#111111"
     }
   },

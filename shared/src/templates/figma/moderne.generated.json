@@ -204,7 +204,7 @@
       "fontFamily": "Fraunces",
       "fontStyle": "Regular",
       "fontWeight": 400,
-      "fontSizePt": 10.5,
+      "fontSizePt": 11.25,
       "lineHeight": 1.55,
       "letterSpacingEm": 0,
       "color": "#222222",
@@ -248,7 +248,7 @@
       "fontFamily": "IBM Plex Sans",
       "fontStyle": "Regular",
       "fontWeight": 400,
-      "fontSizePt": 10,
+      "fontSizePt": 10.75,
       "lineHeight": 1.5,
       "letterSpacingEm": 0,
       "color": "#3a3a3a",
@@ -259,7 +259,7 @@
       "fontFamily": "IBM Plex Sans",
       "fontStyle": "Regular",
       "fontWeight": 400,
-      "fontSizePt": 10,
+      "fontSizePt": 10.75,
       "lineHeight": 1.5,
       "letterSpacingEm": 0,
       "color": "#2a2a2a",
@@ -357,7 +357,7 @@
     "skills": {
       "glyph": "•",
       "fontFamily": "IBM Plex Sans",
-      "fontSizePt": 15,
+      "fontSizePt": 15.75,
       "color": "#111111"
     }
   },

@@ -239,7 +239,7 @@ export const minimalisteCss = `
 .cv header .summary {
   margin: ${s(3.5, "mm")} 0 0 0;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${s(10, "pt")};
+  font-size: ${s(10.75, "pt")};
   line-height: 1.55;
   color: #2A2A2A;
   font-style: normal;
@@ -333,7 +333,7 @@ export const minimalisteCss = `
 .cv article .entry-sub {
   margin: 0 0 ${s(0.6, "mm")} 0;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${s(10, "pt")};
+  font-size: ${s(10.75, "pt")};
   color: #333333;
   line-height: 1.5;
   font-style: normal;
@@ -345,7 +345,7 @@ export const minimalisteCss = `
 .cv article p,
 .cv article li {
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${s(10, "pt")};
+  font-size: ${s(10.75, "pt")};
   color: #222222;
   line-height: 1.5;
 }
@@ -441,7 +441,7 @@ export const minimalisteCss = `
 .cv .skills-grouped li::marker {
   content: "•  ";
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: ${s(15, "pt")};
+  font-size: ${s(15.75, "pt")};
   color: #111111;
 }
 
