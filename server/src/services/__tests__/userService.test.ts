@@ -41,6 +41,35 @@ describe("upsertUserByAuth0Sub", () => {
     expect(call.update.email).toBe("jane@example.com");
   });
 
+  it("returns existing user with updated email when auth0Sub already exists", async () => {
+    upsertMock.mockResolvedValueOnce({
+      id: "u_existing",
+      auth0Sub: "auth0|existing",
+      email: "new@example.com",
+      username: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+    } as never);
+
+    const user = await upsertUserByAuth0Sub({
+      sub: "auth0|existing",
+      email: "new@example.com",
+    });
+
+    expect(user.email).toBe("new@example.com");
+    expect(upsertMock).toHaveBeenCalledTimes(1);
+    const call = upsertMock.mock.calls[0]?.[0] as {
+      where: { auth0Sub: string };
+      create: { auth0Sub: string; email: string };
+      update: { email: string };
+    };
+    expect(call.where.auth0Sub).toBe("auth0|existing");
+    expect(call.create.auth0Sub).toBe("auth0|existing");
+    expect(call.create.email).toBe("new@example.com");
+    expect(call.update.email).toBe("new@example.com");
+  });
+
   it("retries once on Prisma P2002 unique-conflict race, then succeeds", async () => {
     const conflict = Object.assign(new Error("unique conflict"), {
       code: "P2002",
