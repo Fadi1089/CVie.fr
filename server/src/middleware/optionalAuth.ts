@@ -1,12 +1,9 @@
 import type { MiddlewareHandler } from "hono";
 import { jwk } from "hono/jwk";
-import { upsertUserByAuth0Sub } from "../services/userService";
-
-type Auth0Claims = {
-  sub: string;
-  email: string;
-  email_verified?: boolean;
-};
+import {
+  upsertUserByAuth0Sub,
+  type Auth0Claims,
+} from "../services/userService";
 
 declare module "hono" {
   interface ContextVariableMap {
