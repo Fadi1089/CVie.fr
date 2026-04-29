@@ -1,11 +1,13 @@
 import { describe, expect, it } from "bun:test";
 import { Hono } from "hono";
+import "../optionalAuth"; // load ContextVariableMap augmentation
 import { requireAuth } from "../requireAuth";
+import type { Auth0Claims } from "../../services/userService";
 
-function buildApp(claims: unknown) {
+function buildApp(claims: Auth0Claims | null) {
   const app = new Hono();
   app.use("*", async (c, next) => {
-    c.set("userClaims" as never, claims as never);
+    c.set("userClaims", claims);
     await next();
   });
   app.use("/secret", requireAuth());
