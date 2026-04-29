@@ -4,8 +4,9 @@ import type { Auth0Claims } from "../../services/userService";
 import "../../middleware/optionalAuth";
 
 const findUniqueMock = mock(async (_args: unknown) => null);
+const upsertMock = mock(async (_args: unknown) => ({ id: "u_1" }));
 mock.module("../../lib/prisma", () => ({
-  prisma: { user: { findUnique: findUniqueMock } },
+  prisma: { user: { findUnique: findUniqueMock, upsert: upsertMock } },
 }));
 
 import { authRoutes } from "../auth";

@@ -2,8 +2,9 @@ import { describe, expect, it, mock, beforeEach } from "bun:test";
 import { Prisma } from "../../../../prisma/generated/prisma/client";
 
 const upsertMock = mock(async (_args: unknown) => ({ id: "u_1" }));
+const findUniqueMock = mock(async (_args: unknown) => null);
 mock.module("../../lib/prisma", () => ({
-  prisma: { user: { upsert: upsertMock } },
+  prisma: { user: { upsert: upsertMock, findUnique: findUniqueMock } },
 }));
 
 import { upsertUserByAuth0Sub } from "../userService";
