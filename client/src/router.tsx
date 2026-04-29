@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createBrowserRouter, Link, Navigate, useSearchParams } from "react-router";
+import { createBrowserRouter, Link, Navigate, Outlet, useSearchParams } from "react-router";
 import { renderCvHtml, sampleCv } from "@cvie/shared";
+import { Auth0ProviderWithNavigate, AuthCallback } from "./features/auth";
 import { CvEditor } from "./features/editor";
 import { EditorErrorBoundary } from "./features/editor/components/EditorErrorBoundary";
 import {
@@ -242,14 +243,25 @@ function EditorRouteGate() {
   );
 }
 
+function RootLayout() {
+  return (
+    <Auth0ProviderWithNavigate>
+      <Outlet />
+    </Auth0ProviderWithNavigate>
+  );
+}
+
 export const router = createBrowserRouter([
-  { path: "/", element: <HomePage /> },
-  { path: "/home", element: <Navigate to="/editor" replace /> },
-  { path: "/templates", element: <Navigate to="/editor" replace /> },
   {
-    path: "/editor",
-    element: <EditorRouteGate />,
+    element: <RootLayout />,
+    children: [
+      { path: "/", element: <HomePage /> },
+      { path: "/home", element: <Navigate to="/editor" replace /> },
+      { path: "/templates", element: <Navigate to="/editor" replace /> },
+      { path: "/editor", element: <EditorRouteGate /> },
+      { path: "/template-demo", element: <TemplateDemoPage /> },
+      { path: "/auth/callback", element: <AuthCallback /> },
+      { path: "*", element: <NotFoundPage /> },
+    ],
   },
-  { path: "/template-demo", element: <TemplateDemoPage /> },
-  { path: "*", element: <NotFoundPage /> },
 ]);
