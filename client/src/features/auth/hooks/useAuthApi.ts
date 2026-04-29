@@ -6,23 +6,32 @@ type AuthFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Respo
 export function useAuthApi(): { fetch: AuthFetch } {
   const { isAuthenticated, getAccessTokenSilently, loginWithRedirect } = useAuth0();
 
+  const redirectToLogin = useCallback(async () => {
+    await loginWithRedirect({
+      appState: { returnTo: window.location.pathname + window.location.search },
+    });
+  }, [loginWithRedirect]);
+
   const authFetch: AuthFetch = useCallback(
     async (input, init = {}) => {
       const headers = new Headers(init.headers);
       if (isAuthenticated) {
-        const token = await getAccessTokenSilently();
-        headers.set("authorization", `Bearer ${token}`);
+        try {
+          const token = await getAccessTokenSilently();
+          headers.set("authorization", `Bearer ${token}`);
+        } catch {
+          await redirectToLogin();
+          throw new Error("Unauthenticated — redirecting to login.");
+        }
       }
       const res = await fetch(input, { ...init, headers });
       if (res.status === 401) {
-        await loginWithRedirect({
-          appState: { returnTo: window.location.pathname + window.location.search },
-        });
+        await redirectToLogin();
         throw new Error("Unauthenticated — redirecting to login.");
       }
       return res;
     },
-    [isAuthenticated, getAccessTokenSilently, loginWithRedirect],
+    [isAuthenticated, getAccessTokenSilently, redirectToLogin],
   );
 
   return { fetch: authFetch };
