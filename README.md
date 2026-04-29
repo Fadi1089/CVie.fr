@@ -25,9 +25,27 @@ Requires Bun ≥ 1.2.4.
 
 ```bash
 bun install
-cp .env.example .env   # fill in DATABASE_URL, DIRECT_URL, JWT secrets
+cp .env.example .env   # fill in DATABASE_URL, DIRECT_URL, Auth0 vars
 bunx prisma migrate dev
 ```
+
+## Auth0 setup
+
+Authentication uses an Auth0 EU tenant (Universal Login + PKCE). Anonymous flow is preserved — sign-in is opt-in. The server validates RS256 JWTs and lazy-upserts a `User` row keyed by `auth0Sub`.
+
+Required env vars (see `.env.example`):
+
+```
+AUTH0_DOMAIN=cvie-fr.eu.auth0.com
+AUTH0_AUDIENCE=https://api.cvie.fr
+AUTH0_ISSUER=https://cvie-fr.eu.auth0.com/
+
+VITE_AUTH0_DOMAIN=cvie-fr.eu.auth0.com
+VITE_AUTH0_CLIENT_ID=<spa-client-id>
+VITE_AUTH0_AUDIENCE=https://api.cvie.fr
+```
+
+Full dashboard config (callbacks, allowed origins, post-login Action) lives in `docs/superpowers/specs/2026-04-29-auth0-integration-design.md` § 10.1.
 
 ## Dev
 
