@@ -1,4 +1,8 @@
 import { prisma } from "../lib/prisma";
+import { Prisma } from "../../../prisma/generated/prisma/client";
+import type { User } from "../../../prisma/generated/prisma/client";
+
+export type AppUser = User;
 
 export type Auth0Claims = {
   sub: string;
@@ -6,22 +10,13 @@ export type Auth0Claims = {
   email_verified?: boolean;
 };
 
-export type AppUser = {
-  id: string;
-  auth0Sub: string;
-  email: string;
-  username: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt: Date | null;
-};
-
-function isUniqueConflict(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    (err as { code?: string }).code === "P2002"
-  );
+function isAuth0SubConflict(err: unknown): boolean {
+  if (!(err instanceof Prisma.PrismaClientKnownRequestError)) return false;
+  if (err.code !== "P2002") return false;
+  const target = err.meta?.target;
+  if (Array.isArray(target)) return target.includes("auth0_sub");
+  if (typeof target === "string") return target === "auth0_sub" || target.includes("auth0_sub");
+  return false;
 }
 
 export async function upsertUserByAuth0Sub(claims: Auth0Claims): Promise<AppUser> {
@@ -36,7 +31,7 @@ export async function upsertUserByAuth0Sub(claims: Auth0Claims): Promise<AppUser
   try {
     return (await prisma.user.upsert(args)) as AppUser;
   } catch (err) {
-    if (isUniqueConflict(err)) {
+    if (isAuth0SubConflict(err)) {
       return (await prisma.user.upsert(args)) as AppUser;
     }
     throw err;

@@ -1,4 +1,5 @@
 import { describe, expect, it, mock, beforeEach } from "bun:test";
+import { Prisma } from "../../../../prisma/generated/prisma/client";
 
 const upsertMock = mock(async (_args: unknown) => ({ id: "u_1" }));
 mock.module("../../lib/prisma", () => ({
@@ -12,7 +13,7 @@ describe("upsertUserByAuth0Sub", () => {
     upsertMock.mockClear();
   });
 
-  it("upserts by auth0Sub with email + email_verified from claims", async () => {
+  it("upserts by auth0Sub with email from claims (new user)", async () => {
     upsertMock.mockResolvedValueOnce({
       id: "u_1",
       auth0Sub: "google-oauth2|123",
@@ -70,9 +71,11 @@ describe("upsertUserByAuth0Sub", () => {
     expect(call.update.email).toBe("new@example.com");
   });
 
-  it("retries once on Prisma P2002 unique-conflict race, then succeeds", async () => {
-    const conflict = Object.assign(new Error("unique conflict"), {
+  it("retries once on Prisma P2002 unique-conflict race on auth0_sub, then succeeds", async () => {
+    const conflict = new Prisma.PrismaClientKnownRequestError("unique conflict", {
       code: "P2002",
+      clientVersion: "test",
+      meta: { target: ["auth0_sub"] },
     });
     upsertMock.mockRejectedValueOnce(conflict);
     upsertMock.mockResolvedValueOnce({
@@ -90,7 +93,21 @@ describe("upsertUserByAuth0Sub", () => {
     expect(upsertMock).toHaveBeenCalledTimes(2);
   });
 
-  it("rethrows non-P2002 errors", async () => {
+  it("rethrows P2002 on a different unique constraint (e.g. email collision)", async () => {
+    const conflict = new Prisma.PrismaClientKnownRequestError("unique conflict", {
+      code: "P2002",
+      clientVersion: "test",
+      meta: { target: ["email"] },
+    });
+    upsertMock.mockRejectedValueOnce(conflict);
+
+    await expect(
+      upsertUserByAuth0Sub({ sub: "auth0|abc", email: "taken@example.com" }),
+    ).rejects.toThrow("unique conflict");
+    expect(upsertMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("rethrows non-P2002 errors (e.g. connection refused)", async () => {
     upsertMock.mockRejectedValueOnce(new Error("connection refused"));
     await expect(
       upsertUserByAuth0Sub({ sub: "auth0|x", email: "x@y.com" }),
