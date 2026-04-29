@@ -9,8 +9,8 @@ generator client {
 
 model User {
   id           String    @id @default(cuid())
+  auth0Sub     String    @unique @map("auth0_sub")
   email        String    @unique
-  passwordHash String    @map("password_hash")
   username     String?   @unique
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
