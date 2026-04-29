@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { templateRegistry, type TemplateId } from "@cvie/shared";
 import { cn } from "@/lib/utils";
+import { AuthGate, LoginButton, UserMenu } from "@/features/auth";
 import {
   createCvRecord,
   formatUpdatedAt,
@@ -230,6 +231,18 @@ export function EditorSidebar({
           })}
         </ul>
       </nav>
+
+      {/* Auth slot */}
+      <div
+        className={cn(
+          "border-t border-[var(--color-rule)]/80",
+          collapsed ? "px-2 py-2" : "px-3 py-3",
+        )}
+      >
+        {!collapsed ? (
+          <AuthGate anon={<LoginButton />} authed={<UserMenu />} />
+        ) : null}
+      </div>
 
       {/* Footer */}
       <div
