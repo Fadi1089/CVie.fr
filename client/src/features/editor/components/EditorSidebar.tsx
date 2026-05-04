@@ -233,15 +233,11 @@ export function EditorSidebar({
       </nav>
 
       {/* Auth slot */}
-      <div
-        className={cn(
-          "border-t border-[var(--color-rule)]/80",
-          collapsed ? "px-2 py-2" : "px-3 py-3",
-        )}
-      >
-        {!collapsed ? (
-          <AuthGate anon={<LoginButton />} authed={<UserMenu />} />
-        ) : null}
+      <div className="border-t border-[var(--color-rule)]/80 px-3 py-3">
+        <AuthGate
+          anon={<LoginButton compact={collapsed} />}
+          authed={<UserMenu compact={collapsed} />}
+        />
       </div>
 
       {/* Footer */}
