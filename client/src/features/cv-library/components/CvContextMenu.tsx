@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import type { Folder } from "../store/types";
 
 type Props = {
@@ -42,7 +43,9 @@ export function CvContextMenu({
     (f) => !(f.isSystem && f.ttlDays !== null),
   );
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div
       role="menu"
       style={{ left: x, top: y }}
@@ -114,6 +117,7 @@ export function CvContextMenu({
           </button>
         </>
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }
