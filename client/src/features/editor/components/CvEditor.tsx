@@ -292,7 +292,6 @@ function EditorShell({
   setScale,
   resetScale,
   overflowMode,
-  setOverflowMode,
   resetDraft,
   onTemplateChange,
   onCvTitleChange,

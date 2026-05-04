@@ -37,6 +37,7 @@ const minimalCvData: CvData = {
     linkedinUrl: "",
     portfolioUrl: "",
     photoUrl: "",
+    portfolioDisplay: "clickable",
   },
   experiences: [],
   formations: [],
