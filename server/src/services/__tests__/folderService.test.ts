@@ -11,6 +11,9 @@ const createMock = mock(async (args: { data: Record<string, unknown> }) => ({
   updatedAt: new Date(),
 }));
 const createManyMock = mock(async (_args: unknown) => ({ count: 2 }));
+const updateMock = mock(async (_args: unknown) => ({} as unknown));
+const deleteMock = mock(async (_args: unknown) => ({} as unknown));
+const updateManyMock = mock(async (_args: unknown) => ({ count: 0 }));
 const transactionMock = mock(async (cb: (tx: unknown) => Promise<unknown>) =>
   cb({
     folder: {
@@ -18,7 +21,10 @@ const transactionMock = mock(async (cb: (tx: unknown) => Promise<unknown>) =>
       findUnique: findUniqueMock,
       create: createMock,
       createMany: createManyMock,
+      update: updateMock,
+      delete: deleteMock,
     },
+    cv: { updateMany: updateManyMock },
   }),
 );
 
@@ -29,7 +35,10 @@ mock.module("../../lib/prisma", () => ({
       findUnique: findUniqueMock,
       create: createMock,
       createMany: createManyMock,
+      update: updateMock,
+      delete: deleteMock,
     },
+    cv: { updateMany: updateManyMock },
     $transaction: transactionMock,
   },
 }));
@@ -37,15 +46,35 @@ mock.module("../../lib/prisma", () => ({
 import {
   createFolder,
   seedSystemFolders,
+  listFolders,
+  renameFolder,
+  deleteFolder,
   FolderError,
 } from "../folderService";
 
 describe("folderService", () => {
   beforeEach(() => {
-    findManyMock.mockClear();
-    findUniqueMock.mockClear();
-    createMock.mockClear();
-    createManyMock.mockClear();
+    findManyMock.mockReset();
+    findManyMock.mockImplementation(async (_args: unknown) => [] as unknown[]);
+    findUniqueMock.mockReset();
+    findUniqueMock.mockImplementation(async (_args: unknown) => null as unknown);
+    createMock.mockReset();
+    createMock.mockImplementation(async (args: { data: Record<string, unknown> }) => ({
+      id: "f_new",
+      ...args.data,
+      isSystem: args.data.isSystem ?? false,
+      ttlDays: args.data.ttlDays ?? null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }));
+    createManyMock.mockReset();
+    createManyMock.mockImplementation(async (_args: unknown) => ({ count: 2 }));
+    updateMock.mockReset();
+    updateMock.mockImplementation(async (_args: unknown) => ({} as unknown));
+    deleteMock.mockReset();
+    deleteMock.mockImplementation(async (_args: unknown) => ({} as unknown));
+    updateManyMock.mockReset();
+    updateManyMock.mockImplementation(async (_args: unknown) => ({ count: 0 }));
   });
 
   describe("seedSystemFolders", () => {
@@ -118,6 +147,106 @@ describe("folderService", () => {
       await expect(createFolder("u_1", "Twenty-first")).rejects.toMatchObject({
         code: "FOLDER_LIMIT_EXCEEDED",
       });
+    });
+  });
+
+  describe("listFolders", () => {
+    it("returns all folders for a user", async () => {
+      findManyMock.mockResolvedValueOnce([
+        { id: "f_sys", name: "Mes CV", isSystem: true, ttlDays: null },
+        { id: "f_trash", name: "Corbeille", isSystem: true, ttlDays: 30 },
+        { id: "f_user", name: "Alternance", isSystem: false, ttlDays: null },
+      ]);
+      const folders = await listFolders("u_1");
+      expect(folders).toHaveLength(3);
+      expect(findManyMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("renameFolder", () => {
+    it("renames a custom folder when name is unique", async () => {
+      findUniqueMock.mockResolvedValueOnce({
+        id: "f_user",
+        userId: "u_1",
+        name: "Old",
+        isSystem: false,
+        ttlDays: null,
+      });
+      findManyMock.mockResolvedValueOnce([]);
+      updateMock.mockResolvedValueOnce({
+        id: "f_user",
+        userId: "u_1",
+        name: "New",
+        isSystem: false,
+        ttlDays: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      const folder = await renameFolder("u_1", "f_user", "New");
+      expect(folder.name).toBe("New");
+    });
+
+    it("throws when folder is system-owned", async () => {
+      findUniqueMock.mockResolvedValueOnce({
+        id: "f_sys",
+        userId: "u_1",
+        name: "Mes CV",
+        isSystem: true,
+        ttlDays: null,
+      });
+      await expect(renameFolder("u_1", "f_sys", "Foo")).rejects.toMatchObject({
+        code: "FOLDER_IS_SYSTEM",
+      });
+    });
+
+    it("throws when folder belongs to another user", async () => {
+      findUniqueMock.mockResolvedValueOnce({
+        id: "f_user",
+        userId: "u_other",
+        name: "X",
+        isSystem: false,
+        ttlDays: null,
+      });
+      await expect(renameFolder("u_1", "f_user", "Y")).rejects.toMatchObject({
+        code: "FOLDER_NOT_FOUND",
+      });
+    });
+  });
+
+  describe("deleteFolder", () => {
+    it("reassigns CVs and deletes folder in a transaction", async () => {
+      // Pre-flight findUnique: returns the folder to delete (non-system)
+      findUniqueMock.mockResolvedValueOnce({
+        id: "f_user",
+        userId: "u_1",
+        name: "Old",
+        isSystem: false,
+        ttlDays: null,
+      });
+      // Transaction findUnique: returns the target folder
+      findUniqueMock.mockResolvedValueOnce({
+        id: "f_target",
+        userId: "u_1",
+        name: "Target",
+        isSystem: false,
+        ttlDays: null,
+      });
+      await deleteFolder("u_1", "f_user", "f_target");
+      expect(updateManyMock).toHaveBeenCalledTimes(1);
+      expect(deleteMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("rejects deletion of system folder", async () => {
+      findUniqueMock.mockResolvedValueOnce({
+        id: "f_trash",
+        userId: "u_1",
+        name: "Corbeille",
+        isSystem: true,
+        ttlDays: 30,
+      });
+      await expect(
+        deleteFolder("u_1", "f_trash", "f_target"),
+      ).rejects.toMatchObject({ code: "FOLDER_IS_SYSTEM" });
     });
   });
 });

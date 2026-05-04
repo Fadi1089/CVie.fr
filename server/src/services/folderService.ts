@@ -89,3 +89,85 @@ export async function createFolder(
     data: { userId, name, isSystem: false, ttlDays: null },
   })) as FolderRow;
 }
+
+export async function listFolders(userId: string): Promise<FolderRow[]> {
+  return prisma.folder.findMany({
+    where: { userId },
+    orderBy: [{ isSystem: "desc" }, { createdAt: "asc" }],
+  });
+}
+
+export async function renameFolder(
+  userId: string,
+  folderId: string,
+  rawName: string,
+): Promise<FolderRow> {
+  const name = normalizeName(rawName);
+  if (name.length === 0 || name.length > MAX_FOLDER_NAME_LENGTH) {
+    throw new FolderError(
+      "VALIDATION",
+      `Folder name must be between 1 and ${MAX_FOLDER_NAME_LENGTH} characters.`,
+    );
+  }
+
+  const folder = await prisma.folder.findUnique({ where: { id: folderId } });
+  if (!folder || folder.userId !== userId) {
+    throw new FolderError("FOLDER_NOT_FOUND", "Folder not found.");
+  }
+  if (folder.isSystem) {
+    throw new FolderError(
+      "FOLDER_IS_SYSTEM",
+      "System folders cannot be renamed.",
+    );
+  }
+
+  const folded = caseFold(name);
+  const peers = await prisma.folder.findMany({
+    where: { userId, NOT: { id: folderId } },
+    select: { name: true },
+  });
+  if (peers.some((p) => caseFold(p.name) === folded)) {
+    throw new FolderError(
+      "FOLDER_NAME_CONFLICT",
+      "A folder with this name already exists.",
+    );
+  }
+
+  return prisma.folder.update({
+    where: { id: folderId },
+    data: { name },
+  });
+}
+
+export async function deleteFolder(
+  userId: string,
+  folderId: string,
+  moveCvsTo: string,
+): Promise<void> {
+  // Pre-flight checks outside the transaction so error codes are stable.
+  const folder = await prisma.folder.findUnique({ where: { id: folderId } });
+  if (!folder || folder.userId !== userId) {
+    throw new FolderError("FOLDER_NOT_FOUND", "Folder not found.");
+  }
+  if (folder.isSystem) {
+    throw new FolderError(
+      "FOLDER_IS_SYSTEM",
+      "System folders cannot be deleted.",
+    );
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const target = await tx.folder.findUnique({ where: { id: moveCvsTo } });
+    if (!target || target.userId !== userId) {
+      throw new FolderError(
+        "TARGET_FOLDER_NOT_FOUND",
+        "Target folder not found.",
+      );
+    }
+    await tx.cv.updateMany({
+      where: { folderId, userId },
+      data: { folderId: moveCvsTo },
+    });
+    await tx.folder.delete({ where: { id: folderId } });
+  });
+}
