@@ -4,18 +4,24 @@ const folderFindFirstMock = mock(async (_args: unknown) => null as unknown);
 const cvFindUniqueMock = mock(async (_args: unknown) => null as unknown);
 const cvFindManyMock = mock(async (_args: unknown) => [] as unknown[]);
 const cvCountMock = mock(async (_args: unknown) => 0);
-const cvCreateMock = mock(async (args: { data: Record<string, unknown> }) => ({
-  id: "cv_new",
-  ...args.data,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-}));
-const cvUpdateMock = mock(async (args: { where: unknown; data: Record<string, unknown> }) => ({
-  id: "cv_1",
-  ...args.data,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-}));
+const cvCreateMock = mock(
+  async (args: { data: Record<string, unknown> }) =>
+    ({
+      id: "cv_new",
+      ...args.data,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }) as Record<string, unknown>,
+);
+const cvUpdateMock = mock(
+  async (args: { where: unknown; data: Record<string, unknown> }) =>
+    ({
+      id: "cv_1",
+      ...args.data,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }) as Record<string, unknown>,
+);
 const cvDeleteMock = mock(async (_args: unknown) => undefined as unknown);
 const cvCreateManyMock = mock(async (_args: unknown) => ({ count: 0 }));
 
@@ -211,7 +217,9 @@ describe("cvService", () => {
         updatedAt: new Date(),
       });
       await patchCv("u_1", "cv_1", { title: "New" });
-      const call = cvUpdateMock.mock.calls[0]?.[0] as { data: { title: string } };
+      const call = cvUpdateMock.mock.calls[0]?.[0] as unknown as {
+        data: { title: string };
+      };
       expect(call.data.title).toBe("New");
     });
 
