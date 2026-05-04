@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createBrowserRouter, Link, Navigate, Outlet, useSearchParams } from "react-router";
 import { renderCvHtml, sampleCv } from "@cvie/shared";
+import { useAuth0 } from "@auth0/auth0-react";
 import { Auth0ProviderWithNavigate, AuthCallback, useMe } from "./features/auth";
+import { ImportLocalCvsModal } from "./features/cv-library/components/ImportLocalCvsModal";
+import { LocalCvStore } from "./features/cv-library/store/LocalCvStore";
+import type { AnonExport } from "./features/cv-library/store/types";
 import { CvEditor } from "./features/editor";
 import { EditorErrorBoundary } from "./features/editor/components/EditorErrorBoundary";
 import {
@@ -248,13 +252,68 @@ function MeBootstrap() {
   return null;
 }
 
+function MigrationGate() {
+  const { isAuthenticated, user } = useAuth0();
+  const [records, setRecords] = useState<AnonExport[]>([]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.sub) return;
+    let alive = true;
+    void (async () => {
+      const anon = new LocalCvStore({ namespace: "anon" });
+      const list = await anon.listActive();
+      const promises = list.map(async (r) => {
+        const data = await anon.read(r.id);
+        if (!data) return null;
+        return {
+          id: r.id,
+          title: r.title,
+          templateId: r.templateId,
+          data,
+          updatedAt: r.updatedAt,
+        } satisfies AnonExport;
+      });
+      const all = (await Promise.all(promises)).filter(
+        (r): r is AnonExport => r !== null,
+      );
+      if (alive) setRecords(all);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [isAuthenticated, user?.sub]);
+
+  if (!isAuthenticated || !user?.sub || records.length === 0) return null;
+  return (
+    <ImportLocalCvsModal
+      sub={user.sub}
+      anonRecords={records}
+      onImport={async (rs) => {
+        // Use the active store via a local DbCvStore; library refresh on
+        // editor remount fetches the imported set.
+        return importViaStore(user.sub!, rs);
+      }}
+    />
+  );
+}
+
 function RootLayout() {
   return (
     <Auth0ProviderWithNavigate>
       <MeBootstrap />
+      <MigrationGate />
       <Outlet />
     </Auth0ProviderWithNavigate>
   );
+}
+
+async function importViaStore(sub: string, records: AnonExport[]) {
+  const local = new LocalCvStore({ namespace: `user-${sub}` });
+  const db = new (await import("./features/cv-library/store/DbCvStore")).DbCvStore({
+    namespace: `user-${sub}`,
+    local,
+  });
+  return db.bulkImport(records);
 }
 
 export const router = createBrowserRouter([

@@ -4,3 +4,4 @@ export * from "./avatar";
 export * from "./cv";
 export * from "./cvImport";
 export * from "./cvTranslate";
+export { folderRoutes } from "./folders";

@@ -32,15 +32,19 @@ describe("GET /me", () => {
   });
 
   it("returns user row when authenticated", async () => {
-    findUniqueMock.mockResolvedValueOnce({
-      id: "u_1",
-      auth0Sub: "auth0|abc",
-      email: "j@e.com",
-      username: null,
-      createdAt: new Date("2026-04-29"),
-      updatedAt: new Date("2026-04-29"),
-      deletedAt: null,
-    } as never);
+    // requireAuth calls findUnique first to resolve userId, then the route
+    // handler calls findUnique again to fetch the full user profile.
+    findUniqueMock
+      .mockResolvedValueOnce({ id: "u_1" } as never) // requireAuth lookup
+      .mockResolvedValueOnce({
+        id: "u_1",
+        auth0Sub: "auth0|abc",
+        email: "j@e.com",
+        username: null,
+        createdAt: new Date("2026-04-29"),
+        updatedAt: new Date("2026-04-29"),
+        deletedAt: null,
+      } as never); // route handler lookup
     const res = await buildApp({ sub: "auth0|abc", email: "j@e.com" }).request("/me");
     expect(res.status).toBe(200);
     const body = (await res.json()) as { id: string; email: string };
@@ -49,7 +53,11 @@ describe("GET /me", () => {
   });
 
   it("returns 404 when authenticated but no row exists (race-after-failed-upsert)", async () => {
-    findUniqueMock.mockResolvedValueOnce(null);
+    // requireAuth finds the user row (userId resolved), but route handler
+    // finds no detailed row (simulates race after a failed upsert).
+    findUniqueMock
+      .mockResolvedValueOnce({ id: "u_1" } as never) // requireAuth lookup
+      .mockResolvedValueOnce(null as never);          // route handler lookup
     const res = await buildApp({ sub: "auth0|abc", email: "j@e.com" }).request("/me");
     expect(res.status).toBe(404);
   });

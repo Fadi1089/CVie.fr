@@ -27,6 +27,9 @@ import {
 } from "@/components/ui/dialog";
 import { AutofillSyncContext, useAutofillSync } from "../hooks/useAutofillSync";
 import { useCvDraft, type PersistStatus } from "../hooks/useCvDraft";
+import { useAuth0 } from "@auth0/auth0-react";
+import { SyncStatusBadge } from "@/features/cv-library/components/SyncStatusBadge";
+import type { SyncStatus } from "@/features/cv-library/store/types";
 import {
   CV_SCALE_DEFAULT,
   CV_SCALE_MAX,
@@ -604,10 +607,17 @@ function EditorHeader({
   overflowMode: OverflowMode;
   resetDraft: () => void;
 }) {
-  const persistText =
+  const { isAuthenticated } = useAuth0();
+  const badgeStatus: SyncStatus =
     persistStatus === "failed"
-      ? "⚠ Sauvegarde locale en échec"
-      : "Brouillon enregistré localement";
+      ? "error"
+      : persistStatus === "saving"
+        ? "saving"
+        : persistStatus === "offline"
+          ? "offline"
+          : persistStatus === "saved"
+            ? "saved"
+            : "idle";
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-[var(--color-rule)] bg-[var(--color-paper)]/85 px-6 backdrop-blur">
       <div className="flex min-w-0 items-baseline gap-3">
@@ -616,16 +626,8 @@ function EditorHeader({
         </h1>
       </div>
       <div className="flex items-center gap-3">
-        <span
-          className={cn(
-            "font-mono-caps hidden text-[10px] sm:block",
-            persistStatus === "failed"
-              ? "text-red-700"
-              : "text-[var(--color-ink-soft)]",
-          )}
-          role={persistStatus === "failed" ? "alert" : undefined}
-        >
-          {persistText}
+        <span className="hidden sm:inline">
+          <SyncStatusBadge status={badgeStatus} authed={isAuthenticated} />
         </span>
         <ScaleSlider scale={scale} setScale={setScale} resetScale={resetScale} />
         <CvImportButton />
