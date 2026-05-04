@@ -5,6 +5,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { Auth0ProviderWithNavigate, AuthCallback, useMe } from "./features/auth";
 import { ImportLocalCvsModal } from "./features/cv-library/components/ImportLocalCvsModal";
 import { LocalCvStore } from "./features/cv-library/store/LocalCvStore";
+import { useCvLibrary } from "./features/cv-library/hooks/useCvLibrary";
 import type { AnonExport } from "./features/cv-library/store/types";
 import { CvEditor } from "./features/editor";
 import { EditorErrorBoundary } from "./features/editor/components/EditorErrorBoundary";
@@ -272,6 +273,7 @@ function MeBootstrap() {
 
 function MigrationGate() {
   const { isAuthenticated, user } = useAuth0();
+  const lib = useCvLibrary();
   const [records, setRecords] = useState<AnonExport[]>([]);
 
   useEffect(() => {
@@ -306,11 +308,10 @@ function MigrationGate() {
     <ImportLocalCvsModal
       sub={user.sub}
       anonRecords={records}
-      onImport={async (rs) => {
-        // Use the active store via a local DbCvStore; library refresh on
-        // editor remount fetches the imported set.
-        return importViaStore(user.sub!, rs);
-      }}
+      // The hook's bulkImport routes through useCvStore → DbCvStore with the
+      // auth-injecting fetch from useAuthApi. A locally-constructed DbCvStore
+      // here would miss the bearer and 401 silently.
+      onImport={(rs) => lib.bulkImport(rs)}
     />
   );
 }
@@ -323,15 +324,6 @@ function RootLayout() {
       <Outlet />
     </Auth0ProviderWithNavigate>
   );
-}
-
-async function importViaStore(sub: string, records: AnonExport[]) {
-  const local = new LocalCvStore({ namespace: `user-${sub}` });
-  const db = new (await import("./features/cv-library/store/DbCvStore")).DbCvStore({
-    namespace: `user-${sub}`,
-    local,
-  });
-  return db.bulkImport(records);
 }
 
 export const router = createBrowserRouter([
