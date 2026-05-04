@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import type { Folder } from "../store/types";
 
 type Props = {
@@ -19,13 +20,15 @@ export function DeleteFolderModal({
   const [target, setTarget] = useState(reassignTargets[0]?.id ?? "");
   const [busy, setBusy] = useState(false);
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
     >
-      <div className="atelier-paper w-full max-w-md rounded-lg p-6 shadow-2xl">
+      <div className="w-full max-w-md rounded-lg bg-[var(--color-paper)] p-6 shadow-2xl">
         <h2 className="font-display mb-3 text-[20px] tracking-[-0.02em]">
           Supprimer "{folder.name}"&nbsp;?
         </h2>
@@ -72,6 +75,7 @@ export function DeleteFolderModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

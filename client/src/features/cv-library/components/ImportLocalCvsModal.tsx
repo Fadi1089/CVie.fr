@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import type { AnonExport, ImportResult } from "../store/types";
 
 type Props = {
@@ -72,14 +73,19 @@ export function ImportLocalCvsModal({ sub, anonRecords, onImport }: Props) {
     setOpen(false);
   };
 
-  return (
+  // Portal to <body> so the dialog escapes any ancestor stacking/transform
+  // context (e.g. the editor's flex/overflow tree) that would otherwise
+  // collapse `position: fixed` to a non-viewport containing block.
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-label="Importer les CV locaux"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
     >
-      <div className="atelier-paper w-full max-w-md rounded-lg p-6 shadow-2xl">
+      <div className="w-full max-w-md rounded-lg bg-[var(--color-paper)] p-6 shadow-2xl">
         <h2 className="font-display mb-3 text-[22px] tracking-[-0.02em]">
           Importer vos CV locaux ?
         </h2>
@@ -120,6 +126,7 @@ export function ImportLocalCvsModal({ sub, anonRecords, onImport }: Props) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
