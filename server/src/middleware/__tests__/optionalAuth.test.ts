@@ -49,7 +49,10 @@ beforeEach(async () => {
 });
 
 async function buildApp() {
-  const { optionalAuth } = await import("../optionalAuth");
+  const { optionalAuth, __resetUserUpsertCacheForTests } = await import(
+    "../optionalAuth"
+  );
+  __resetUserUpsertCacheForTests();
   const app = new Hono();
   app.use("*", optionalAuth());
   app.get("/probe", (c) =>
@@ -85,6 +88,25 @@ describe("optionalAuth middleware", () => {
     expect(body.claims?.sub).toBe("google-oauth2|108472");
     expect(body.claims?.email).toBe("jane@example.com");
     expect(upsertMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips re-upsert for the same sub within the TTL", async () => {
+    const app = await buildApp();
+    const token = await signWithKid({
+      sub: "google-oauth2|108472",
+      "https://cvie.fr/email": "jane@example.com",
+    });
+    const headers = { authorization: `Bearer ${token}` };
+    const r1 = await app.request("/probe", { headers });
+    const r2 = await app.request("/probe", { headers });
+    expect(r1.status).toBe(200);
+    expect(r2.status).toBe(200);
+    // First request writes, second is a cache hit — only one DB round-trip.
+    expect(upsertMock).toHaveBeenCalledTimes(1);
+    const body = (await r2.json()) as {
+      claims: { sub: string; email: string } | null;
+    };
+    expect(body.claims?.sub).toBe("google-oauth2|108472");
   });
 
   it("treats tokens missing the custom email claim as anonymous", async () => {

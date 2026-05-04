@@ -23,6 +23,18 @@ function readEnv(): { domain: string; audience: string; issuer: string } {
   return { domain, audience, issuer };
 }
 
+// In-memory cache: Auth0 sub -> last successful upsert epoch ms. Skips the DB
+// round-trip on subsequent authed requests within the TTL. Tokens last 24h
+// in prod, so a 5-minute window catches the hot path without holding stale
+// rows: the first request per session writes, the rest read claims only.
+const USER_UPSERT_CACHE = new Map<string, number>();
+const USER_UPSERT_TTL_MS = 5 * 60_000;
+
+/** Test-only — clear the upsert cache between specs. */
+export function __resetUserUpsertCacheForTests(): void {
+  USER_UPSERT_CACHE.clear();
+}
+
 export function optionalAuth(): MiddlewareHandler {
   const { domain, audience, issuer } = readEnv();
   const verify = jwk({
@@ -63,15 +75,22 @@ export function optionalAuth(): MiddlewareHandler {
     }
 
     if (claims) {
-      try {
-        await upsertUserByAuth0Sub(claims);
+      const lastUpsert = USER_UPSERT_CACHE.get(claims.sub) ?? 0;
+      const fresh = Date.now() - lastUpsert < USER_UPSERT_TTL_MS;
+      if (fresh) {
         c.set("userClaims", claims);
-      } catch (err) {
-        console.warn(
-          "[optionalAuth] user upsert failed; treating as anon:",
-          (err as Error).message,
-        );
-        c.set("userClaims", null);
+      } else {
+        try {
+          await upsertUserByAuth0Sub(claims);
+          USER_UPSERT_CACHE.set(claims.sub, Date.now());
+          c.set("userClaims", claims);
+        } catch (err) {
+          console.warn(
+            "[optionalAuth] user upsert failed; treating as anon:",
+            (err as Error).message,
+          );
+          c.set("userClaims", null);
+        }
       }
     }
 

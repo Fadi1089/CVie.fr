@@ -6,7 +6,7 @@ import { cvRoutes } from "./routes/cv";
 import { avatarRoutes } from "./routes/avatar";
 import { cvImportRoutes } from "./routes/cvImport";
 import { cvTranslateRoutes } from "./routes/cvTranslate";
-import { shutdownPdfService } from "./services/pdfService";
+import { shutdownPdfService, warmupPdfService } from "./services/pdfService";
 
 const app = new Hono();
 
@@ -29,6 +29,10 @@ app.use("/*", serveStatic({ root: "../client/dist" }));
 
 // SPA fallback — serve index.html for all unmatched non-API routes
 app.get("*", serveStatic({ root: "../client/dist", path: "index.html" }));
+
+// Pre-launch Chromium so the first /pdf request doesn't pay cold-start cost.
+// Fire-and-forget: server starts immediately, browser warms in the background.
+void warmupPdfService();
 
 // Release Chromium on shutdown so it doesn't leak on deploy restarts.
 for (const sig of ["SIGTERM", "SIGINT"] as const) {
