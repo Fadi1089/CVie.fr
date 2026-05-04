@@ -4,9 +4,7 @@ import { requireAuth } from "../middleware/requireAuth";
 
 export const authRoutes = new Hono();
 
-authRoutes.use("*", requireAuth());
-
-authRoutes.get("/me", async (c) => {
+authRoutes.get("/me", requireAuth(), async (c) => {
   const claims = c.get("userClaims");
   if (!claims) {
     return c.json(
