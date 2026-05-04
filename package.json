@@ -21,11 +21,16 @@
 		"lint": "turbo lint",
 		"type-check": "turbo type-check",
 		"test": "turbo test",
+		"sync:figma-templates": "bun run scripts/sync-figma-templates.ts",
+		"generate:template-css": "bun run scripts/generate-template-css.ts",
+		"check:template-css": "bun run scripts/generate-template-css.ts --check",
+		"smoke:template-previews": "bun run scripts/smoke-template-previews.ts",
 		"postinstall": "turbo build --filter=@cvie/shared && bunx playwright install chromium"
 	},
 	"devDependencies": {
 		"bun-types": "latest",
 		"dotenv": "^17.4.2",
+		"jose": "^6.2.3",
 		"prisma": "^7.7.0",
 		"turbo": "^2.6.3"
 	},
@@ -33,6 +38,8 @@
 		"typescript": "^5.8.3"
 	},
 	"dependencies": {
-		"@prisma/adapter-neon": "^7.7.0"
+		"@auth0/auth0-react": "^2.16.2",
+		"@prisma/adapter-neon": "^7.7.0",
+		"@prisma/client": "^7.8.0"
 	}
 }

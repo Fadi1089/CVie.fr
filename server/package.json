@@ -13,7 +13,7 @@
     "build": "tsc",
     "dev": "bun --env-file=../.env --watch run src/index.ts",
     "type-check": "tsc --noEmit",
-    "test": "bun test --preload ./test-setup.ts src/middleware src/services/__tests__ && bun test --preload ./test-setup.ts src/routes/__tests__"
+    "test": "bun test --preload ./test-setup.ts src/services/__tests__ && bun test --preload ./test-setup.ts src/middleware && bun test --preload ./test-setup.ts src/routes/__tests__"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.71",
@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/pdf-parse": "^1.1.5"
+    "@types/pdf-parse": "^1.1.5",
+    "jose": "^6.2.3"
   }
 }

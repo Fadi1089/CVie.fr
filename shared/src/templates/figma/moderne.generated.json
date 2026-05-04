@@ -1,0 +1,391 @@
+{
+  "schemaVersion": 1,
+  "id": "moderne",
+  "name": "Moderne",
+  "source": {
+    "fileKey": "25iovEf8CZdNuAlo8n9P1h",
+    "pageId": "5:2",
+    "pageName": "Moderne",
+    "rootNodeId": "9:2"
+  },
+  "sourceNodeIds": {
+    "contact": [
+      "9:8"
+    ],
+    "contact.city": [
+      "25:15"
+    ],
+    "contact.email": [
+      "25:6"
+    ],
+    "contact.phone": [
+      "25:10"
+    ],
+    "contact.portfolio": [
+      "25:21"
+    ],
+    "entry": [
+      "10:5",
+      "10:11",
+      "10:20",
+      "10:28"
+    ],
+    "entry.body": [
+      "10:10",
+      "10:16"
+    ],
+    "entry.bullet": [
+      "10:25",
+      "10:26",
+      "10:27",
+      "10:33",
+      "10:34"
+    ],
+    "entry.date": [
+      "10:8",
+      "10:14",
+      "10:23",
+      "10:31"
+    ],
+    "entry.header": [
+      "10:6",
+      "10:12",
+      "10:21",
+      "10:29"
+    ],
+    "entry.meta": [
+      "10:9",
+      "10:15",
+      "10:24",
+      "10:32"
+    ],
+    "entry.title": [
+      "10:7",
+      "10:13",
+      "10:22",
+      "10:30"
+    ],
+    "header": [
+      "9:3"
+    ],
+    "header.identity": [
+      "9:5"
+    ],
+    "header.photo": [
+      "9:13"
+    ],
+    "header.top": [
+      "9:4"
+    ],
+    "interests.content": [
+      "11:19"
+    ],
+    "languages.content": [
+      "11:12"
+    ],
+    "languages.item": [
+      "11:13",
+      "11:14",
+      "11:15"
+    ],
+    "portfolio.qrBox": [
+      "82:3"
+    ],
+    "portfolio.qrLabel": [
+      "85:3"
+    ],
+    "section": [
+      "10:2",
+      "10:17",
+      "11:2",
+      "11:9",
+      "11:16"
+    ],
+    "section.title": [
+      "10:4",
+      "10:19",
+      "11:4",
+      "11:11",
+      "11:18"
+    ],
+    "section.titleWrap": [
+      "10:3",
+      "10:18",
+      "11:3",
+      "11:10",
+      "11:17"
+    ],
+    "skills.item": [
+      "19:3",
+      "19:4",
+      "19:5",
+      "19:6"
+    ],
+    "skills.list": [
+      "19:2"
+    ],
+    "template": [
+      "9:2"
+    ],
+    "text.headline": [
+      "9:7"
+    ],
+    "text.name": [
+      "9:6"
+    ],
+    "text.summary": [
+      "9:14"
+    ]
+  },
+  "page": {
+    "widthPx": 793.7008056640625,
+    "heightPx": 1122.5196533203125
+  },
+  "colors": {
+    "canvasBackground": "#e9e6e0",
+    "pageBackground": "#ffffff",
+    "text": "#111111",
+    "muted": "#3a3a3a",
+    "accent": "#a8421e",
+    "rule": "#a8421e",
+    "photoBackground": "#f3f0ea",
+    "photoBorder": "#111111",
+    "portfolioQrBackground": "#f3f0ea",
+    "portfolioQrBorder": "#111111"
+  },
+  "typography": {
+    "body": {
+      "nodeId": "9:14",
+      "fontFamily": "IBM Plex Sans",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 10.5,
+      "lineHeight": 1.5,
+      "letterSpacingEm": 0,
+      "color": "#222222",
+      "textTransform": "none"
+    },
+    "name": {
+      "nodeId": "9:6",
+      "fontFamily": "Fraunces",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 32,
+      "lineHeight": 1.05,
+      "letterSpacingEm": -0.01,
+      "color": "#111111",
+      "textTransform": "none",
+      "frameHeightMm": 13.7583
+    },
+    "headline": {
+      "nodeId": "9:7",
+      "fontFamily": "IBM Plex Sans",
+      "fontStyle": "Bold",
+      "fontWeight": 700,
+      "fontSizePt": 10.5,
+      "lineHeight": 1.3,
+      "letterSpacingEm": 0.02,
+      "color": "#3a3a3a",
+      "textTransform": "uppercase"
+    },
+    "contact": {
+      "nodeId": "25:6",
+      "fontFamily": "IBM Plex Sans",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 9,
+      "lineHeight": 1.3,
+      "letterSpacingEm": 0.02,
+      "color": "#3a3a3a",
+      "textTransform": "none"
+    },
+    "summary": {
+      "nodeId": "9:14",
+      "fontFamily": "Fraunces",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 11.25,
+      "lineHeight": 1.55,
+      "letterSpacingEm": 0,
+      "color": "#222222",
+      "textTransform": "none"
+    },
+    "sectionTitle": {
+      "nodeId": "10:4",
+      "fontFamily": "Fraunces",
+      "fontStyle": "BoldItalic",
+      "fontWeight": 700,
+      "fontSizePt": 13,
+      "lineHeight": 1.5,
+      "letterSpacingEm": 0.01,
+      "color": "#111111",
+      "textTransform": "none"
+    },
+    "entryTitle": {
+      "nodeId": "10:7",
+      "fontFamily": "IBM Plex Sans",
+      "fontStyle": "Regular",
+      "fontWeight": 600,
+      "fontSizePt": 11,
+      "lineHeight": 1.3,
+      "letterSpacingEm": 0.005,
+      "color": "#111111",
+      "textTransform": "none"
+    },
+    "entryDate": {
+      "nodeId": "10:8",
+      "fontFamily": "IBM Plex Sans",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 9,
+      "lineHeight": 1.3,
+      "letterSpacingEm": 0.01,
+      "color": "#6a5a52",
+      "textTransform": "none"
+    },
+    "entryMeta": {
+      "nodeId": "10:9",
+      "fontFamily": "IBM Plex Sans",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 10.75,
+      "lineHeight": 1.5,
+      "letterSpacingEm": 0,
+      "color": "#3a3a3a",
+      "textTransform": "none"
+    },
+    "entryBody": {
+      "nodeId": "10:10",
+      "fontFamily": "IBM Plex Sans",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 10.75,
+      "lineHeight": 1.5,
+      "letterSpacingEm": 0,
+      "color": "#2a2a2a",
+      "textTransform": "none"
+    },
+    "listItem": {
+      "nodeId": "19:3",
+      "fontFamily": "IBM Plex Sans",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 10,
+      "lineHeight": 1.5,
+      "letterSpacingEm": 0,
+      "color": "#111111",
+      "textTransform": "none"
+    },
+    "portfolioQrLabel": {
+      "nodeId": "85:3",
+      "fontFamily": "IBM Plex Sans",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSizePt": 7.5,
+      "lineHeight": 1.3,
+      "letterSpacingEm": 0,
+      "color": "#3a3a3a",
+      "textTransform": "none",
+      "frameHeightMm": 15.875
+    }
+  },
+  "layout": {
+    "pagePaddingMm": {
+      "top": 6.35,
+      "right": 6.35,
+      "bottom": 6.35,
+      "left": 6.35
+    },
+    "rootGapMm": 5,
+    "headerGapMm": 8,
+    "headerPaddingBottomMm": 3,
+    "headerMarginBottomMm": 5,
+    "headerBorderBottomWeightPt": 0.75,
+    "headerIdentityBorderLeftWeightPt": 0.75,
+    "headerIdentityBorderRadiiMm": {
+      "topLeft": 0,
+      "topRight": 0,
+      "bottomLeft": 0,
+      "bottomRight": 0
+    },
+    "headerIdentityPaddingMm": {
+      "top": 0,
+      "right": 0,
+      "bottom": 0,
+      "left": 0
+    },
+    "headerIdentityItemSpacingMm": 1.5,
+    "headerSummaryGapMm": 3.5,
+    "photoSizeMm": {
+      "width": 26,
+      "height": 26
+    },
+    "photoStrokeWeightPt": 1.5,
+    "photoBorderRadiusMm": 0,
+    "portfolioQrSizeMm": {
+      "width": 26,
+      "height": 26
+    },
+    "portfolioQrStrokeWeightPt": 1.5,
+    "portfolioQrRadiusMm": 0,
+    "sectionGapMm": 5,
+    "sectionPaddingBottomMm": 0,
+    "sectionTitleBorderWeightPt": 0.5,
+    "sectionTitleBorderRadiiMm": {
+      "topLeft": 0,
+      "topRight": 0,
+      "bottomLeft": 0,
+      "bottomRight": 0
+    },
+    "sectionTitleMarginBottomMm": 2.5,
+    "sectionTitlePaddingMm": {
+      "top": 0,
+      "right": 0,
+      "bottom": 1,
+      "left": 0
+    },
+    "entryGapMm": 2.5,
+    "entryHeaderGapMm": 4
+  },
+  "bullets": {
+    "entry": {
+      "glyph": "—",
+      "fontFamily": "IBM Plex Sans",
+      "fontSizePt": 15,
+      "color": "#000000"
+    },
+    "skills": {
+      "glyph": "•",
+      "fontFamily": "IBM Plex Sans",
+      "fontSizePt": 15.75,
+      "color": "#111111"
+    }
+  },
+  "sections": [
+    {
+      "id": "formations",
+      "nodeId": "10:2",
+      "titleNodeId": "10:4"
+    },
+    {
+      "id": "experiences",
+      "nodeId": "10:17",
+      "titleNodeId": "10:19"
+    },
+    {
+      "id": "skills",
+      "nodeId": "11:2",
+      "titleNodeId": "11:4"
+    },
+    {
+      "id": "languages",
+      "nodeId": "11:9",
+      "titleNodeId": "11:11"
+    },
+    {
+      "id": "interests",
+      "nodeId": "11:16",
+      "titleNodeId": "11:18"
+    }
+  ]
+}

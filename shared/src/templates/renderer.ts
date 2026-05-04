@@ -4,6 +4,7 @@ import type {
   Formation,
   Interest,
   Language,
+  Palette,
   PersonalInfo,
   Skill,
 } from "../types/cv";
@@ -66,15 +67,16 @@ export function renderCvHtml(
       : 1;
 
   const safeMode = normalizeOverflowMode(overflowMode);
+  const paletteCss = renderPaletteOverride(data.appearance?.palette);
 
   return `<!DOCTYPE html>
-<html lang="fr" style="--cv-scale: ${safeScale}">
+<html lang="fr" style="${renderRootStyle(safeScale, data.appearance?.textSizes, data.appearance?.mediaSize, data.appearance?.spacing)}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${title}</title>
 <style>${css}
-${BASE_PAGE_CSS}</style>
+${BASE_PAGE_CSS}${paletteCss}</style>
 </head>
 <body style="margin:0">
 <div class="cv-canvas">
@@ -101,12 +103,16 @@ const BASE_PAGE_CSS = `
 /* ==== renderer-owned page geometry (cascade last, template-independent) ==== */
 @page {
   size: A4;
-  margin: 0.25in;
+  margin: calc(0.25in + var(--cv-space-page-delta, 0mm));
+}
+.cv-canvas {
+  background: transparent;
+  padding: 5px 0 0;
 }
 .cv {
   width: 210mm;
   min-height: 297mm;
-  padding: 0.25in;
+  padding: calc(0.25in + var(--cv-space-page-delta, 0mm));
   box-sizing: border-box;
 }
 
@@ -157,9 +163,12 @@ const BASE_PAGE_CSS = `
   position: relative;
 }
 
-.cv header.has-portfolio-qr .header-top,
-.cv header.has-portfolio-qr .summary {
+.cv header.has-portfolio-qr .header-top {
   padding-right: 24mm;
+}
+
+.cv header .job-title {
+  white-space: nowrap;
 }
 
 .cv .portfolio-qr {
@@ -167,18 +176,14 @@ const BASE_PAGE_CSS = `
   top: 0;
   right: 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: row-reverse;
   align-items: center;
-  gap: 1.2mm;
+  gap: 1.5mm;
 }
 
 .cv .portfolio-qr-label {
-  display: inline-block;
   margin: 0;
-  font-family: "Inter", -apple-system, "Helvetica Neue", Arial, sans-serif;
-  font-size: 7.5pt;
-  line-height: 1.1;
-  color: #5e5d59;
+  writing-mode: sideways-lr;
   text-align: center;
   user-select: none;
   -webkit-user-select: none;
@@ -329,6 +334,117 @@ const PAGINATION_SCRIPT = `
       }
       lastPostedHeight = -1;
       schedule();
+      return;
+    }
+    if (data.type === 'cv-text-deltas') {
+      var roles = ['paragraph', 'header', 'title'];
+      var ranges = {
+        paragraph: [-3, 5],
+        header: [-3, 5],
+        title: [-4, 6],
+      };
+      var nextDeltas = data.deltas || {};
+      var changed = false;
+      for (var i = 0; i < roles.length; i++) {
+        var role = roles[i];
+        var raw = nextDeltas[role];
+        var prop = '--cv-text-' + role + '-delta';
+        if (typeof raw !== 'number' || !isFinite(raw)) {
+          if (document.documentElement.style.getPropertyValue(prop)) {
+            document.documentElement.style.removeProperty(prop);
+            changed = true;
+          }
+          continue;
+        }
+        var lo = ranges[role][0];
+        var hi = ranges[role][1];
+        if (raw < lo) raw = lo;
+        if (raw > hi) raw = hi;
+        var next = raw + 'pt';
+        if (document.documentElement.style.getPropertyValue(prop) !== next) {
+          document.documentElement.style.setProperty(prop, next);
+          changed = true;
+        }
+      }
+      if (changed) {
+        lastPostedHeight = -1;
+        schedule();
+      }
+      return;
+    }
+    if (data.type === 'cv-media-delta') {
+      var mediaRaw = Number(data.value);
+      var mediaProp = '--cv-media-delta';
+      if (!isFinite(mediaRaw)) {
+        if (document.documentElement.style.getPropertyValue(mediaProp)) {
+          document.documentElement.style.removeProperty(mediaProp);
+          lastPostedHeight = -1;
+          schedule();
+        }
+        return;
+      }
+      if (mediaRaw < -8) mediaRaw = -8;
+      if (mediaRaw > 12) mediaRaw = 12;
+      var nextMedia = mediaRaw + 'mm';
+      if (document.documentElement.style.getPropertyValue(mediaProp) !== nextMedia) {
+        document.documentElement.style.setProperty(mediaProp, nextMedia);
+        lastPostedHeight = -1;
+        schedule();
+      }
+      return;
+    }
+    if (data.type === 'cv-space-deltas') {
+      var spaceMap = [
+        { key: 'pageMargin', prop: '--cv-space-page-delta', lo: -6, hi: 8 },
+        { key: 'sectionGap', prop: '--cv-space-section-delta', lo: -3, hi: 8 },
+        { key: 'itemGap', prop: '--cv-space-item-delta', lo: -2, hi: 6 },
+      ];
+      var spaceDeltas = data.deltas || {};
+      var spaceChanged = false;
+      for (var si = 0; si < spaceMap.length; si++) {
+        var entry = spaceMap[si];
+        var spaceRaw = spaceDeltas[entry.key];
+        if (typeof spaceRaw !== 'number' || !isFinite(spaceRaw)) {
+          if (document.documentElement.style.getPropertyValue(entry.prop)) {
+            document.documentElement.style.removeProperty(entry.prop);
+            spaceChanged = true;
+          }
+          continue;
+        }
+        if (spaceRaw < entry.lo) spaceRaw = entry.lo;
+        if (spaceRaw > entry.hi) spaceRaw = entry.hi;
+        var spaceNext = spaceRaw + 'mm';
+        if (document.documentElement.style.getPropertyValue(entry.prop) !== spaceNext) {
+          document.documentElement.style.setProperty(entry.prop, spaceNext);
+          spaceChanged = true;
+        }
+      }
+      if (spaceChanged) {
+        lastPostedHeight = -1;
+        schedule();
+      }
+      return;
+    }
+    if (data.type === 'cv-line-height-delta') {
+      var lhRaw = Number(data.value);
+      var lhProp = '--cv-line-height-delta';
+      if (!isFinite(lhRaw)) {
+        if (document.documentElement.style.getPropertyValue(lhProp)) {
+          document.documentElement.style.removeProperty(lhProp);
+          lastPostedHeight = -1;
+          schedule();
+        }
+        return;
+      }
+      if (lhRaw < -0.2) lhRaw = -0.2;
+      if (lhRaw > 0.4) lhRaw = 0.4;
+      var lhNext = String(lhRaw);
+      if (document.documentElement.style.getPropertyValue(lhProp) !== lhNext) {
+        document.documentElement.style.setProperty(lhProp, lhNext);
+        lastPostedHeight = -1;
+        schedule();
+      }
+      return;
     }
   });
 
@@ -358,11 +474,34 @@ const PAGINATION_SCRIPT = `
     return el;
   }
 
+  // Header job-title sits in a fixed-width Figma slot. Long titles overflow
+  // horizontally and visually collide with the contact strip below. Shrink
+  // font-size in 0.5px steps until the (white-space: nowrap) text fits. The
+  // inline override resets at the start of every paginate() so density-scale
+  // and text-delta changes get a fresh measurement instead of compounding.
+  function fitJobTitle() {
+    var el = document.querySelector('.cv header .job-title');
+    if (!el) return;
+    el.style.fontSize = '';
+    void el.offsetWidth;
+    var maxPx = parseFloat(getComputedStyle(el).fontSize);
+    if (!isFinite(maxPx) || maxPx <= 0) return;
+    if (el.scrollWidth <= el.clientWidth + 0.5) return;
+    var minPx = Math.max(6, maxPx * 0.5);
+    var size = maxPx;
+    var guard = 80;
+    while (el.scrollWidth > el.clientWidth + 0.5 && size > minPx && guard-- > 0) {
+      size -= 0.5;
+      el.style.fontSize = size + 'px';
+    }
+  }
+
   function paginate() {
     var wrap = document.querySelector('.cv-paginated');
     var cv = document.querySelector('.cv');
     if (!wrap || !cv) return;
 
+    fitJobTitle();
     resetPushes(cv);
     clearChrome(wrap);
     // Reset wrap height BEFORE measuring. A previous paginate() at higher
@@ -543,13 +682,36 @@ const PAGINATION_SCRIPT = `
     window.parent.postMessage(payload, '*');
   });
 
-  // Scroll-bridge: when the preview iframe captures wheel events, the outer
-  // editor scroller can appear to "stall" mid-way. Forward wheel deltas to
-  // the parent so the host pane keeps scrolling smoothly.
+  // Pinch-to-zoom bridge: trackpad pinch fires wheel + ctrlKey. Intercept
+  // those before the browser zooms the iframe document and forward the delta
+  // to the parent so it can adjust the density scale.
   window.addEventListener(
     'wheel',
     function (event) {
-      if (!event) return;
+      if (!event || !event.ctrlKey) return;
+      event.preventDefault();
+      window.parent.postMessage(
+        {
+          type: 'cv-pinch',
+          deltaY: event.deltaY,
+          deltaMode: event.deltaMode,
+          x: event.clientX,
+          y: event.clientY,
+        },
+        '*',
+      );
+    },
+    { passive: false },
+  );
+
+  // Scroll-bridge: when the preview iframe captures wheel events, the outer
+  // editor scroller can appear to "stall" mid-way. Forward wheel deltas to
+  // the parent so the host pane keeps scrolling smoothly. Skip when ctrlKey
+  // is held — that's pinch territory, handled above.
+  window.addEventListener(
+    'wheel',
+    function (event) {
+      if (!event || event.ctrlKey) return;
       window.parent.postMessage(
         {
           type: 'cv-wheel',
@@ -563,6 +725,78 @@ const PAGINATION_SCRIPT = `
   );
 })();
 `;
+
+const TEXT_SIZE_RANGES: Record<"paragraph" | "header" | "title", { min: number; max: number }> = {
+  paragraph: { min: -3, max: 5 },
+  header: { min: -3, max: 5 },
+  title: { min: -4, max: 6 },
+};
+const MEDIA_SIZE_MIN = -8;
+const MEDIA_SIZE_MAX = 12;
+const SPACE_RANGES: Record<"page" | "section" | "item", { min: number; max: number }> = {
+  page: { min: -6, max: 8 },
+  section: { min: -3, max: 8 },
+  item: { min: -2, max: 6 },
+};
+const LINE_HEIGHT_MIN = -0.2;
+const LINE_HEIGHT_MAX = 0.4;
+
+function clampNumber(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(max, Math.max(min, value));
+}
+
+function renderRootStyle(
+  scale: number,
+  textSizes: { paragraph?: number; header?: number; title?: number } | undefined,
+  mediaSize: number | undefined,
+  spacing: { pageMargin?: number; sectionGap?: number; itemGap?: number; lineHeight?: number } | undefined,
+): string {
+  const decls: string[] = [`--cv-scale: ${scale}`];
+  if (textSizes) {
+    for (const role of ["paragraph", "header", "title"] as const) {
+      const raw = textSizes[role];
+      if (Number.isFinite(raw)) {
+        const range = TEXT_SIZE_RANGES[role];
+        decls.push(`--cv-text-${role}-delta: ${clampNumber(raw as number, range.min, range.max)}pt`);
+      }
+    }
+  }
+  if (Number.isFinite(mediaSize)) {
+    decls.push(`--cv-media-delta: ${clampNumber(mediaSize as number, MEDIA_SIZE_MIN, MEDIA_SIZE_MAX)}mm`);
+  }
+  if (spacing) {
+    const spaceFields = [
+      { role: "page" as const, key: "pageMargin" as const },
+      { role: "section" as const, key: "sectionGap" as const },
+      { role: "item" as const, key: "itemGap" as const },
+    ];
+    for (const { role, key } of spaceFields) {
+      const raw = spacing[key];
+      if (Number.isFinite(raw)) {
+        const range = SPACE_RANGES[role];
+        decls.push(`--cv-space-${role}-delta: ${clampNumber(raw as number, range.min, range.max)}mm`);
+      }
+    }
+    if (Number.isFinite(spacing.lineHeight)) {
+      decls.push(`--cv-line-height-delta: ${clampNumber(spacing.lineHeight as number, LINE_HEIGHT_MIN, LINE_HEIGHT_MAX)}`);
+    }
+  }
+  return decls.join("; ");
+}
+
+/**
+ * Build a `:root` selector that overrides the palette CSS variables when the
+ * user has customized the template colors. Returns "" when no override exists
+ * — the template's baked-in defaults take effect via `var(--cv-X, #hex)`.
+ *
+ * Each hex is validated against `^#[0-9a-fA-F]{6}$` upstream by the schema,
+ * so by the time we hit this function the value is safe to interpolate.
+ */
+function renderPaletteOverride(palette: Palette | undefined): string {
+  if (!palette) return "";
+  return `\n:root{--cv-accent:${palette.accent};--cv-ink:${palette.ink};--cv-soft:${palette.soft};--cv-rule:${palette.rule};--cv-canvas:${palette.canvas};}`;
+}
 
 function getTemplateCss(template: TemplateId): string {
   switch (template) {

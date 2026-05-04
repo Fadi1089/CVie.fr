@@ -157,6 +157,59 @@ export const interestSchema = z.object({
   name: z.string().max(MAX_SHORT),
 });
 
+const hexColorSchema = z
+  .string()
+  .regex(/^#[0-9a-fA-F]{6}$/i, { message: "Format couleur invalide (#RRGGBB)" });
+
+export const paletteSchema = z.object({
+  accent: hexColorSchema,
+  ink: hexColorSchema,
+  soft: hexColorSchema,
+  rule: hexColorSchema,
+  canvas: hexColorSchema,
+});
+
+export const SUPPORTED_LOCALES = ["fr", "en", "de", "es", "nl"] as const;
+export const localeSchema = z.enum(SUPPORTED_LOCALES);
+
+/** Per-role font-size delta in pt. Title range is wider — headline carries more visual weight. */
+const textSizesSchema = z
+  .object({
+    paragraph: z.number().min(-3).max(5).optional(),
+    header: z.number().min(-3).max(5).optional(),
+    title: z.number().min(-4).max(6).optional(),
+  })
+  .optional();
+
+/** Header media (photo + QR) size delta in mm. */
+const mediaSizeSchema = z.number().min(-8).max(12).optional();
+
+/**
+ * Layout spacing deltas from Figma-synced template baselines (units noted per field).
+ * A value of `0` or `undefined` means "use baseline". Negative values tighten,
+ * positive values loosen.
+ *   pageMargin  — mm, outer content padding
+ *   sectionGap  — mm, gap between major content blocks
+ *   itemGap     — mm, gap between entries inside a section
+ *   lineHeight  — unitless, additive to baseline line-height
+ */
+const spacingSchema = z
+  .object({
+    pageMargin: z.number().min(-6).max(8).optional(),
+    sectionGap: z.number().min(-3).max(8).optional(),
+    itemGap: z.number().min(-2).max(6).optional(),
+    lineHeight: z.number().min(-0.2).max(0.4).optional(),
+  })
+  .optional();
+
+export const appearanceSchema = z.object({
+  palette: paletteSchema.optional(),
+  locale: localeSchema.optional(),
+  textSizes: textSizesSchema,
+  mediaSize: mediaSizeSchema,
+  spacing: spacingSchema,
+});
+
 export const cvDataSchema = z.object({
   personalInfo: personalInfoSchema,
   formations: z.array(formationSchema).max(MAX_ARRAY).default([]),
@@ -164,4 +217,5 @@ export const cvDataSchema = z.object({
   skills: z.array(skillSchema).max(MAX_ARRAY).default([]),
   languages: z.array(languageSchema).max(MAX_ARRAY).default([]),
   interests: z.array(interestSchema).max(MAX_ARRAY).default([]),
+  appearance: appearanceSchema.optional(),
 });

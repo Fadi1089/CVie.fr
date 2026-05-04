@@ -1,33 +1,8 @@
 import { s } from "./_scaled";
 
 /**
- * Moderne CV template — "Éditorial Presse".
- *
- * Magazine-inspired layout: asymmetric header, italic display serif for
- * identity + section headings, rust accent used only for rules (never body
- * text), square photo, dates in tabular-nums, skills as inline hairline
- * row. Deliberately avoids the "premium green CV" Canva cliché.
- *
- * Accent: rust #A8421E — used for header rule, H2 rule, link underline.
- *   Kept out of body text so the ink (#111) carries the content.
- * Display: Fraunces italic (variable serif, Google Fonts) — headline.
- * Body: IBM Plex Sans (Google Fonts) — body + meta.
- *   Full fallback chain ensures offline PDF renders in Charter / Georgia
- *   / Helvetica without broken glyphs.
- *
- * Density scaling: content-owned absolute lengths are wrapped in `s()` so
- * the editor's density slider rescales them uniformly. Page geometry
- * (`@page`, `.cv`, `.cv-paginated`, `.cv-page-bg`, `.cv-canvas`,
- * `.cv-page-advisory`) stays literal — owned by the renderer. See
- * `_scaled.ts` for the full authoring rules.
- *
- * Contract — MUST match renderer.ts:
- *   - Selectors scoped under .cv / .cv-canvas / .cv-paginated / .cv-page-bg
- *   - @page A4 / margin 0 preserved for PDF pipeline
- *   - Pagination script measures :scope > header/section/article — no
- *     structural surprises that break those measurements
- *   - ATS: no position:absolute text, no pseudo-element text content that
- *     leaks into the PDF text stream
+ * @generated from Figma template Moderne.
+ * Do not edit by hand; run `bun run generate:template-css`.
  */
 export const moderneCss = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');
@@ -35,10 +10,11 @@ export const moderneCss = `
 @page {
   size: A4;
   margin: 0;
+  background: #FFFFFF;
 }
 
 .cv-canvas {
-  background: #e9e6e0;
+  background: #E9E6E0;
   padding: 24px 0 8px;
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
@@ -55,9 +31,9 @@ export const moderneCss = `
   left: 0;
   width: 210mm;
   height: 297mm;
-  background: #ffffff;
+  background: #FFFFFF;
   box-shadow:
-    0 0 0 0.75pt rgba(168, 66, 30, 0.14),
+    0 0 0 0.5pt rgba(168, 66, 30, 0.16),
     0 1px 2px rgba(10, 10, 10, 0.05),
     0 4mm 10mm -2mm rgba(10, 10, 10, 0.10),
     0 8mm 20mm -6mm rgba(10, 10, 10, 0.08);
@@ -77,7 +53,7 @@ export const moderneCss = `
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 9pt;
   line-height: 1.5;
-  color: #5a4a42;
+  color: #3A3A3A;
   text-align: center;
   padding: 0 14mm;
 }
@@ -92,21 +68,19 @@ export const moderneCss = `
 .cv-page-advisory .cv-page-advisory-rule {
   flex: 1;
   height: 1px;
-  background: linear-gradient(to right, transparent, rgba(168, 66, 30, 0.35), transparent);
+  background: linear-gradient(to right, transparent, rgba(168, 66, 30, 0.3), transparent);
 }
 
 .cv-page-advisory .cv-page-advisory-text {
-  font-style: italic;
   letter-spacing: 0.01em;
   white-space: nowrap;
 }
 
 .cv-page-advisory .cv-page-advisory-text strong {
-  font-weight: 600;
-  font-style: normal;
+  font-weight: 700;
   color: #A8421E;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   font-size: 8pt;
   margin-right: 1.5mm;
 }
@@ -150,13 +124,9 @@ export const moderneCss = `
   margin-bottom: 0.2em;
 }
 
-/* Header — asymmetric editorial masthead.
-   Name anchors left in large italic serif; photo (if present) sits right
-   as a square (not round — avoids the "startup avatar" trope). Contact row
-   is small-caps sans, pipe-separated. Rust hairline rule below. */
 .cv header {
   position: relative;
-  margin-bottom: ${s(6, "mm")};
+  margin-bottom: ${s(5, "mm")};
   padding-bottom: ${s(3, "mm")};
   border-bottom: ${s(0.75, "pt")} solid #A8421E;
 }
@@ -173,8 +143,21 @@ export const moderneCss = `
 }
 
 .cv header .header-identity {
+  position: relative;
   flex: 1;
   min-width: 0;
+  padding: ${s(0, "mm")} ${s(0, "mm")} ${s(0, "mm")} ${s(0, "mm")};
+}
+
+.cv header .header-identity::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: ${s(0.75, "pt")};
+  background: #A8421E;
+  border-radius: ${s(0, "mm")} ${s(0, "mm")} ${s(0, "mm")} ${s(0, "mm")};
 }
 
 .cv header .photo {
@@ -182,26 +165,21 @@ export const moderneCss = `
   width: ${s(26, "mm")};
   height: ${s(26, "mm")};
   object-fit: cover;
-  /* Hard-anchor the crop to the top of the image so portrait photos never
-     lose the head to the default 50/50 object-position. */
   object-position: center top;
-  border-radius: 0;
+  border-radius: ${s(0, "mm")};
   display: block;
-  background: #f3f0ea;
-  /* Frame ring as a border (not an outer box-shadow) — outer shadows get
-     clipped by Chromium's @page content zone in PDF when the photo sits
-     at the page edge. See classique.ts for the full rationale. */
+  background: #F3F0EA;
   box-sizing: border-box;
-  border: ${s(0.5, "pt")} solid rgba(17, 17, 17, 0.15);
+  border: ${s(1.5, "pt")} solid #111111;
 }
 
 .cv .portfolio-qr-box {
   width: ${s(26, "mm")};
   height: ${s(26, "mm")};
-  border-radius: 0;
-  background: #f3f0ea;
+  border-radius: ${s(0, "mm")};
+  background: #F3F0EA;
   box-sizing: border-box;
-  border: ${s(0.5, "pt")} solid rgba(17, 17, 17, 0.15);
+  border: ${s(1.5, "pt")} solid #111111;
   overflow: hidden;
 }
 
@@ -211,35 +189,48 @@ export const moderneCss = `
   display: block;
 }
 
+.cv .portfolio-qr-label {
+  font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: ${s(7.5, "pt")};
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: 0em;
+  color: #3A3A3A;
+  text-transform: none;
+}
+
 .cv header h1 {
   margin: 0 0 ${s(1.5, "mm")} 0;
-  font-family: "Fraunces", "Charter", Georgia, "Times New Roman", serif;
+  font-family: "Fraunces", "Newsreader", Georgia, serif;
   font-size: ${s(32, "pt")};
-  font-weight: 500;
-  font-style: italic;
-  font-variation-settings: "opsz" 144;
+  font-weight: 400;
   color: #111111;
   letter-spacing: -0.01em;
   line-height: 1.05;
+  font-style: normal;
+  height: ${s(13.7583, "mm")};
+  overflow: visible;
 }
 
 .cv header .job-title {
-  margin: 0 0 ${s(2, "mm")} 0;
+  margin: 0 0 ${s(1.5, "mm")} 0;
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: ${s(10.5, "pt")};
-  font-weight: 400;
-  color: #3a3a3a;
+  font-weight: 700;
+  color: #3A3A3A;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  line-height: 1.3;
 }
 
 .cv header .contact {
   margin: 0;
   padding: 0;
   list-style: none;
+  font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: ${s(9, "pt")};
-  color: #3a3a3a;
-  font-variant-numeric: tabular-nums;
+  color: #3A3A3A;
+  line-height: 1.3;
   letter-spacing: 0.02em;
 }
 
@@ -252,44 +243,50 @@ export const moderneCss = `
   content: none;
 }
 
+.cv header .contact a {
+  color: #111111;
+}
+
 .cv header .summary {
-  /* Description/summary must span full content width of the page,
-     respecting only the renderer-owned page margins. No max-width cap. */
   margin: ${s(3.5, "mm")} 0 0 0;
-  font-family: "Fraunces", "Charter", Georgia, "Times New Roman", serif;
-  font-size: ${s(10.5, "pt")};
+  font-family: "Fraunces", "Newsreader", Georgia, serif;
+  font-size: ${s(11.25, "pt")};
   line-height: 1.55;
   color: #222222;
-  font-style: italic;
-  font-variation-settings: "opsz" 14;
+  font-style: normal;
 }
 
 .cv section {
   margin-bottom: ${s(5, "mm")};
+  
 }
 
-/* H2 — italic Fraunces small-caps look (via tracking + weight).
-   Break-after AND break-inside both set so wrapping headings stay intact. */
+.cv section:last-of-type {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
 .cv section h2 {
   position: relative;
   margin: 0 0 ${s(2.5, "mm")} 0;
-  padding: 0 0 ${s(1, "mm")} 0;
-  font-family: "Fraunces", "Charter", Georgia, "Times New Roman", serif;
+  padding: ${s(0, "mm")} ${s(0, "mm")} ${s(1, "mm")} ${s(0, "mm")};
+  font-family: "Fraunces", "Newsreader", Georgia, serif;
   font-size: ${s(13, "pt")};
-  font-weight: 500;
-  font-style: italic;
-  font-variation-settings: "opsz" 144;
+  font-weight: 700;
   color: #111111;
   letter-spacing: 0.01em;
+  line-height: 1.5;
+  font-style: italic;
   border-bottom: ${s(0.5, "pt")} solid #A8421E;
   page-break-after: avoid;
-  page-break-inside: avoid;
   break-after: avoid;
-  break-inside: avoid;
 }
 
+
+
 .cv article {
-  margin-bottom: ${s(3, "mm")};
+  margin-bottom: ${s(2.5, "mm")};
   page-break-inside: avoid;
   break-inside: avoid;
 }
@@ -303,78 +300,74 @@ export const moderneCss = `
   justify-content: space-between;
   align-items: baseline;
   gap: ${s(4, "mm")};
-  margin-bottom: ${s(0.5, "mm")};
+  margin-bottom: ${s(0.6, "mm")};
   page-break-after: avoid;
   break-after: avoid;
 }
 
 .cv article h3 {
   margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: ${s(11, "pt")};
   font-weight: 600;
   color: #111111;
   letter-spacing: 0.005em;
+  line-height: 1.3;
 }
 
 .cv article .entry-meta {
   margin: 0;
+  flex-shrink: 0;
   font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: ${s(9, "pt")};
   font-weight: 400;
-  color: #6a5a52;
+  color: #6A5A52;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
-  font-style: italic;
   letter-spacing: 0.01em;
+  line-height: 1.3;
+  font-style: normal;
 }
 
 .cv article .entry-sub {
-  margin: 0 0 ${s(1, "mm")} 0;
-  font-size: ${s(10, "pt")};
-  color: #3a3a3a;
+  margin: 0 0 ${s(0.6, "mm")} 0;
+  font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: ${s(10.75, "pt")};
+  color: #3A3A3A;
+  line-height: 1.5;
+  font-style: normal;
   page-break-after: avoid;
   break-after: avoid;
 }
 
-.cv article .entry-description {
-  /* Full content width, inherits .cv padding as margin */
-  margin: ${s(1, "mm")} 0 0 0;
-  font-size: ${s(10, "pt")};
-  color: #2a2a2a;
-}
-
-.cv article ul {
-  list-style: none;
-  padding-left: 0;
-}
-
+.cv article .entry-description,
+.cv article p,
 .cv article li {
-  position: relative;
-  padding-left: ${s(4, "mm")};
+  font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: ${s(10.75, "pt")};
+  color: #2A2A2A;
+  line-height: 1.5;
 }
 
-.cv article li::before {
-  content: "—";
-  position: absolute;
-  left: 0;
-  color: #A8421E;
-  font-weight: 400;
+.cv article .entry-description {
+  margin: ${s(1, "mm")} 0 0 0;
 }
 
-/* Skills — disc-bulleted list grouped per category. Accent color on the
-   category label keeps the Moderne palette cue; names stay neutral so the
-   line reads as a scan-friendly taxonomy, not a style demo. */
 .cv .skills-grouped {
   list-style: disc;
   margin: 0;
   padding-left: ${s(5, "mm")};
-  font-size: ${s(10, "pt")};
-  line-height: 1.55;
 }
 
 .cv .skills-grouped li {
+  font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: ${s(10, "pt")};
   margin: 0;
+  line-height: 1.5;
+  color: #111111;
 }
 
 .cv .skills-grouped li + li {
@@ -383,18 +376,19 @@ export const moderneCss = `
 
 .cv .skills-grouped .skill-category {
   font-weight: 700;
-  color: #A8421E;
+  color: #111111;
 }
 
 .cv .skills-grouped .skill-name {
-  font-weight: 500;
+  color: #111111;
 }
 
 .cv .skills-grouped .skill-level {
-  color: #6a5a52;
-  font-style: italic;
-  font-size: ${s(9.5, "pt")};
+  font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #3A3A3A;
+  font-size: ${s(8.7, "pt")};
   margin-left: 0.2em;
+  letter-spacing: 0.02em;
 }
 
 .cv .languages-list {
@@ -403,59 +397,54 @@ export const moderneCss = `
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: ${s(3, "mm")} ${s(7, "mm")};
+  gap: ${s(1.5, "mm")} ${s(7, "mm")};
+  font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: ${s(10, "pt")};
+  line-height: 1.5;
 }
 
 .cv .languages-list li {
+  display: inline-flex;
+  gap: 0.4em;
   margin: 0;
-  font-variant-numeric: tabular-nums;
 }
 
 .cv .languages-list .lang-name {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .cv .languages-list .lang-level {
-  color: #6a5a52;
-  font-style: italic;
-  margin-left: 0.4em;
+  color: #3A3A3A;
 }
 
 .cv .interests-list {
   list-style: none;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${s(1.5, "mm")} ${s(4, "mm")};
+  font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: ${s(10, "pt")};
+  line-height: 1.5;
 }
 
 .cv .interests-list li {
-  display: inline;
   margin: 0;
 }
 
-.cv .interests-list li + li::before {
-  content: " , ";
-  color: #A8421E;
+
+.cv article ul li::marker {
+  content: "—  ";
+  font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: ${s(15, "pt")};
+  color: #000000;
+}
+.cv .skills-grouped li::marker {
+  content: "•  ";
+  font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: ${s(15.75, "pt")};
+  color: #111111;
 }
 
-@media print {
-  .cv-canvas {
-    background: #ffffff;
-    padding: 0;
-  }
-  .cv-page-bg,
-  .cv-page-advisory {
-    display: none;
-  }
-  .cv-paginated,
-  .cv {
-    margin: 0;
-    box-shadow: none;
-    background: #ffffff;
-  }
-  .cv [data-page-push] {
-    padding-top: 0 !important;
-  }
-}
 `;

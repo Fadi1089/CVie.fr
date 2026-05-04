@@ -193,6 +193,20 @@ export async function inlineRemotePhotoForPdf(
 }
 
 /**
+ * Pre-launch the singleton browser at server boot so the first user-facing
+ * PDF request doesn't pay the 2–5s Chromium cold-start cost. Errors are
+ * swallowed: a launch failure here just defers the cost back to the first
+ * request, which is no worse than today's behavior.
+ */
+export async function warmupPdfService(): Promise<void> {
+  try {
+    await getBrowser();
+  } catch (err) {
+    console.warn("[pdfService] warmup failed:", (err as Error).message);
+  }
+}
+
+/**
  * Release the browser process. Call from SIGTERM/SIGINT handlers so Chromium
  * doesn't leak on deploy restarts.
  */

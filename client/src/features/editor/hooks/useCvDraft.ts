@@ -27,6 +27,10 @@ export type UseCvDraftReturn = {
   resetDraft: () => void;
 };
 
+export type UseCvDraftOptions = {
+  onPersisted?: () => void;
+};
+
 function safeStorage(): Storage | null {
   try {
     if (typeof window === "undefined") return null;
@@ -93,7 +97,7 @@ function readStoredDraft(storage: Storage, key: string): CvData | null {
  * NOT schema-valid (firstName/lastName are `.min(1)`). That's fine: the
  * validate-then-persist gate means the empty skeleton never gets written.
  */
-export function useCvDraft(cvId: string): UseCvDraftReturn {
+export function useCvDraft(cvId: string, options?: UseCvDraftOptions): UseCvDraftReturn {
   const form = useForm<CvData>({
     resolver: zodResolver(cvDataSchema) as unknown as Resolver<CvData>,
     defaultValues: createEmptyCv(),
@@ -106,6 +110,8 @@ export function useCvDraft(cvId: string): UseCvDraftReturn {
   const hasSeenHydratedSnapshotRef = useRef(false);
   const latestValuesRef = useRef<CvData>(form.getValues());
   const watchedValues = useWatch({ control: form.control });
+  const onPersistedRef = useRef(options?.onPersisted);
+  onPersistedRef.current = options?.onPersisted;
 
   const writeNow = (storage: Storage, values: CvData) => {
     const parsed = cvDataSchema.safeParse(values);
@@ -118,6 +124,7 @@ export function useCvDraft(cvId: string): UseCvDraftReturn {
     try {
       storage.setItem(storageKey, serialized);
       setPersistStatus("saved");
+      onPersistedRef.current?.();
     } catch {
       // Quota exceeded, serializer threw, localStorage disabled, etc.
       // Surface the failure so the UI can prompt the user to export.

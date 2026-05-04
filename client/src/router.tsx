@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createBrowserRouter, Link, Navigate, useSearchParams } from "react-router";
+import { createBrowserRouter, Link, Navigate, Outlet, useSearchParams } from "react-router";
 import { renderCvHtml, sampleCv } from "@cvie/shared";
+import { Auth0ProviderWithNavigate, AuthCallback, useMe } from "./features/auth";
 import { CvEditor } from "./features/editor";
 import { EditorErrorBoundary } from "./features/editor/components/EditorErrorBoundary";
-import { CvLibrary } from "./features/templates";
+import {
+  createCvRecord,
+  readCvLibrary,
+} from "./features/cv-library/storage";
 
 function HomePage() {
   return (
@@ -37,10 +41,10 @@ function HomePage() {
 
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <Link
-                to="/home"
+                to="/editor"
                 className="rounded-full bg-[var(--color-ink)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-ink)]/90 motion-reduce:transition-none"
               >
-                Ouvrir ma bibliotheque
+                Ouvrir l'editeur
               </Link>
             </div>
           </section>
@@ -224,7 +228,13 @@ function EditorRouteGate() {
   const [params] = useSearchParams();
   const cvId = params.get("cv");
   if (!cvId || !cvId.trim()) {
-    return <Navigate to="/home" replace />;
+    // No CV in URL — open most-recent record, or create one if library is empty.
+    const library = readCvLibrary();
+    const target = library[0] ?? createCvRecord("classique");
+    const next = new URLSearchParams();
+    next.set("template", target.templateId);
+    next.set("cv", target.id);
+    return <Navigate to={`/editor?${next.toString()}`} replace />;
   }
   return (
     <EditorErrorBoundary>
@@ -233,14 +243,31 @@ function EditorRouteGate() {
   );
 }
 
+function MeBootstrap() {
+  useMe();
+  return null;
+}
+
+function RootLayout() {
+  return (
+    <Auth0ProviderWithNavigate>
+      <MeBootstrap />
+      <Outlet />
+    </Auth0ProviderWithNavigate>
+  );
+}
+
 export const router = createBrowserRouter([
-  { path: "/", element: <HomePage /> },
-  { path: "/home", element: <CvLibrary /> },
-  { path: "/templates", element: <Navigate to="/home" replace /> },
   {
-    path: "/editor",
-    element: <EditorRouteGate />,
+    element: <RootLayout />,
+    children: [
+      { path: "/", element: <HomePage /> },
+      { path: "/home", element: <Navigate to="/editor" replace /> },
+      { path: "/templates", element: <Navigate to="/editor" replace /> },
+      { path: "/editor", element: <EditorRouteGate /> },
+      { path: "/template-demo", element: <TemplateDemoPage /> },
+      { path: "/auth/callback", element: <AuthCallback /> },
+      { path: "*", element: <NotFoundPage /> },
+    ],
   },
-  { path: "/template-demo", element: <TemplateDemoPage /> },
-  { path: "*", element: <NotFoundPage /> },
 ]);

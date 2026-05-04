@@ -1,1 +1,6 @@
 // Route definitions
+export * from "./auth";
+export * from "./avatar";
+export * from "./cv";
+export * from "./cvImport";
+export * from "./cvTranslate";
