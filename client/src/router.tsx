@@ -230,15 +230,33 @@ function NotFoundPage() {
 
 function EditorRouteGate() {
   const [params] = useSearchParams();
+  const { isAuthenticated, isLoading } = useAuth0();
   const cvId = params.get("cv");
+
+  // Authed users land on a CV id that exists server-side. The DB list isn't
+  // available synchronously, so block render with a transient "loading"
+  // (Auth0 isLoading) and let the editor itself surface "no CV selected"
+  // when the URL has no ?cv= and the library is empty. We avoid the anon
+  // localStorage gate entirely for authed sessions because anon-style ids
+  // (`cv-${Date.now()}`) won't exist in the DB and would force every save
+  // into a 404 loop.
   if (!cvId || !cvId.trim()) {
-    // No CV in URL — open most-recent record, or create one if library is empty.
-    const library = readCvLibrary();
-    const target = library[0] ?? createCvRecord("classique");
-    const next = new URLSearchParams();
-    next.set("template", target.templateId);
-    next.set("cv", target.id);
-    return <Navigate to={`/editor?${next.toString()}`} replace />;
+    if (isLoading) {
+      return null;
+    }
+    if (!isAuthenticated) {
+      const library = readCvLibrary();
+      const target = library[0] ?? createCvRecord("classique");
+      const next = new URLSearchParams();
+      next.set("template", target.templateId);
+      next.set("cv", target.id);
+      return <Navigate to={`/editor?${next.toString()}`} replace />;
+    }
+    // Authed: defer to the sidebar — it lists the user's DB CVs and the
+    // user picks one, or clicks "+ Nouveau CV" which creates a server row
+    // and navigates with the new id. Send them back to the home page in
+    // the meantime so we don't render an editor pinned to a missing id.
+    return <Navigate to="/" replace />;
   }
   return (
     <EditorErrorBoundary>

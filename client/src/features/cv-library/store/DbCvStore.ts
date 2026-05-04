@@ -76,7 +76,9 @@ export class DbCvStore implements CvStore {
       headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
     });
     if (res.status === 401) {
-      throw new CvStoreError("UNAUTHENTICATED", "Session expirée.");
+      const err = new CvStoreError("UNAUTHENTICATED", "Session expirée.");
+      (err as CvStoreError & { httpStatus?: number }).httpStatus = 401;
+      throw err;
     }
     if (!res.ok) {
       let code = "INTERNAL";
@@ -86,7 +88,11 @@ export class DbCvStore implements CvStore {
       } catch {
         /* ignore */
       }
-      throw new CvStoreError(code as never, `HTTP ${res.status} (${code})`);
+      // Stash the HTTP status so the caller can decide retryability without
+      // having to maintain a per-code allowlist.
+      const err = new CvStoreError(code as never, `HTTP ${res.status} (${code})`);
+      (err as CvStoreError & { httpStatus?: number }).httpStatus = res.status;
+      throw err;
     }
     return (await res.json()) as T;
   }
@@ -294,13 +300,16 @@ export class DbCvStore implements CvStore {
     } catch (err) {
       entry.inflight = false;
       entry.attempts += 1;
-      if (
-        err instanceof CvStoreError &&
-        (err.code === "UNAUTHENTICATED" ||
-          err.code === "VALIDATION" ||
-          err.code === "LIMIT_EXCEEDED" ||
-          err.code === "NOT_FOUND")
-      ) {
+      // Decide retryability by HTTP status, not by error code allowlist:
+      // any 4xx is the client's fault and won't recover by retrying. Only
+      // network errors (no httpStatus) and 5xx warrant the offline queue.
+      const httpStatus =
+        err instanceof CvStoreError
+          ? (err as CvStoreError & { httpStatus?: number }).httpStatus
+          : undefined;
+      const isClientError =
+        typeof httpStatus === "number" && httpStatus >= 400 && httpStatus < 500;
+      if (isClientError) {
         this.queue.delete(id);
         for (const w of entry.waiters) w.reject(err);
         entry.waiters = [];
