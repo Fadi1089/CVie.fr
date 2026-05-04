@@ -1,5 +1,10 @@
-import { describe, expect, it, mock, beforeEach } from "bun:test";
+import { describe, expect, it, mock, beforeEach, afterAll } from "bun:test";
 import { Prisma } from "../../../../prisma/generated/prisma/client";
+
+const seedSystemFoldersMock = mock(async (_userId: string) => undefined);
+mock.module("../folderService", () => ({
+  seedSystemFolders: seedSystemFoldersMock,
+}));
 
 const upsertMock = mock(async (_args: unknown) => ({ id: "u_1" }));
 const findUniqueMock = mock(async (_args: unknown) => null);
@@ -10,8 +15,16 @@ mock.module("../../lib/prisma", () => ({
 import { upsertUserByAuth0Sub } from "../userService";
 
 describe("upsertUserByAuth0Sub", () => {
+  afterAll(() => {
+    // Restore module mocks so they don't leak into other test files
+    // (e.g. folderService.test.ts imports the real folderService module).
+    mock.restore();
+  });
+
   beforeEach(() => {
     upsertMock.mockClear();
+    findUniqueMock.mockClear();
+    seedSystemFoldersMock.mockClear();
   });
 
   it("upserts by auth0Sub with email from claims (new user)", async () => {
@@ -119,5 +132,49 @@ describe("upsertUserByAuth0Sub", () => {
     await expect(
       upsertUserByAuth0Sub({ sub: "", email: "x@y.com" } as never),
     ).rejects.toThrow(/sub/i);
+  });
+
+  it("seeds 'Mes CV' and 'Corbeille' on user creation", async () => {
+    upsertMock.mockResolvedValueOnce({
+      id: "u_new",
+      auth0Sub: "auth0|new",
+      email: "new@example.com",
+      username: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+    } as never);
+    findUniqueMock.mockResolvedValueOnce(null);
+
+    await upsertUserByAuth0Sub({
+      sub: "auth0|new",
+      email: "new@example.com",
+    });
+
+    expect(seedSystemFoldersMock).toHaveBeenCalledTimes(1);
+    expect(seedSystemFoldersMock).toHaveBeenCalledWith("u_new");
+  });
+
+  it("does not re-seed system folders for existing user", async () => {
+    upsertMock.mockResolvedValueOnce({
+      id: "u_existing",
+      auth0Sub: "auth0|existing",
+      email: "still@example.com",
+      username: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+    } as never);
+    findUniqueMock.mockResolvedValueOnce({
+      id: "u_existing",
+      auth0Sub: "auth0|existing",
+    } as never);
+
+    await upsertUserByAuth0Sub({
+      sub: "auth0|existing",
+      email: "still@example.com",
+    });
+
+    expect(seedSystemFoldersMock).not.toHaveBeenCalled();
   });
 });
