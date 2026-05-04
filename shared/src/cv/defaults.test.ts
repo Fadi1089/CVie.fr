@@ -5,7 +5,11 @@ import { createEmptyCv, sampleCv } from "./defaults";
 describe("createEmptyCv", () => {
   it("returns an object with every CvData section present and empty", () => {
     const cv = createEmptyCv();
-    expect(cv.personalInfo).toEqual({ firstName: "", lastName: "" });
+    expect(cv.personalInfo).toEqual({
+      firstName: "",
+      lastName: "",
+      portfolioDisplay: "clickable",
+    });
     expect(cv.formations).toEqual([]);
     expect(cv.experiences).toEqual([]);
     expect(cv.skills).toEqual([]);

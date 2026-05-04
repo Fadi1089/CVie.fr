@@ -20,8 +20,9 @@ export function Auth0ProviderWithNavigate({ children }: Props) {
         redirect_uri: `${window.location.origin}/auth/callback`,
         audience: clientEnv.AUTH0_AUDIENCE,
       }}
-      cacheLocation="memory"
+      cacheLocation="localstorage"
       useRefreshTokens
+      useRefreshTokensFallback
       onRedirectCallback={onRedirectCallback}
     >
       {children}
