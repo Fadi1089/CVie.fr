@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createBrowserRouter, Link, Navigate, Outlet, useSearchParams } from "react-router";
 import { renderCvHtml, sampleCv } from "@cvie/shared";
-import { Auth0ProviderWithNavigate, AuthCallback } from "./features/auth";
+import { Auth0ProviderWithNavigate, AuthCallback, useMe } from "./features/auth";
 import { CvEditor } from "./features/editor";
 import { EditorErrorBoundary } from "./features/editor/components/EditorErrorBoundary";
 import {
@@ -243,9 +243,15 @@ function EditorRouteGate() {
   );
 }
 
+function MeBootstrap() {
+  useMe();
+  return null;
+}
+
 function RootLayout() {
   return (
     <Auth0ProviderWithNavigate>
+      <MeBootstrap />
       <Outlet />
     </Auth0ProviderWithNavigate>
   );

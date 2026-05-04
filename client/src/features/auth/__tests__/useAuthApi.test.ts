@@ -42,15 +42,15 @@ describe("useAuthApi", () => {
     expect(auth).toBe("Bearer test-token");
   });
 
-  it("calls loginWithRedirect on 401 and rethrows", async () => {
+  it("returns 401 response without redirecting", async () => {
     fetchMock.mockResolvedValueOnce(new Response("nope", { status: 401 }));
     const { result } = renderHook(() => useAuthApi());
-    await expect(
-      act(async () => {
-        await result.current.fetch("/api/v1/me");
-      }),
-    ).rejects.toThrow(/unauthenticated/i);
-    expect(loginWithRedirect).toHaveBeenCalledTimes(1);
+    let res: Response | undefined;
+    await act(async () => {
+      res = await result.current.fetch("/api/v1/me");
+    });
+    expect(res?.status).toBe(401);
+    expect(loginWithRedirect).not.toHaveBeenCalled();
   });
 
   it("does not inject Authorization header when not authenticated", async () => {
