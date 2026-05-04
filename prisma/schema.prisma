@@ -16,5 +16,40 @@ model User {
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
+  cvs     Cv[]
+  folders Folder[]
+
   @@map("users")
+}
+
+model Folder {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  isSystem  Boolean  @default(false) @map("is_system")
+  ttlDays   Int?     @map("ttl_days")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  cvs Cv[]
+
+  @@unique([userId, name])
+  @@map("folders")
+}
+
+model Cv {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folderId   String   @map("folder_id")
+  folder     Folder   @relation(fields: [folderId], references: [id])
+  title      String
+  templateId String   @map("template_id")
+  data       Json
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([userId, folderId, updatedAt(sort: Desc)])
+  @@map("cvs")
 }
