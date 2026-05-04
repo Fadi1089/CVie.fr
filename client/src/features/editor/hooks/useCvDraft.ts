@@ -3,23 +3,19 @@ import { useForm, useWatch, type Resolver, type UseFormReturn } from "react-hook
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createEmptyCv, cvDataSchema, type CvData } from "@cvie/shared";
 import "@/lib/zodFrenchErrorMap";
+import { useCvStore } from "@/features/cv-library/hooks/useCvStore";
+import type { CvStore, SyncStatus } from "@/features/cv-library/store/types";
 
 const DRAFT_STORAGE_KEY_PREFIX = "cvie.cv.draft";
 // Backward-compatible export used by existing imports/tests.
 export const DRAFT_STORAGE_KEY = DRAFT_STORAGE_KEY_PREFIX;
 // Two-tier debounce contract (Story 2-3):
 //   - preview (EditorPreviewPane `AUTO_REFRESH_DEBOUNCE_MS`) = 80 ms — NFR6 ≤100 ms p50.
-//   - persistence (this constant) = 300 ms — localStorage write isn't in NFR6 scope and
-//     per-keystroke IO thrashes slow devices. `pagehide` + `visibilitychange` flush
-//     catches the trailing window. Do NOT unify these two values.
+//   - persistence = 300 ms — IO thrash guard. `pagehide` flushes the trailing window.
 const PERSIST_DEBOUNCE_MS = 300;
-// Hard cap to avoid main-thread freeze on a pathological key. Schema caps
-// total string payload well below this; real drafts are under 50 KB.
 const MAX_STORED_BYTES = 500_000;
 
-type Storage = Pick<typeof window.localStorage, "getItem" | "setItem" | "removeItem">;
-
-export type PersistStatus = "idle" | "saved" | "failed";
+export type PersistStatus = "idle" | "saving" | "saved" | "offline" | "failed";
 
 export type UseCvDraftReturn = {
   form: UseFormReturn<CvData>;
@@ -29,82 +25,36 @@ export type UseCvDraftReturn = {
 
 export type UseCvDraftOptions = {
   onPersisted?: () => void;
+  /** Test-only override. Production code uses `useCvStore()`. */
+  store?: CvStore;
 };
 
-function safeStorage(): Storage | null {
-  try {
-    if (typeof window === "undefined") return null;
-    return window.localStorage;
-  } catch {
-    return null;
+function syncStatusToPersist(s: SyncStatus): PersistStatus {
+  switch (s) {
+    case "saving":
+      return "saving";
+    case "saved":
+      return "saved";
+    case "offline":
+      return "offline";
+    case "error":
+      return "failed";
+    case "idle":
+    default:
+      return "idle";
   }
 }
 
-/**
- * Reads `cvie.cv.draft` from localStorage, JSON-parses it, and validates it
- * against `cvDataSchema`. Returns `null` if missing, malformed, oversize, or
- * invalid — and silently removes the bad entry so it can't keep failing on
- * every load.
- */
-function draftStorageKey(cvId: string): string {
-  return `${DRAFT_STORAGE_KEY_PREFIX}.${cvId}`;
-}
-
-function readStoredDraft(storage: Storage, key: string): CvData | null {
-  let raw: string | null;
-  try {
-    raw = storage.getItem(key);
-  } catch {
-    return null;
-  }
-  if (!raw) return null;
-  if (raw.length > MAX_STORED_BYTES) {
-    try {
-      storage.removeItem(key);
-    } catch {
-      /* ignore */
-    }
-    return null;
-  }
-  try {
-    const parsed = cvDataSchema.safeParse(JSON.parse(raw));
-    if (parsed.success) return parsed.data;
-  } catch {
-    /* fallthrough — remove */
-  }
-  try {
-    storage.removeItem(key);
-  } catch {
-    /* ignore */
-  }
-  return null;
-}
-
-/**
- * React Hook Form wrapper for the CV editor.
- *
- * - Typed against `CvData` with `zodResolver(cvDataSchema)` — no redefinition.
- * - Hydrates from `localStorage["cvie.cv.draft"]` on mount, silently dropping
- *   malformed entries.
- * - Persists the full draft (debounced 300 ms) ONLY when the whole object
- *   passes `cvDataSchema.safeParse` — invalid / partial states never hit
- *   disk, so whatever's stored is always loadable.
- * - Returns a `persistStatus` flag the UI can read to warn the user when a
- *   write fails (quota exceeded, serializer throw, etc.) so work-in-
- *   progress doesn't silently die in a locked-down browser.
- *
- * The form's default values are `createEmptyCv()`, which is intentionally
- * NOT schema-valid (firstName/lastName are `.min(1)`). That's fine: the
- * validate-then-persist gate means the empty skeleton never gets written.
- */
 export function useCvDraft(cvId: string, options?: UseCvDraftOptions): UseCvDraftReturn {
+  const ambientStore = useCvStore();
+  const store = options?.store ?? ambientStore;
+
   const form = useForm<CvData>({
     resolver: zodResolver(cvDataSchema) as unknown as Resolver<CvData>,
     defaultValues: createEmptyCv(),
     mode: "onBlur",
   });
   const [persistStatus, setPersistStatus] = useState<PersistStatus>("idle");
-  const storageKey = draftStorageKey(cvId);
 
   const hasHydratedRef = useRef(false);
   const hasSeenHydratedSnapshotRef = useRef(false);
@@ -113,7 +63,7 @@ export function useCvDraft(cvId: string, options?: UseCvDraftOptions): UseCvDraf
   const onPersistedRef = useRef(options?.onPersisted);
   onPersistedRef.current = options?.onPersisted;
 
-  const writeNow = (storage: Storage, values: CvData) => {
+  const writeNow = async (values: CvData) => {
     const parsed = cvDataSchema.safeParse(values);
     if (!parsed.success) return;
     const serialized = JSON.stringify(parsed.data);
@@ -122,41 +72,47 @@ export function useCvDraft(cvId: string, options?: UseCvDraftOptions): UseCvDraf
       return;
     }
     try {
-      storage.setItem(storageKey, serialized);
-      setPersistStatus("saved");
+      await store.patch(cvId, { data: parsed.data });
       onPersistedRef.current?.();
     } catch {
-      // Quota exceeded, serializer threw, localStorage disabled, etc.
-      // Surface the failure so the UI can prompt the user to export.
       setPersistStatus("failed");
     }
   };
 
-  // Hydrate on mount. `reset` triggers a re-render with the stored values,
-  // so any subsequent `watch` notifications already see the hydrated state.
+  // Hydrate on mount via store.
   useEffect(() => {
-    const storage = safeStorage();
-    if (!storage) {
-      hasHydratedRef.current = true;
-      hasSeenHydratedSnapshotRef.current = true;
-      return;
-    }
-    const draft = readStoredDraft(storage, storageKey);
-    if (draft) form.reset(draft);
-    hasHydratedRef.current = true;
-    // form.reset is stable across renders; run once.
+    let alive = true;
+    void store
+      .read(cvId)
+      .then((draft) => {
+        if (!alive) return;
+        if (draft) form.reset(draft);
+        hasHydratedRef.current = true;
+      })
+      .catch(() => {
+        if (!alive) return;
+        hasHydratedRef.current = true;
+      });
+    return () => {
+      alive = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form, storageKey]);
+  }, [store, cvId]);
+
+  // Forward store status into the local persistStatus.
+  useEffect(() => {
+    return store.subscribeStatus((s) => {
+      setPersistStatus(syncStatusToPersist(s));
+    });
+  }, [store]);
 
   useEffect(() => {
     latestValuesRef.current = form.getValues();
-  }, [form, storageKey, watchedValues]);
+  }, [form, watchedValues]);
 
-  // Debounced persistence driven by `useWatch`, which reliably tracks both
-  // regular field edits and `useFieldArray` structural changes like remove().
+  // Debounced persistence driven by `useWatch` (catches both field edits and
+  // `useFieldArray` structural changes like remove()).
   useEffect(() => {
-    const storage = safeStorage();
-    if (!storage) return;
     if (!hasHydratedRef.current) return;
     if (!hasSeenHydratedSnapshotRef.current) {
       hasSeenHydratedSnapshotRef.current = true;
@@ -164,30 +120,28 @@ export function useCvDraft(cvId: string, options?: UseCvDraftOptions): UseCvDraf
     }
 
     const timer = setTimeout(() => {
-      writeNow(storage, form.getValues());
+      void writeNow(form.getValues());
     }, PERSIST_DEBOUNCE_MS);
 
     return () => {
       clearTimeout(timer);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form, watchedValues]);
 
   useEffect(() => {
     return () => {
-      const storage = safeStorage();
-      if (!storage || !hasHydratedRef.current) return;
-      writeNow(storage, latestValuesRef.current);
+      if (!hasHydratedRef.current) return;
+      void writeNow(latestValuesRef.current);
     };
-  }, [form, storageKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store, cvId]);
 
-  // Flush pending edits synchronously on tab close / hide so the 300ms
-  // debounce doesn't drop the user's last keystroke.
+  // Flush pending edits on tab close / hide.
   useEffect(() => {
-    const storage = safeStorage();
-    if (!storage) return;
     const flush = () => {
       if (!hasHydratedRef.current) return;
-      writeNow(storage, form.getValues());
+      void writeNow(form.getValues());
     };
     const onVisibility = () => {
       if (document.visibilityState === "hidden") flush();
@@ -198,41 +152,13 @@ export function useCvDraft(cvId: string, options?: UseCvDraftOptions): UseCvDraf
       window.removeEventListener("pagehide", flush);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [form, storageKey]);
-
-  // Cross-tab awareness: another tab wrote to the same draft key. Soft-warn
-  // only; don't auto-reset the user's in-memory form.
-  useEffect(() => {
-    function onStorage(e: StorageEvent) {
-      if (e.key !== storageKey) return;
-      if (!e.newValue) return;
-      try {
-        const parsed = cvDataSchema.safeParse(JSON.parse(e.newValue));
-        if (parsed.success) {
-          console.warn(
-            "[useCvDraft] draft updated in another tab — local edits may diverge",
-          );
-        }
-      } catch {
-        /* ignore */
-      }
-    }
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, [storageKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, store, cvId]);
 
   const resetDraft = () => {
     const empty = createEmptyCv();
     form.reset(empty);
     latestValuesRef.current = empty;
-    const storage = safeStorage();
-    if (storage) {
-      try {
-        storage.removeItem(storageKey);
-      } catch {
-        /* ignore */
-      }
-    }
     setPersistStatus("idle");
   };
 
