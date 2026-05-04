@@ -73,31 +73,96 @@ export function ImportLocalCvsModal({ sub, anonRecords, onImport }: Props) {
     setOpen(false);
   };
 
-  // Portal to <body> so the dialog escapes any ancestor stacking/transform
-  // context (e.g. the editor's flex/overflow tree) that would otherwise
-  // collapse `position: fixed` to a non-viewport containing block.
   if (typeof document === "undefined") return null;
+
+  // Inline styles instead of Tailwind so the modal can't be broken by
+  // ancestor CSS, missing utility classes, or stale CSS bundles.
+  const overlay: React.CSSProperties = {
+    position: "fixed",
+    inset: 0,
+    zIndex: 50,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "rgba(0,0,0,0.3)",
+    padding: "1rem",
+  };
+  const card: React.CSSProperties = {
+    width: "100%",
+    maxWidth: "28rem",
+    background: "#fafaf7",
+    borderRadius: "0.5rem",
+    padding: "1.5rem",
+    boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
+    color: "#0a0a0a",
+    fontFamily: "system-ui, -apple-system, sans-serif",
+  };
+  const title: React.CSSProperties = {
+    fontSize: "22px",
+    margin: 0,
+    marginBottom: "0.75rem",
+    fontWeight: 600,
+    letterSpacing: "-0.02em",
+  };
+  const body: React.CSSProperties = {
+    fontSize: "14px",
+    lineHeight: 1.5,
+    color: "#4a4a48",
+    margin: 0,
+    marginBottom: "1.25rem",
+  };
+  const labelStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    fontSize: "12px",
+    color: "#4a4a48",
+    marginBottom: "1.25rem",
+  };
+  const buttonRow: React.CSSProperties = {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "0.75rem",
+  };
+  const laterBtn: React.CSSProperties = {
+    background: "transparent",
+    border: "none",
+    cursor: busy ? "default" : "pointer",
+    color: "#4a4a48",
+    padding: "0.375rem 0.75rem",
+    fontSize: "13px",
+    borderRadius: "0.375rem",
+    opacity: busy ? 0.6 : 1,
+  };
+  const importBtn: React.CSSProperties = {
+    background: "#0a0a0a",
+    color: "white",
+    border: "none",
+    cursor: busy ? "default" : "pointer",
+    padding: "0.375rem 1rem",
+    fontSize: "13px",
+    fontWeight: 500,
+    borderRadius: "0.375rem",
+    opacity: busy ? 0.6 : 1,
+  };
 
   return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-label="Importer les CV locaux"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+      style={overlay}
     >
-      <div className="w-full max-w-md rounded-lg bg-[var(--color-paper)] p-6 shadow-2xl">
-        <h2 className="font-display mb-3 text-[22px] tracking-[-0.02em]">
-          Importer vos CV locaux ?
-        </h2>
-        <p className="mb-5 text-[14px] leading-relaxed text-[var(--color-ink-soft)]">
+      <div style={card}>
+        <h2 style={title}>Importer vos CV locaux ?</h2>
+        <p style={body}>
           Vous avez {pending.length} CV{" "}
-          {pending.length > 1 ? "enregistrés" : "enregistré"} sur cet
-          appareil. Voulez-vous{" "}
-          {pending.length > 1 ? "les importer" : "l'importer"} dans votre
-          compte&nbsp;?
+          {pending.length > 1 ? "enregistrés" : "enregistré"} sur cet appareil.
+          Voulez-vous {pending.length > 1 ? "les importer" : "l'importer"} dans
+          votre compte&nbsp;?
         </p>
 
-        <label className="mb-5 flex items-center gap-2 text-[12px] text-[var(--color-ink-soft)]">
+        <label style={labelStyle}>
           <input
             type="checkbox"
             checked={neverAsk}
@@ -107,12 +172,12 @@ export function ImportLocalCvsModal({ sub, anonRecords, onImport }: Props) {
           Ne plus me demander
         </label>
 
-        <div className="flex justify-end gap-3">
+        <div style={buttonRow}>
           <button
             type="button"
             onClick={handleLater}
             disabled={busy}
-            className="rounded-md px-3 py-1.5 text-[13px] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
+            style={laterBtn}
           >
             Plus tard
           </button>
@@ -120,7 +185,7 @@ export function ImportLocalCvsModal({ sub, anonRecords, onImport }: Props) {
             type="button"
             onClick={handleImport}
             disabled={busy}
-            className="rounded-md bg-[var(--color-ink)] px-4 py-1.5 text-[13px] font-medium text-white hover:opacity-90 disabled:opacity-60"
+            style={importBtn}
           >
             {busy ? "Importation…" : "Importer"}
           </button>
