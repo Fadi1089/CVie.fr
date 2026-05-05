@@ -139,8 +139,17 @@ export function CvEditor() {
     if (!cvId) return;
     upsertCvRecord(cvId, {});
   }, [cvId]);
+  const handleCvIdChanged = useCallback(
+    (newId: string) => {
+      const next = new URLSearchParams(params);
+      next.set("cv", newId);
+      setParams(next, { replace: true });
+    },
+    [params, setParams],
+  );
   const { form, persistStatus, resetDraft } = useCvDraft(cvId, {
     onPersisted: handleDraftPersisted,
+    onCvIdChanged: handleCvIdChanged,
   });
   const { scale, setScale, resetScale } = useCvScale();
   const { overflowMode, setOverflowMode } = useCvOverflowMode();

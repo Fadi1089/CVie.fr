@@ -25,6 +25,9 @@ export type UseCvDraftReturn = {
 
 export type UseCvDraftOptions = {
   onPersisted?: () => void;
+  /** Fires when DbCvStore.patch promoted an unknown id to a fresh server-side
+   *  CV. Caller (router) should redirect the URL to the new id. */
+  onCvIdChanged?: (newId: string) => void;
   /** Test-only override. Production code uses `useCvStore()`. */
   store?: CvStore;
 };
@@ -62,6 +65,8 @@ export function useCvDraft(cvId: string, options?: UseCvDraftOptions): UseCvDraf
   const watchedValues = useWatch({ control: form.control });
   const onPersistedRef = useRef(options?.onPersisted);
   onPersistedRef.current = options?.onPersisted;
+  const onCvIdChangedRef = useRef(options?.onCvIdChanged);
+  onCvIdChangedRef.current = options?.onCvIdChanged;
 
   const writeNow = async (values: CvData) => {
     const parsed = cvDataSchema.safeParse(values);
@@ -72,7 +77,12 @@ export function useCvDraft(cvId: string, options?: UseCvDraftOptions): UseCvDraf
       return;
     }
     try {
-      await store.patch(cvId, { data: parsed.data });
+      const rec = await store.patch(cvId, { data: parsed.data });
+      // DbCvStore promotes a 404 PATCH to a fresh POST and resolves with the
+      // server-generated record — its id won't match the requested cvId.
+      if (rec.id !== cvId) {
+        onCvIdChangedRef.current?.(rec.id);
+      }
       onPersistedRef.current?.();
     } catch {
       setPersistStatus("failed");
