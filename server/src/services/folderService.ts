@@ -32,25 +32,24 @@ function caseFold(s: string): string {
   return s.trim().toLocaleLowerCase("fr-FR");
 }
 
-/** Seeds "Mes CV" + "Corbeille" for a new user. Idempotent: caller is
- *  expected to call this exactly once on user creation. */
+/** Seeds "Mes CV" + "Corbeille" for a user when missing. Idempotent —
+ *  inspects existing system folders and only inserts the ones that aren't
+ *  there yet, so this can be called as a self-heal on every list. */
 export async function seedSystemFolders(userId: string): Promise<void> {
-  await prisma.folder.createMany({
-    data: [
-      {
-        userId,
-        name: SYSTEM_FOLDER_DEFAULT,
-        isSystem: true,
-        ttlDays: null,
-      },
-      {
-        userId,
-        name: SYSTEM_FOLDER_TRASH,
-        isSystem: true,
-        ttlDays: TRASH_TTL_DAYS,
-      },
-    ],
+  const existing = await prisma.folder.findMany({
+    where: { userId, isSystem: true },
+    select: { name: true },
   });
+  const have = new Set(existing.map((f) => f.name));
+  const toInsert: Array<{ userId: string; name: string; isSystem: true; ttlDays: number | null }> = [];
+  if (!have.has(SYSTEM_FOLDER_DEFAULT)) {
+    toInsert.push({ userId, name: SYSTEM_FOLDER_DEFAULT, isSystem: true, ttlDays: null });
+  }
+  if (!have.has(SYSTEM_FOLDER_TRASH)) {
+    toInsert.push({ userId, name: SYSTEM_FOLDER_TRASH, isSystem: true, ttlDays: TRASH_TTL_DAYS });
+  }
+  if (toInsert.length === 0) return;
+  await prisma.folder.createMany({ data: toInsert });
 }
 
 export async function createFolder(
@@ -91,6 +90,10 @@ export async function createFolder(
 }
 
 export async function listFolders(userId: string): Promise<FolderRow[]> {
+  // Self-heal: legacy users (created before ticket 2 shipped folder
+  // seeding in upsertUserByAuth0Sub) have zero system folders. Seed on
+  // first list so the sidebar can never render empty.
+  await seedSystemFolders(userId);
   return prisma.folder.findMany({
     where: { userId },
     orderBy: [{ isSystem: "desc" }, { createdAt: "asc" }],
