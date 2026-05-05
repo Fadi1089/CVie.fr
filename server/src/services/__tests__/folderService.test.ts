@@ -152,6 +152,12 @@ describe("folderService", () => {
 
   describe("listFolders", () => {
     it("returns all folders for a user", async () => {
+      // First findMany: self-heal seed check (returns existing system folders).
+      findManyMock.mockResolvedValueOnce([
+        { name: "Mes CV" },
+        { name: "Corbeille" },
+      ]);
+      // Second findMany: the actual list query.
       findManyMock.mockResolvedValueOnce([
         { id: "f_sys", name: "Mes CV", isSystem: true, ttlDays: null },
         { id: "f_trash", name: "Corbeille", isSystem: true, ttlDays: 30 },
@@ -159,7 +165,19 @@ describe("folderService", () => {
       ]);
       const folders = await listFolders("u_1");
       expect(folders).toHaveLength(3);
-      expect(findManyMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("self-heals: seeds system folders when missing, then lists", async () => {
+      // First findMany: self-heal sees no system folders.
+      findManyMock.mockResolvedValueOnce([]);
+      // Then list returns the freshly-seeded folders.
+      findManyMock.mockResolvedValueOnce([
+        { id: "f_sys", name: "Mes CV", isSystem: true, ttlDays: null },
+        { id: "f_trash", name: "Corbeille", isSystem: true, ttlDays: 30 },
+      ]);
+      const folders = await listFolders("u_1");
+      expect(createManyMock).toHaveBeenCalledTimes(1);
+      expect(folders).toHaveLength(2);
     });
   });
 
