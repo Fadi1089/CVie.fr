@@ -214,16 +214,10 @@ export function CvEditor() {
     return () => mql.removeEventListener("change", handler);
   }, []);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    function beforeUnload(e: BeforeUnloadEvent) {
-      if (!form.formState.isDirty) return;
-      e.preventDefault();
-      e.returnValue = "";
-    }
-    window.addEventListener("beforeunload", beforeUnload);
-    return () => window.removeEventListener("beforeunload", beforeUnload);
-  }, [form.formState.isDirty]);
+  // beforeunload prompt removed: auto-save (debounced 300 ms + pagehide
+  // flush in useCvDraft) already commits work in flight, and RHF's
+  // formState.isDirty was firing on a freshly-reset form (Zod resolver +
+  // nested defaults), making the prompt appear on a blank editor.
 
   return (
     <FormProvider {...form}>
