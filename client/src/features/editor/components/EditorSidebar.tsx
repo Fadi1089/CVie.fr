@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, Plus } from "lucide-react";
 import { templateRegistry, type TemplateId } from "@cvie/shared";
 import { useAuth0 } from "@auth0/auth0-react";
 import { cn } from "@/lib/utils";
@@ -287,34 +287,31 @@ function AuthedSidebar({
                           aria-current={isActive ? "page" : undefined}
                           title={collapsed ? cv.title : undefined}
                           className={cn(
-                            "editor-sidebar__item relative flex w-full items-center gap-3 overflow-hidden rounded-lg text-left transition-colors motion-reduce:transition-none",
+                            "editor-sidebar__item relative flex w-full items-center gap-2 overflow-hidden rounded-lg text-left transition-colors motion-reduce:transition-none",
                             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/25",
-                            collapsed ? "h-11 justify-center px-2" : "px-3 py-2.5",
+                            collapsed ? "h-9 justify-center px-2" : "px-3 py-2",
                             isActive
                               ? "bg-[var(--color-paper-deep)]/85 text-[var(--color-ink)]"
                               : "text-[var(--color-ink)] hover:bg-white/60",
                           )}
+                          title={collapsed ? cv.title : `${cv.title} — ${templateName}`}
                         >
                           {collapsed ? (
-                            <span className="font-mono-caps text-[10px] tabular-nums text-[var(--color-ink-soft)]">
-                              {String(idx + 1).padStart(2, "0")}
-                            </span>
+                            <FileText
+                              className="h-3.5 w-3.5 text-[var(--color-ink-soft)]"
+                              aria-hidden
+                            />
                           ) : (
                             <>
-                              <span className="font-mono-caps w-7 shrink-0 text-[10px] tabular-nums text-[var(--color-ink-soft)]">
-                                {String(idx + 1).padStart(2, "0")}
+                              <FileText
+                                className="h-3.5 w-3.5 shrink-0 text-[var(--color-ink-soft)]"
+                                aria-hidden
+                              />
+                              <span className="font-display flex-1 truncate text-[14px] tracking-[-0.01em]">
+                                {cv.title}
                               </span>
-                              <span className="min-w-0 flex-1">
-                                <span className="font-display block truncate text-[15px] leading-tight tracking-[-0.01em]">
-                                  {cv.title}
-                                </span>
-                                <span className="mt-0.5 flex items-baseline gap-1.5 text-[11px] text-[var(--color-ink-soft)]">
-                                  <span className="truncate">{templateName}</span>
-                                  <span aria-hidden="true" className="text-[var(--color-dot)]">·</span>
-                                  <span className="truncate">
-                                    {formatUpdatedAt(cv.updatedAt).replace(/^Mis a jour /, "")}
-                                  </span>
-                                </span>
+                              <span className="font-mono-caps shrink-0 text-[9px] tabular-nums text-[var(--color-ink-soft)]">
+                                {String(idx + 1).padStart(2, "0")}
                               </span>
                             </>
                           )}
