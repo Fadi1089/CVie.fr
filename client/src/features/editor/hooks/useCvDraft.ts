@@ -159,6 +159,10 @@ export function useCvDraft(cvId: string, options?: UseCvDraftOptions): UseCvDraf
     const empty = createEmptyCv();
     form.reset(empty);
     latestValuesRef.current = empty;
+    // Bypass the watch-driven debounce: clear the persisted draft directly.
+    // Without this, the empty form fails schema validation, no patch fires,
+    // and the old body sits in localStorage / cache and rehydrates on reload.
+    void store.clearDraft(cvId);
     setPersistStatus("idle");
   };
 

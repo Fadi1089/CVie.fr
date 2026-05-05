@@ -266,6 +266,12 @@ export class LocalCvStore implements CvStore {
     storage.removeItem(draftKey(this.opts.namespace, id));
   }
 
+  async clearDraft(id: string): Promise<void> {
+    const storage = this.storage;
+    if (!storage) return;
+    storage.removeItem(draftKey(this.opts.namespace, id));
+  }
+
   async bulkImport(_records: AnonExport[]): Promise<ImportResult> {
     throw new CvStoreError(
       "NOT_SUPPORTED",

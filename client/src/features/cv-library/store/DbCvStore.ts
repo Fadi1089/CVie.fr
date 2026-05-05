@@ -349,6 +349,13 @@ export class DbCvStore implements CvStore {
     await this.opts.local.hardDeleteCv(id);
   }
 
+  async clearDraft(id: string): Promise<void> {
+    // Drop the local cache so a stale body can't rehydrate the form on the
+    // next mount. The server copy stays put — UI semantics treat this as
+    // "blank the editor" rather than "delete the row".
+    await this.opts.local.clearDraft(id);
+  }
+
   async bulkImport(records: AnonExport[]): Promise<ImportResult> {
     return this.request<ImportResult>("/api/v1/cv/import", {
       method: "POST",

@@ -61,6 +61,8 @@ export interface CvStore {
   ): Promise<CvLibraryRecord>;
   moveCv(id: string, folderId: string): Promise<void>;
   hardDeleteCv(id: string): Promise<void>;
+  /** Clear the cached draft body so next read can't rehydrate stale data. */
+  clearDraft(id: string): Promise<void>;
   bulkImport(records: AnonExport[]): Promise<ImportResult>;
 
   // Status stream for UI badge
