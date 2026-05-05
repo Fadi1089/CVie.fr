@@ -22,24 +22,86 @@ export function DeleteFolderModal({
 
   if (typeof document === "undefined") return null;
 
+  const overlay: React.CSSProperties = {
+    position: "fixed",
+    inset: 0,
+    zIndex: 50,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "rgba(0,0,0,0.3)",
+    padding: "1rem",
+  };
+  const card: React.CSSProperties = {
+    width: "100%",
+    maxWidth: "28rem",
+    background: "#fafaf7",
+    borderRadius: "0.5rem",
+    padding: "1.5rem",
+    boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
+    color: "#0a0a0a",
+    fontFamily: "system-ui, -apple-system, sans-serif",
+  };
+  const title: React.CSSProperties = {
+    fontSize: "20px",
+    margin: 0,
+    marginBottom: "0.75rem",
+    fontWeight: 600,
+    letterSpacing: "-0.02em",
+  };
+  const body: React.CSSProperties = {
+    fontSize: "13px",
+    color: "#4a4a48",
+    margin: 0,
+    marginBottom: "1rem",
+  };
+  const select: React.CSSProperties = {
+    width: "100%",
+    marginBottom: "1.25rem",
+    padding: "0.5rem 0.75rem",
+    border: "1px solid #e8e6df",
+    borderRadius: "0.375rem",
+    background: "white",
+    fontSize: "13px",
+  };
+  const buttonRow: React.CSSProperties = {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "0.75rem",
+  };
+  const cancelBtn: React.CSSProperties = {
+    background: "transparent",
+    border: "none",
+    cursor: busy ? "default" : "pointer",
+    color: "#4a4a48",
+    padding: "0.375rem 0.75rem",
+    fontSize: "13px",
+    borderRadius: "0.375rem",
+    opacity: busy ? 0.6 : 1,
+  };
+  const deleteBtn: React.CSSProperties = {
+    background: "#dc2626",
+    color: "white",
+    border: "none",
+    cursor: busy || !target ? "default" : "pointer",
+    padding: "0.375rem 1rem",
+    fontSize: "13px",
+    fontWeight: 500,
+    borderRadius: "0.375rem",
+    opacity: busy || !target ? 0.6 : 1,
+  };
+
   return createPortal(
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
-    >
-      <div className="w-full max-w-md rounded-lg bg-[var(--color-paper)] p-6 shadow-2xl">
-        <h2 className="font-display mb-3 text-[20px] tracking-[-0.02em]">
-          Supprimer "{folder.name}"&nbsp;?
-        </h2>
-        <p className="mb-4 text-[13px] text-[var(--color-ink-soft)]">
-          Ce dossier contient {cvCount} CV. Choisissez où les
-          déplacer&nbsp;:
+    <div role="dialog" aria-modal="true" style={overlay}>
+      <div style={card}>
+        <h2 style={title}>Supprimer "{folder.name}"&nbsp;?</h2>
+        <p style={body}>
+          Ce dossier contient {cvCount} CV. Choisissez où les déplacer&nbsp;:
         </p>
         <select
           value={target}
           onChange={(e) => setTarget(e.target.value)}
-          className="mb-5 w-full rounded-md border border-[var(--color-rule)] bg-white px-3 py-2 text-[13px]"
+          style={select}
         >
           {reassignTargets.map((t) => (
             <option key={t.id} value={t.id}>
@@ -48,12 +110,12 @@ export function DeleteFolderModal({
           ))}
         </select>
 
-        <div className="flex justify-end gap-3">
+        <div style={buttonRow}>
           <button
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="rounded-md px-3 py-1.5 text-[13px] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
+            style={cancelBtn}
           >
             Annuler
           </button>
@@ -69,7 +131,7 @@ export function DeleteFolderModal({
               }
             }}
             disabled={busy || !target}
-            className="rounded-md bg-red-600 px-4 py-1.5 text-[13px] font-medium text-white hover:opacity-90 disabled:opacity-60"
+            style={deleteBtn}
           >
             {busy ? "Suppression…" : "Supprimer"}
           </button>

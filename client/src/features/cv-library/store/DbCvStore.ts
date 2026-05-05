@@ -300,15 +300,53 @@ export class DbCvStore implements CvStore {
     } catch (err) {
       entry.inflight = false;
       entry.attempts += 1;
-      // Decide retryability by HTTP status, not by error code allowlist:
-      // any 4xx is the client's fault and won't recover by retrying. Only
-      // network errors (no httpStatus) and 5xx warrant the offline queue.
       const httpStatus =
         err instanceof CvStoreError
           ? (err as CvStoreError & { httpStatus?: number }).httpStatus
           : undefined;
+
+      // Auto-promote: a 404 on PATCH means this id has no DB row for the
+      // current user. If we have a full body in the partial, the user is
+      // actively editing an anon-style cv that hasn't been imported. Convert
+      // the failed PATCH into a POST so the CV materialises in the DB and
+      // future saves succeed. Resolve waiters with the server-generated
+      // record (caller can detect the id change and update its URL).
+      if (
+        httpStatus === 404 &&
+        entry.partial.data !== undefined &&
+        entry.partial.data !== null
+      ) {
+        try {
+          const promoted = await this.create(
+            {
+              title: entry.partial.title ?? "Nouveau CV",
+              templateId: entry.partial.templateId ?? "classique",
+            },
+            entry.partial.data,
+          );
+          this.queue.delete(id);
+          const waiters = entry.waiters;
+          entry.waiters = [];
+          for (const w of waiters) w.resolve(promoted);
+          this.setStatus("saved");
+          return;
+        } catch (createErr) {
+          // Fall through to error handling below.
+          err = createErr;
+        }
+      }
+
+      // Decide retryability by HTTP status, not by error code allowlist:
+      // any 4xx is the client's fault and won't recover by retrying. Only
+      // network errors (no httpStatus) and 5xx warrant the offline queue.
+      const finalStatus =
+        err instanceof CvStoreError
+          ? (err as CvStoreError & { httpStatus?: number }).httpStatus
+          : undefined;
       const isClientError =
-        typeof httpStatus === "number" && httpStatus >= 400 && httpStatus < 500;
+        typeof finalStatus === "number" &&
+        finalStatus >= 400 &&
+        finalStatus < 500;
       if (isClientError) {
         this.queue.delete(id);
         for (const w of entry.waiters) w.reject(err);
