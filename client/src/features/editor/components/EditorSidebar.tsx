@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { ChevronLeft, ChevronRight, FileText, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, Plus, Trash2 } from "lucide-react";
 import { templateRegistry, type TemplateId } from "@cvie/shared";
 import { useAuth0 } from "@auth0/auth0-react";
 import { cn } from "@/lib/utils";
@@ -269,8 +269,13 @@ function AuthedSidebar({
                     const isActive = cv.id === activeCvId;
                     const templateName =
                       templateRegistry.find((t) => t.id === cv.templateId)?.name ?? "Classique";
+                    const isInTrashFolder =
+                      folder.isSystem && folder.ttlDays !== null;
+                    const trashFolder = sortedFolders.find(
+                      (f) => f.isSystem && f.ttlDays !== null,
+                    );
                     return (
-                      <li key={cv.id}>
+                      <li key={cv.id} className="group relative">
                         <button
                           type="button"
                           onClick={() => openCv(cv)}
@@ -278,23 +283,21 @@ function AuthedSidebar({
                             e.preventDefault();
                             setContextMenu({
                               cv,
-                              isInTrash:
-                                folder.isSystem && folder.ttlDays !== null,
+                              isInTrash: isInTrashFolder,
                               x: e.clientX,
                               y: e.clientY,
                             });
                           }}
                           aria-current={isActive ? "page" : undefined}
-                          title={collapsed ? cv.title : undefined}
+                          title={collapsed ? cv.title : `${cv.title} — ${templateName}`}
                           className={cn(
                             "editor-sidebar__item relative flex w-full items-center gap-2 overflow-hidden rounded-lg text-left transition-colors motion-reduce:transition-none",
                             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/25",
-                            collapsed ? "h-9 justify-center px-2" : "px-3 py-2",
+                            collapsed ? "h-9 justify-center px-2" : "px-3 py-2 pr-8",
                             isActive
                               ? "bg-[var(--color-paper-deep)]/85 text-[var(--color-ink)]"
                               : "text-[var(--color-ink)] hover:bg-white/60",
                           )}
-                          title={collapsed ? cv.title : `${cv.title} — ${templateName}`}
                         >
                           {collapsed ? (
                             <FileText
@@ -316,6 +319,24 @@ function AuthedSidebar({
                             </>
                           )}
                         </button>
+                        {!collapsed && !isInTrashFolder && trashFolder ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void lib.moveCv(cv.id, trashFolder.id);
+                            }}
+                            aria-label="Mettre à la corbeille"
+                            title="Mettre à la corbeille"
+                            className={cn(
+                              "absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 opacity-0 transition-opacity",
+                              "text-[var(--color-ink-soft)] group-hover:opacity-100 hover:text-red-600",
+                              "focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/25",
+                            )}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                          </button>
+                        ) : null}
                       </li>
                     );
                   })}
