@@ -73,12 +73,14 @@ export async function createCv(
     );
   }
 
-  const parsed = cvDataSchema.safeParse(input.data);
-  if (!parsed.success) {
-    throw new CvError("VALIDATION", "CV data failed schema validation.");
-  }
-
   const targetFolderId = input.folderId ?? default_.id;
+
+  // On create, accept partial/empty data — the editor hydrates and overwrites
+  // via PATCH on first save. Strict schema validation lives in patchCv.
+  const parsed = cvDataSchema.safeParse(input.data);
+  const stored = parsed.success
+    ? (parsed.data as unknown as object)
+    : ((input.data ?? {}) as object);
 
   return prisma.cv.create({
     data: {
@@ -86,7 +88,7 @@ export async function createCv(
       folderId: targetFolderId,
       title: input.title,
       templateId: input.templateId,
-      data: parsed.data as unknown as object,
+      data: stored,
     },
   });
 }
