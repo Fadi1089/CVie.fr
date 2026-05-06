@@ -89,7 +89,7 @@ function AuthedSidebar({
       await lib.moveCv(cvId, folderId);
       const target = lib.folders.find((f) => f.id === folderId);
       if (isTrashFolder(folderId)) {
-        toast.push("CV mis à la corbeille");
+        toast.push("CV mis à la corbeille", { variant: "info" });
       } else {
         toast.push(
           `CV déplacé vers « ${target?.name ?? "le dossier"} »`,
@@ -103,7 +103,7 @@ function AuthedSidebar({
   const hardDeleteCvWithToast = async (cvId: string) => {
     try {
       await lib.hardDeleteCv(cvId);
-      toast.push("CV supprimé définitivement", { variant: "success" });
+      toast.push("CV supprimé définitivement", { variant: "info" });
     } catch {
       toast.push("Échec de la suppression", { variant: "error" });
     }
