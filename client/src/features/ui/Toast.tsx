@@ -9,7 +9,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
-type ToastVariant = "default" | "success" | "error";
+type ToastVariant = "default" | "success" | "error" | "info";
 
 type Toast = {
   id: number;
@@ -24,11 +24,76 @@ type ToastContextValue = {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 const AUTO_DISMISS_MS = 2_500;
+const STYLE_TAG_ID = "cvie-toast-keyframes";
+
+const VARIANT_STYLES: Record<
+  ToastVariant,
+  { background: string; color: string; ring: string; glow: string }
+> = {
+  success: {
+    background: "linear-gradient(180deg, #16a34a 0%, #15803d 100%)",
+    color: "#ffffff",
+    ring: "rgba(22, 163, 74, 0.45)",
+    glow: "rgba(22, 163, 74, 0.55)",
+  },
+  error: {
+    background: "linear-gradient(180deg, #dc2626 0%, #b91c1c 100%)",
+    color: "#ffffff",
+    ring: "rgba(220, 38, 38, 0.45)",
+    glow: "rgba(220, 38, 38, 0.55)",
+  },
+  info: {
+    background: "linear-gradient(180deg, #1e3a5f 0%, #0f2540 100%)",
+    color: "#ffffff",
+    ring: "rgba(30, 58, 95, 0.45)",
+    glow: "rgba(30, 58, 95, 0.5)",
+  },
+  default: {
+    background: "linear-gradient(180deg, #1f1f1f 0%, #0a0a0a 100%)",
+    color: "#ffffff",
+    ring: "rgba(0, 0, 0, 0.4)",
+    glow: "rgba(0, 0, 0, 0.45)",
+  },
+};
+
+function ensureKeyframes(): void {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(STYLE_TAG_ID)) return;
+  const style = document.createElement("style");
+  style.id = STYLE_TAG_ID;
+  style.textContent = `
+@keyframes cvie-toast-bloom {
+  0%   { transform: translateY(28px) scale(0.78); opacity: 0; filter: blur(6px); }
+  55%  { transform: translateY(-6px) scale(1.05);  opacity: 1; filter: blur(0); }
+  100% { transform: translateY(0)    scale(1);     opacity: 1; filter: blur(0); }
+}
+@keyframes cvie-toast-glow {
+  0%   { box-shadow: 0 0 0 0 var(--cvie-toast-glow), 0 14px 32px -10px rgba(0,0,0,0.45); }
+  60%  { box-shadow: 0 0 0 14px transparent, 0 14px 32px -10px rgba(0,0,0,0.45); }
+  100% { box-shadow: 0 0 0 0 transparent, 0 14px 32px -10px rgba(0,0,0,0.35); }
+}
+.cvie-toast {
+  animation:
+    cvie-toast-bloom 380ms cubic-bezier(0.22, 1, 0.36, 1) both,
+    cvie-toast-glow  900ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cvie-toast {
+    animation: none;
+  }
+}
+`.trim();
+  document.head.appendChild(style);
+}
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const seq = useRef(0);
   const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
+
+  useEffect(() => {
+    ensureKeyframes();
+  }, []);
 
   const dismiss = useCallback((id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -72,43 +137,49 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           aria-atomic="true"
           style={{
             position: "fixed",
-            bottom: "1rem",
-            right: "1rem",
+            bottom: "2rem",
+            left: "50%",
+            transform: "translateX(-50%)",
             zIndex: 60,
             display: "flex",
-            flexDirection: "column",
+            flexDirection: "column-reverse",
+            alignItems: "center",
             gap: "0.5rem",
             pointerEvents: "none",
           }}
         >
-          {toasts.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => dismiss(t.id)}
-              style={{
-                pointerEvents: "auto",
-                background:
-                  t.variant === "error"
-                    ? "#dc2626"
-                    : t.variant === "success"
-                      ? "#0a0a0a"
-                      : "#0a0a0a",
-                color: "white",
-                padding: "0.625rem 0.875rem",
-                borderRadius: "0.375rem",
-                fontSize: "13px",
-                fontFamily: "system-ui, -apple-system, sans-serif",
-                boxShadow: "0 10px 25px -5px rgba(0,0,0,0.3)",
-                border: "none",
-                cursor: "pointer",
-                maxWidth: "20rem",
-                textAlign: "left",
-              }}
-            >
-              {t.message}
-            </button>
-          ))}
+          {toasts.map((t) => {
+            const v = VARIANT_STYLES[t.variant];
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => dismiss(t.id)}
+                className="cvie-toast"
+                style={
+                  {
+                    pointerEvents: "auto",
+                    background: v.background,
+                    color: v.color,
+                    padding: "0.625rem 1rem",
+                    borderRadius: "999px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    fontFamily:
+                      "system-ui, -apple-system, 'SF Pro Text', sans-serif",
+                    border: `1px solid ${v.ring}`,
+                    cursor: "pointer",
+                    maxWidth: "min(28rem, 90vw)",
+                    textAlign: "center",
+                    letterSpacing: "0.01em",
+                    "--cvie-toast-glow": v.glow,
+                  } as React.CSSProperties
+                }
+              >
+                {t.message}
+              </button>
+            );
+          })}
         </div>,
         document.body,
       )}
@@ -119,7 +190,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 export function useToast(): ToastContextValue {
   const ctx = useContext(ToastContext);
   if (!ctx) {
-    // Fallback no-op so calling components don't crash if provider is absent.
     return { push: () => {} };
   }
   return ctx;
