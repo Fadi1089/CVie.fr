@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router";
 import { ChevronLeft, FileText, Plus, Trash2 } from "lucide-react";
 import { createEmptyCv, templateRegistry, type TemplateId } from "@cvie/shared";
@@ -53,6 +54,88 @@ function writeFolderCollapsed(sub: string, ids: Set<string>): void {
   } catch {
     /* ignore */
   }
+}
+
+function CvNameModal({
+  onConfirm,
+  onCancel,
+}: {
+  onConfirm: (name: string) => void;
+  onCancel: () => void;
+}) {
+  const [value, setValue] = useState("Nouveau CV");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.select();
+  }, []);
+
+  const submit = () => {
+    const name = value.trim().slice(0, 200) || "Nouveau CV";
+    onConfirm(name);
+  };
+
+  return createPortal(
+    <>
+      <div
+        className="fixed inset-0 z-50"
+        aria-hidden="true"
+        onClick={onCancel}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Nom du nouveau CV"
+        className="fixed left-1/2 top-1/3 z-50 w-72 -translate-x-1/2 -translate-y-1/2"
+        style={{
+          background: "var(--color-paper)",
+          border: "1px solid var(--color-rule)",
+          borderRadius: "1rem",
+          boxShadow: "0 8px 40px -8px rgba(10,10,10,0.18), 0 2px 8px -2px rgba(10,10,10,0.08)",
+          padding: "1.25rem",
+          display: "flex",
+          flexDirection: "column",
+          gap: "1rem",
+        }}
+      >
+        <p
+          className="font-mono-caps text-[10px] tracking-[0.18em] text-[var(--color-ink-soft)]"
+        >
+          NOUVEAU CV
+        </p>
+        <input
+          ref={inputRef}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && value.trim()) submit();
+            if (e.key === "Escape") onCancel();
+          }}
+          className="w-full rounded-lg border border-[var(--color-rule)] bg-white/60 px-3 py-2 font-display text-[16px] tracking-[-0.01em] text-[var(--color-ink)] outline-none focus:border-[var(--color-ink-soft)]/50 focus:ring-2 focus:ring-[var(--color-ink)]/10"
+          maxLength={200}
+          autoComplete="off"
+        />
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="font-mono-caps rounded-full px-4 py-2 text-[10px] tracking-[0.18em] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] transition-colors"
+          >
+            ANNULER
+          </button>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!value.trim()}
+            className="rounded-full bg-[var(--color-ink)] px-4 py-2 text-[12px] font-medium text-white transition-colors hover:bg-[var(--color-ink)]/85 disabled:opacity-40"
+          >
+            Créer
+          </button>
+        </div>
+      </div>
+    </>,
+    document.body,
+  );
 }
 
 function folderAccent(folder: Folder): string {
@@ -123,11 +206,9 @@ function AuthedSidebar({
       toast.push("Échec de la suppression", { variant: "error" });
     }
   };
-  const onCreateCv = async () => {
+  const createCvWithName = async (title: string) => {
     const templateId = activeTemplateId ?? "classique";
-    const raw = window.prompt("Nom du nouveau CV", "Nouveau CV");
-    if (raw === null) return;
-    const title = raw.trim().slice(0, 200) || "Nouveau CV";
+    setCvNameModalOpen(false);
     try {
       const created = await lib.createCv(
         { title, templateId },
@@ -146,6 +227,7 @@ function AuthedSidebar({
       toast.push("Impossible de créer le CV", { variant: "error" });
     }
   };
+  const onCreateCv = () => setCvNameModalOpen(true);
   const [folderCollapsed, setFolderCollapsed] = useState<Set<string>>(() =>
     readFolderCollapsed(sub),
   );
@@ -161,6 +243,7 @@ function AuthedSidebar({
     null,
   );
   const [replierSpin, setReplierSpin] = useState(collapsed ? 180 : 0);
+  const [cvNameModalOpen, setCvNameModalOpen] = useState(false);
 
   useEffect(() => {
     writeFolderCollapsed(sub, folderCollapsed);
@@ -431,7 +514,8 @@ function AuthedSidebar({
                 onChange={(e) => setFolderDraft(e.target.value)}
                 onBlur={submitNewFolder}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") void submitNewFolder();
+                  if (e.key === "Enter" && folderDraft.trim().length > 0)
+                    void submitNewFolder();
                   if (e.key === "Escape") {
                     setFolderDraft("");
                     setCreatingFolder(false);
@@ -533,6 +617,13 @@ function AuthedSidebar({
           onCancel={() => setDeleteFolderTarget(null)}
         />
       ) : null}
+
+      {cvNameModalOpen ? (
+        <CvNameModal
+          onConfirm={(name) => void createCvWithName(name)}
+          onCancel={() => setCvNameModalOpen(false)}
+        />
+      ) : null}
     </aside>
   );
 }
@@ -547,6 +638,7 @@ function AnonSidebar({
   const navigate = useNavigate();
   const [library, setLibrary] = useState<CvLibraryRecord[]>(() => readCvLibrary());
   const [replierSpin, setReplierSpin] = useState(collapsed ? 180 : 0);
+  const [cvNameModalOpen, setCvNameModalOpen] = useState(false);
 
   useEffect(() => {
     setLibrary(readCvLibrary());
@@ -574,23 +666,28 @@ function AnonSidebar({
     [navigate],
   );
 
-  const handleCreate = useCallback(() => {
-    const templateId = activeTemplateId ?? "classique";
-    const raw = window.prompt("Nom du nouveau CV", "Nouveau CV");
-    if (raw === null) return;
-    const title = raw.trim().slice(0, 200) || "Nouveau CV";
-    const newCv = createCvRecord(templateId, title);
-    setLibrary(readCvLibrary());
-    onCvCreated?.(newCv);
-    try {
-      window.localStorage.setItem(TEMPLATE_SELECTION_KEY, templateId);
-    } catch {
-      /* ignore */
-    }
-    navigate(
-      `/editor?template=${templateId}&cv=${encodeURIComponent(newCv.id)}&new=1`,
-    );
-  }, [activeTemplateId, navigate, onCvCreated]);
+  const createCvWithName = useCallback(
+    (title: string) => {
+      const templateId = activeTemplateId ?? "classique";
+      setCvNameModalOpen(false);
+      const newCv = createCvRecord(templateId, title);
+      setLibrary(readCvLibrary());
+      onCvCreated?.(newCv);
+      try {
+        window.localStorage.setItem(TEMPLATE_SELECTION_KEY, templateId);
+      } catch {
+        /* ignore */
+      }
+      navigate(
+        `/editor?template=${templateId}&cv=${encodeURIComponent(newCv.id)}&new=1`,
+      );
+    },
+    [activeTemplateId, navigate, onCvCreated],
+  );
+  const handleCreate = useCallback(
+    () => setCvNameModalOpen(true),
+    [],
+  );
 
   const items = useMemo(() => {
     return library.map((cv, index) => {
@@ -778,6 +875,13 @@ function AnonSidebar({
           Replier
         </span>
       </button>
+
+      {cvNameModalOpen ? (
+        <CvNameModal
+          onConfirm={(name) => createCvWithName(name)}
+          onCancel={() => setCvNameModalOpen(false)}
+        />
+      ) : null}
     </aside>
   );
 }
