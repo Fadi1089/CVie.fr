@@ -177,8 +177,15 @@ export class DbCvStore implements CvStore {
       const { cv } = await this.request<{ cv: { data: CvData } }>(
         `/api/v1/cv/${encodeURIComponent(id)}`,
       );
-      // Hydrate local cache for next read
-      await this.opts.local.patch(id, { data: cv.data });
+      // Best-effort local cache. Empty/partial CVs (just-created, or sparse
+      // copies) fail LocalCvStore.patch's strict cvDataSchema check; the
+      // server is the source of truth, so swallow the cache error rather
+      // than failing the read.
+      try {
+        await this.opts.local.patch(id, { data: cv.data });
+      } catch {
+        /* ignore */
+      }
       return cv.data;
     } catch (err) {
       if (err instanceof CvStoreError && err.code === "NOT_FOUND") return null;
