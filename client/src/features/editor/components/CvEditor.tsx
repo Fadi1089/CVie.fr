@@ -147,7 +147,7 @@ export function CvEditor() {
     },
     [params, setParams],
   );
-  const { form, persistStatus, resetDraft } = useCvDraft(cvId, {
+  const { form, persistStatus, hydrating, resetDraft } = useCvDraft(cvId, {
     onPersisted: handleDraftPersisted,
     onCvIdChanged: handleCvIdChanged,
   });
@@ -236,6 +236,7 @@ export function CvEditor() {
         templateName={templateMeta.name}
         cvTitle={cvTitleInput}
         persistStatus={persistStatus}
+        hydrating={hydrating}
         unknownQuery={unknownQuery}
         unknownBannerDismissed={unknownBannerDismissed}
         onDismissUnknownBanner={() => setUnknownBannerDismissed(true)}
@@ -264,6 +265,7 @@ type EditorShellProps = {
   templateName: string;
   cvTitle: string;
   persistStatus: PersistStatus;
+  hydrating: boolean;
   unknownQuery: boolean;
   unknownBannerDismissed: boolean;
   onDismissUnknownBanner: () => void;
@@ -289,6 +291,7 @@ function EditorShell({
   templateName,
   cvTitle,
   persistStatus,
+  hydrating,
   unknownQuery,
   unknownBannerDismissed,
   onDismissUnknownBanner,
@@ -528,6 +531,7 @@ function EditorShell({
                   scale={scale}
                   overflowMode={overflowMode}
                   resetNonce={resetNonce}
+                  hydrating={hydrating}
                   onSectionClick={handlePreviewSectionClick}
                   headerActions={
                     <TemplateDrawerButton

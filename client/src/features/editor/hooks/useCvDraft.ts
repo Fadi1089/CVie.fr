@@ -20,6 +20,7 @@ export type PersistStatus = "idle" | "saving" | "saved" | "offline" | "failed";
 export type UseCvDraftReturn = {
   form: UseFormReturn<CvData>;
   persistStatus: PersistStatus;
+  hydrating: boolean;
   resetDraft: () => void;
 };
 
@@ -58,6 +59,7 @@ export function useCvDraft(cvId: string, options?: UseCvDraftOptions): UseCvDraf
     mode: "onBlur",
   });
   const [persistStatus, setPersistStatus] = useState<PersistStatus>("idle");
+  const [hydrating, setHydrating] = useState(true);
 
   const hasHydratedRef = useRef(false);
   const hasSeenHydratedSnapshotRef = useRef(false);
@@ -89,19 +91,28 @@ export function useCvDraft(cvId: string, options?: UseCvDraftOptions): UseCvDraf
     }
   };
 
-  // Hydrate on mount via store.
+  // Hydrate on cvId change via store. Reset the form to a clean empty
+  // skeleton synchronously so the previous CV's data never leaks into the
+  // preview while the read is in flight; flip hydrating off when the read
+  // resolves so the preview pane can stop showing its loading state.
   useEffect(() => {
     let alive = true;
+    setHydrating(true);
+    hasHydratedRef.current = false;
+    hasSeenHydratedSnapshotRef.current = false;
+    form.reset(createEmptyCv());
     void store
       .read(cvId)
       .then((draft) => {
         if (!alive) return;
         if (draft) form.reset(draft);
         hasHydratedRef.current = true;
+        setHydrating(false);
       })
       .catch(() => {
         if (!alive) return;
         hasHydratedRef.current = true;
+        setHydrating(false);
       });
     return () => {
       alive = false;
@@ -176,5 +187,5 @@ export function useCvDraft(cvId: string, options?: UseCvDraftOptions): UseCvDraf
     setPersistStatus("idle");
   };
 
-  return { form, persistStatus, resetDraft };
+  return { form, persistStatus, hydrating, resetDraft };
 }

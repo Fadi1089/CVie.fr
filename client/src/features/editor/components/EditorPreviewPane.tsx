@@ -18,6 +18,10 @@ type Props = {
   resetNonce?: number;
   onSectionClick?: (payload: { sectionId: string; itemId?: string }) => void;
   headerActions?: ReactNode;
+  /** True while useCvDraft is loading the CV body. Suppresses the validation
+   *  "frozen preview" error so we don't flash required-field complaints
+   *  against an empty form. */
+  hydrating?: boolean;
 };
 
 // Trackpad pinch sends many small ctrl+wheel events. exp() keeps zoom feel
@@ -89,6 +93,7 @@ export function EditorPreviewPane({
   resetNonce,
   onSectionClick,
   headerActions,
+  hydrating = false,
 }: Props) {
   const { getValues, control } = useFormContext<CvData>();
   const { isDirty } = useFormState({ control });
@@ -465,6 +470,14 @@ export function EditorPreviewPane({
       const parsed = cvDataSchema.safeParse(values);
 
       if (!parsed.success) {
+        if (hydrating) {
+          // Don't accuse the user of missing fields while the body is still
+          // loading. Hold the previous html (if any) and show the loading
+          // state until hydration completes.
+          setPhase("rendering");
+          setMessage(null);
+          return;
+        }
         setPhase("error");
         setMessage(firstValidationMessage(values));
         return;
@@ -513,7 +526,7 @@ export function EditorPreviewPane({
     }, AUTO_REFRESH_DEBOUNCE_MS);
 
     return () => window.clearTimeout(timer);
-  }, [watchedValues, templateId, overflowMode, autofillSync, getValues, isDirty]);
+  }, [watchedValues, templateId, overflowMode, autofillSync, getValues, isDirty, hydrating]);
 
   const statusText =
     phase === "rendering"
