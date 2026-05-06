@@ -8,6 +8,7 @@ type Props = {
   count: number;
   expanded: boolean;
   collapsed?: boolean;
+  accentColor?: string;
   onToggle: () => void;
   onRename?: (newName: string) => Promise<void>;
   onDelete?: () => void;
@@ -19,6 +20,7 @@ export function FolderHeader({
   count,
   expanded,
   collapsed = false,
+  accentColor,
   onToggle,
   onRename,
   onDelete,
@@ -71,16 +73,18 @@ export function FolderHeader({
         <span
           aria-hidden
           className="absolute left-[17px] top-1/2 -translate-y-1/2"
+          style={{ color: accentColor ?? "var(--color-ink-soft)" }}
         >
-          <Icon className="h-3.5 w-3.5 text-[var(--color-ink-soft)]" />
+          <Icon className="h-3.5 w-3.5" />
         </span>
         {!editing ? (
           <span
             className={cn(
-              "font-mono-caps absolute left-9 right-3 top-1/2 -translate-y-1/2 truncate text-[10px] tracking-[0.18em] text-[var(--color-ink-soft)]",
+              "font-mono-caps absolute left-9 right-3 top-1/2 -translate-y-1/2 truncate text-[10px] tracking-[0.18em]",
               "transition-opacity duration-[180ms]",
               collapsed ? "opacity-0" : "opacity-100",
             )}
+            style={{ color: accentColor ?? "var(--color-ink-soft)" }}
           >
             {folder.name.toUpperCase()} ({count})
           </span>

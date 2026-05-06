@@ -752,10 +752,18 @@ select:-webkit-autofill {
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  border: 1px solid var(--color-rule);
-  background: color-mix(in oklab, var(--color-paper-deep) 70%, white);
+  border: 1px solid #9f9984;
+  background: linear-gradient(
+    180deg,
+    #00bc38 0%,
+    #ffb900 21%,
+    #ff8302 41%,
+    #fe373d 60%,
+    #ac3b9a 80%,
+    #019fe0 100%
+  );
   color: var(--color-ink);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
 }
 
 .editor-sidebar__create {

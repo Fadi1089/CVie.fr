@@ -55,6 +55,16 @@ function writeFolderCollapsed(sub: string, ids: Set<string>): void {
   }
 }
 
+const FOLDER_PALETTE = ["#bf3ec1", "#2c8335", "#ff8302", "#019fe0", "#ac3b9a"];
+
+function folderAccent(folder: Folder): string {
+  if (folder.isSystem && folder.ttlDays === null) return "#206aab";
+  if (folder.isSystem && folder.ttlDays !== null) return "#b33d3b";
+  let hash = 0;
+  for (const ch of folder.id) hash = (hash + ch.charCodeAt(0)) | 0;
+  return FOLDER_PALETTE[Math.abs(hash) % FOLDER_PALETTE.length];
+}
+
 function compareFolders(a: Folder, b: Folder): number {
   // Default system folder ("Mes CV", ttlDays=null) first; user folders next; trash last.
   const order = (f: Folder) =>
@@ -256,8 +266,14 @@ function AuthedSidebar({
           aria-label="Creer un nouveau CV"
           title="Creer un nouveau CV"
         >
-          <Plus className="h-4 w-4 shrink-0" aria-hidden />
-          {!collapsed ? <span>Nouveau CV</span> : null}
+          {collapsed ? (
+            <Plus className="h-4 w-4 shrink-0" aria-hidden />
+          ) : (
+            <>
+              <Plus className="absolute left-4 h-4 w-4" aria-hidden />
+              <span>Nouveau CV</span>
+            </>
+          )}
         </button>
       </div>
 
@@ -275,6 +291,7 @@ function AuthedSidebar({
                 count={cvs.length}
                 expanded={!isCollapsed}
                 collapsed={collapsed}
+                accentColor={folderAccent(folder)}
                 onToggle={() => toggleFolder(folder.id)}
                 onExpandSidebar={() => onCollapsedChange(false)}
                 onRename={
@@ -583,8 +600,14 @@ function AnonSidebar({
           aria-label="Creer un nouveau CV"
           title="Creer un nouveau CV"
         >
-          <Plus className="h-4 w-4 shrink-0" aria-hidden />
-          {!collapsed ? <span>Nouveau CV</span> : null}
+          {collapsed ? (
+            <Plus className="h-4 w-4 shrink-0" aria-hidden />
+          ) : (
+            <>
+              <Plus className="absolute left-4 h-4 w-4" aria-hidden />
+              <span>Nouveau CV</span>
+            </>
+          )}
         </button>
       </div>
 
