@@ -454,7 +454,7 @@ function AuthedSidebar({
         ) : null}
       </nav>
 
-      <div className="relative h-14 border-t border-[var(--color-rule)]/80 px-4">
+      <div className="relative h-14 border-t border-[var(--color-rule)]/80">
         <AuthGate
           anon={<LoginButton compact={collapsed} />}
           authed={<UserMenu compact={collapsed} />}
@@ -475,14 +475,15 @@ function AuthedSidebar({
           "hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/25",
         )}
       >
-        <ChevronLeft
+        <span
           aria-hidden
-          className="absolute left-6 h-4 w-4 transition-transform duration-[320ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
-          style={{
-            top: "50%",
-            transform: `translateY(-50%) rotate(${replierSpin}deg)`,
-          }}
-        />
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+        >
+          <ChevronLeft
+            className="h-4 w-4 transition-transform duration-[320ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
+            style={{ transform: `rotate(${replierSpin}deg)` }}
+          />
+        </span>
         <span
           className={cn(
             "font-mono-caps absolute left-[60px] right-3 top-1/2 -translate-y-1/2 truncate text-left text-[10px] tracking-[0.18em]",
@@ -739,7 +740,7 @@ function AnonSidebar({
         </ul>
       </nav>
 
-      <div className="relative h-14 border-t border-[var(--color-rule)]/80 px-4">
+      <div className="relative h-14 border-t border-[var(--color-rule)]/80">
         <AuthGate
           anon={<LoginButton compact={collapsed} />}
           authed={<UserMenu compact={collapsed} />}
@@ -760,14 +761,15 @@ function AnonSidebar({
           "hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/25",
         )}
       >
-        <ChevronLeft
+        <span
           aria-hidden
-          className="absolute left-6 h-4 w-4 transition-transform duration-[320ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
-          style={{
-            top: "50%",
-            transform: `translateY(-50%) rotate(${replierSpin}deg)`,
-          }}
-        />
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+        >
+          <ChevronLeft
+            className="h-4 w-4 transition-transform duration-[320ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
+            style={{ transform: `rotate(${replierSpin}deg)` }}
+          />
+        </span>
         <span
           className={cn(
             "font-mono-caps absolute left-[60px] right-3 top-1/2 -translate-y-1/2 truncate text-left text-[10px] tracking-[0.18em]",

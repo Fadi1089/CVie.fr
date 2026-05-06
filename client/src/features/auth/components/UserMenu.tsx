@@ -30,14 +30,14 @@ export function UserMenu({ compact = false }: UserMenuProps) {
   return (
     <>
       <span
-        className="absolute left-0 top-1/2 -translate-y-1/2"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
         title={compact ? label : undefined}
       >
         {avatar}
       </span>
       <div
         className={cn(
-          "absolute left-11 right-3 top-1/2 -translate-y-1/2 truncate",
+          "absolute left-[60px] right-3 top-1/2 -translate-y-1/2 truncate",
           "transition-opacity duration-[180ms]",
           compact ? "opacity-0" : "opacity-100",
         )}

@@ -30,7 +30,7 @@ export function LoginButton({ className, compact = false }: LoginButtonProps) {
         onClick={onClick}
         title="Se connecter"
         aria-label="Se connecter"
-        className="absolute left-0 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--color-rule)] bg-white/85 text-[var(--color-ink)] hover:bg-white"
+        className="absolute left-1/2 top-1/2 inline-flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--color-rule)] bg-white/85 text-[var(--color-ink)] hover:bg-white"
       >
         <LogIn className="h-4 w-4" aria-hidden />
       </button>
