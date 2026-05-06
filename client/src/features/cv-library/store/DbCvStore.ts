@@ -207,11 +207,18 @@ export class DbCvStore implements CvStore {
         data: body,
       }),
     });
-    await this.opts.local.patch(cv.id, {
-      data: body,
-      title: cv.title,
-      templateId: cv.templateId,
-    });
+    // Best-effort local cache — empty/partial bodies may fail schema check,
+    // which is fine: the server row exists and the editor will PATCH valid
+    // data on first save, which repopulates the local cache then.
+    try {
+      await this.opts.local.patch(cv.id, {
+        data: body,
+        title: cv.title,
+        templateId: cv.templateId,
+      });
+    } catch {
+      /* ignore */
+    }
     return {
       id: cv.id,
       title: cv.title,
