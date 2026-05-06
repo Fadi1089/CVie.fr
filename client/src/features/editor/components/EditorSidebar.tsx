@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { ChevronLeft, FileText, Plus, Trash2 } from "lucide-react";
-import { templateRegistry, type TemplateId } from "@cvie/shared";
+import { createEmptyCv, templateRegistry, type TemplateId } from "@cvie/shared";
 import { useAuth0 } from "@auth0/auth0-react";
 import { cn } from "@/lib/utils";
 import { AuthGate, LoginButton, UserMenu } from "@/features/auth";
@@ -125,15 +125,13 @@ function AuthedSidebar({
   };
   const onCreateCv = async () => {
     const templateId = activeTemplateId ?? "classique";
+    const raw = window.prompt("Nom du nouveau CV", "Nouveau CV");
+    if (raw === null) return;
+    const title = raw.trim().slice(0, 200) || "Nouveau CV";
     try {
       const created = await lib.createCv(
-        { title: "Nouveau CV", templateId },
-        // Pass an empty-shape body; the editor will hydrate via the form.
-        // The schema rejects this on persistence — server returns VALIDATION,
-        // and we'll seed via the editor's first valid save instead. Keep the
-        // create call here so the library row exists for navigation.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        {} as any,
+        { title, templateId },
+        createEmptyCv(),
       );
       onCvCreated?.(created as unknown as CvLibraryRecord);
       try {
@@ -145,7 +143,7 @@ function AuthedSidebar({
         `/editor?template=${templateId}&cv=${encodeURIComponent(created.id)}&new=1`,
       );
     } catch {
-      /* surface in a future iteration (toast on quota) */
+      toast.push("Impossible de créer le CV", { variant: "error" });
     }
   };
   const [folderCollapsed, setFolderCollapsed] = useState<Set<string>>(() =>
@@ -578,7 +576,10 @@ function AnonSidebar({
 
   const handleCreate = useCallback(() => {
     const templateId = activeTemplateId ?? "classique";
-    const newCv = createCvRecord(templateId);
+    const raw = window.prompt("Nom du nouveau CV", "Nouveau CV");
+    if (raw === null) return;
+    const title = raw.trim().slice(0, 200) || "Nouveau CV";
+    const newCv = createCvRecord(templateId, title);
     setLibrary(readCvLibrary());
     onCvCreated?.(newCv);
     try {
