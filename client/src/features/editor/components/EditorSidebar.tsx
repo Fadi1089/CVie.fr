@@ -260,7 +260,21 @@ function AuthedSidebar({
         const current = await store.read(activeCvId);
         if (current) body = current;
       }
-      const created = await lib.createCv({ title, templateId }, body);
+      // Drop new CV into the same folder as the currently selected one,
+      // unless that folder is the trash (then default to Mes CV).
+      const selectedRow = lib.active.find((c) => c.id === activeCvId);
+      const selectedFolder = selectedRow
+        ? lib.folders.find((f) => f.id === selectedRow.folderId)
+        : undefined;
+      const targetFolderId =
+        selectedFolder &&
+        !(selectedFolder.isSystem && selectedFolder.ttlDays !== null)
+          ? selectedFolder.id
+          : undefined;
+      const created = await lib.createCv(
+        { title, templateId, folderId: targetFolderId },
+        body,
+      );
       onCvCreated?.(created as unknown as CvLibraryRecord);
       try {
         window.localStorage.setItem(TEMPLATE_SELECTION_KEY, templateId);
@@ -445,6 +459,7 @@ function AuthedSidebar({
                 count={cvs.length}
                 expanded={!isCollapsed}
                 collapsed={collapsed}
+                selected={cvs.some((c) => c.id === activeCvId)}
                 accentColor={folderAccent(folder)}
                 onToggle={() => toggleFolder(folder.id)}
                 onExpandSidebar={() => onCollapsedChange(false)}

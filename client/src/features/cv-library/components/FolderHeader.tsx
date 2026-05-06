@@ -8,6 +8,7 @@ type Props = {
   count: number;
   expanded: boolean;
   collapsed?: boolean;
+  selected?: boolean;
   accentColor?: string;
   onToggle: () => void;
   onRename?: (newName: string) => Promise<void>;
@@ -20,6 +21,7 @@ export function FolderHeader({
   count,
   expanded,
   collapsed = false,
+  selected = false,
   accentColor,
   onToggle,
   onRename,
@@ -56,13 +58,23 @@ export function FolderHeader({
 
   return (
     <div
-      className="group relative h-9 w-full overflow-hidden rounded-lg hover:bg-white/40"
+      className={cn(
+        "group relative h-9 w-full overflow-hidden rounded-lg transition-colors",
+        selected ? "bg-[var(--color-paper-deep)]/55" : "hover:bg-white/40",
+      )}
       onContextMenu={(e) => {
         if (collapsed || folder.isSystem) return;
         e.preventDefault();
         setEditing(true);
       }}
     >
+      {selected ? (
+        <span
+          aria-hidden
+          className="absolute left-1 top-1.5 bottom-1.5 w-[2px] rounded-full"
+          style={{ background: accentColor ?? "var(--color-ink)" }}
+        />
+      ) : null}
       <button
         type="button"
         onClick={handleClick}
