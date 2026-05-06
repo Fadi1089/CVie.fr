@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Folder as FolderIcon, Trash2 } from "lucide-react";
+import { Folder as FolderIcon, FolderOpen, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { Folder } from "../store/types";
@@ -26,7 +26,8 @@ export function FolderHeader({
 }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(folder.name);
-  const Icon = folder.isSystem && folder.ttlDays !== null ? Trash2 : FolderIcon;
+  const isTrash = folder.isSystem && folder.ttlDays !== null;
+  const Icon = isTrash ? Trash2 : expanded ? FolderOpen : FolderIcon;
 
   const commit = async () => {
     if (!onRename) return setEditing(false);
@@ -69,32 +70,14 @@ export function FolderHeader({
       >
         <span
           aria-hidden
-          className={cn(
-            "absolute left-2 top-1/2 -translate-y-1/2",
-            "transition-opacity duration-[180ms]",
-            collapsed ? "opacity-0" : "opacity-100",
-          )}
-        >
-          {expanded ? (
-            <ChevronDown className="h-3 w-3 text-[var(--color-ink-soft)]" />
-          ) : (
-            <ChevronRight className="h-3 w-3 text-[var(--color-ink-soft)]" />
-          )}
-        </span>
-        <span
-          aria-hidden
-          className={cn(
-            "absolute top-1/2 -translate-y-1/2",
-            "transition-[left] duration-[320ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
-            collapsed ? "left-[calc(50%-7px)]" : "left-7",
-          )}
+          className="absolute left-[17px] top-1/2 -translate-y-1/2"
         >
           <Icon className="h-3.5 w-3.5 text-[var(--color-ink-soft)]" />
         </span>
         {!editing ? (
           <span
             className={cn(
-              "font-mono-caps absolute left-12 right-3 top-1/2 -translate-y-1/2 truncate text-[10px] tracking-[0.18em] text-[var(--color-ink-soft)]",
+              "font-mono-caps absolute left-9 right-3 top-1/2 -translate-y-1/2 truncate text-[10px] tracking-[0.18em] text-[var(--color-ink-soft)]",
               "transition-opacity duration-[180ms]",
               collapsed ? "opacity-0" : "opacity-100",
             )}
@@ -116,7 +99,7 @@ export function FolderHeader({
               setEditing(false);
             }
           }}
-          className="font-mono-caps absolute left-12 right-3 top-1/2 -translate-y-1/2 bg-transparent text-[10px] tracking-[0.18em] outline-none"
+          className="font-mono-caps absolute left-9 right-3 top-1/2 -translate-y-1/2 bg-transparent text-[10px] tracking-[0.18em] outline-none"
           maxLength={64}
         />
       ) : null}

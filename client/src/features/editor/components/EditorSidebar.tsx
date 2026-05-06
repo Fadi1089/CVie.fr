@@ -399,13 +399,7 @@ function AuthedSidebar({
         ) : null}
       </nav>
 
-      <div
-        className={cn(
-          "flex h-14 items-center border-t border-[var(--color-rule)]/80",
-          "transition-[padding] duration-[320ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
-          collapsed ? "px-4" : "px-3",
-        )}
-      >
+      <div className="flex h-14 items-center border-t border-[var(--color-rule)]/80 px-4">
         <AuthGate
           anon={<LoginButton compact={collapsed} />}
           authed={<UserMenu compact={collapsed} />}
@@ -655,13 +649,7 @@ function AnonSidebar({
         </ul>
       </nav>
 
-      <div
-        className={cn(
-          "flex h-14 items-center border-t border-[var(--color-rule)]/80",
-          "transition-[padding] duration-[320ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
-          collapsed ? "px-4" : "px-3",
-        )}
-      >
+      <div className="flex h-14 items-center border-t border-[var(--color-rule)]/80 px-4">
         <AuthGate
           anon={<LoginButton compact={collapsed} />}
           authed={<UserMenu compact={collapsed} />}
