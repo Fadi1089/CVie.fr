@@ -12,6 +12,7 @@ import {
   type CvLibraryRecord,
 } from "@/features/cv-library/storage";
 import { useCvLibrary } from "@/features/cv-library/hooks/useCvLibrary";
+import { useToast } from "@/features/ui/Toast";
 import { FolderHeader } from "@/features/cv-library/components/FolderHeader";
 import { CvContextMenu } from "@/features/cv-library/components/CvContextMenu";
 import { DeleteFolderModal } from "@/features/cv-library/components/DeleteFolderModal";
@@ -78,6 +79,35 @@ function AuthedSidebar({
 }: EditorSidebarProps & { sub: string }) {
   const navigate = useNavigate();
   const lib = useCvLibrary();
+  const toast = useToast();
+  const isTrashFolder = (folderId: string) => {
+    const f = lib.folders.find((x) => x.id === folderId);
+    return f?.isSystem === true && f?.ttlDays !== null;
+  };
+  const moveCvWithToast = async (cvId: string, folderId: string) => {
+    try {
+      await lib.moveCv(cvId, folderId);
+      const target = lib.folders.find((f) => f.id === folderId);
+      if (isTrashFolder(folderId)) {
+        toast.push("CV mis à la corbeille");
+      } else {
+        toast.push(
+          `CV déplacé vers « ${target?.name ?? "le dossier"} »`,
+          { variant: "success" },
+        );
+      }
+    } catch {
+      toast.push("Échec du déplacement", { variant: "error" });
+    }
+  };
+  const hardDeleteCvWithToast = async (cvId: string) => {
+    try {
+      await lib.hardDeleteCv(cvId);
+      toast.push("CV supprimé définitivement", { variant: "success" });
+    } catch {
+      toast.push("Échec de la suppression", { variant: "error" });
+    }
+  };
   const onCreateCv = async () => {
     const templateId = activeTemplateId ?? "classique";
     try {
@@ -324,7 +354,7 @@ function AuthedSidebar({
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              void lib.moveCv(cv.id, trashFolder.id);
+                              void moveCvWithToast(cv.id, trashFolder.id);
                             }}
                             aria-label="Mettre à la corbeille"
                             title="Mettre à la corbeille"
@@ -425,19 +455,19 @@ function AuthedSidebar({
           folders={sortedFolders}
           isInTrash={contextMenu.isInTrash}
           onMove={(folderId) => {
-            void lib.moveCv(contextMenu.cv.id, folderId);
+            void moveCvWithToast(contextMenu.cv.id, folderId);
           }}
           onTrash={() => {
             const trash = sortedFolders.find(
               (f) => f.isSystem && f.ttlDays !== null,
             );
-            if (trash) void lib.moveCv(contextMenu.cv.id, trash.id);
+            if (trash) void moveCvWithToast(contextMenu.cv.id, trash.id);
           }}
           onRestore={(folderId) => {
-            void lib.moveCv(contextMenu.cv.id, folderId);
+            void moveCvWithToast(contextMenu.cv.id, folderId);
           }}
           onHardDelete={() => {
-            void lib.hardDeleteCv(contextMenu.cv.id);
+            void hardDeleteCvWithToast(contextMenu.cv.id);
           }}
           onClose={() => setContextMenu(null)}
         />
