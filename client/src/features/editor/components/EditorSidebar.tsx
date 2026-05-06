@@ -13,6 +13,7 @@ import {
   type CvLibraryRecord,
 } from "@/features/cv-library/storage";
 import { useCvLibrary } from "@/features/cv-library/hooks/useCvLibrary";
+import { useCvStore } from "@/features/cv-library/hooks/useCvStore";
 import { useToast } from "@/features/ui/Toast";
 import { FolderHeader } from "@/features/cv-library/components/FolderHeader";
 import { CvContextMenu } from "@/features/cv-library/components/CvContextMenu";
@@ -56,14 +57,21 @@ function writeFolderCollapsed(sub: string, ids: Set<string>): void {
   }
 }
 
+type StartMode = "empty" | "copy";
+
 function CvNameModal({
+  currentCvTitle,
+  canCopy,
   onConfirm,
   onCancel,
 }: {
-  onConfirm: (name: string) => void;
+  currentCvTitle?: string;
+  canCopy: boolean;
+  onConfirm: (name: string, mode: StartMode) => void;
   onCancel: () => void;
 }) {
   const [value, setValue] = useState("Nouveau CV");
+  const [mode, setMode] = useState<StartMode>("empty");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -72,7 +80,7 @@ function CvNameModal({
 
   const submit = () => {
     const name = value.trim().slice(0, 200) || "Nouveau CV";
-    onConfirm(name);
+    onConfirm(name, mode);
   };
 
   return createPortal(
@@ -86,7 +94,7 @@ function CvNameModal({
         role="dialog"
         aria-modal="true"
         aria-label="Nom du nouveau CV"
-        className="fixed left-1/2 top-1/3 z-50 w-72 -translate-x-1/2 -translate-y-1/2"
+        className="fixed left-1/2 top-1/3 z-50 w-80 -translate-x-1/2 -translate-y-1/2"
         style={{
           background: "var(--color-paper)",
           border: "1px solid var(--color-rule)",
@@ -98,9 +106,7 @@ function CvNameModal({
           gap: "1rem",
         }}
       >
-        <p
-          className="font-mono-caps text-[10px] tracking-[0.18em] text-[var(--color-ink-soft)]"
-        >
+        <p className="font-mono-caps text-[10px] tracking-[0.18em] text-[var(--color-ink-soft)]">
           NOUVEAU CV
         </p>
         <input
@@ -115,6 +121,44 @@ function CvNameModal({
           maxLength={200}
           autoComplete="off"
         />
+        {canCopy ? (
+          <div className="flex flex-col gap-2">
+            <p className="font-mono-caps text-[10px] tracking-[0.18em] text-[var(--color-ink-soft)]">
+              CONTENU INITIAL
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setMode("empty")}
+                aria-pressed={mode === "empty"}
+                className={cn(
+                  "rounded-lg border px-3 py-2 text-[12px] transition-colors",
+                  mode === "empty"
+                    ? "border-[var(--color-ink)] bg-[var(--color-ink)] text-white"
+                    : "border-[var(--color-rule)] bg-white/60 text-[var(--color-ink)] hover:border-[var(--color-ink-soft)]/50",
+                )}
+              >
+                Vierge
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("copy")}
+                aria-pressed={mode === "copy"}
+                title={
+                  currentCvTitle ? `Copier « ${currentCvTitle} »` : "Copier le CV actuel"
+                }
+                className={cn(
+                  "rounded-lg border px-3 py-2 text-[12px] transition-colors",
+                  mode === "copy"
+                    ? "border-[var(--color-ink)] bg-[var(--color-ink)] text-white"
+                    : "border-[var(--color-rule)] bg-white/60 text-[var(--color-ink)] hover:border-[var(--color-ink-soft)]/50",
+                )}
+              >
+                Copier l’actuel
+              </button>
+            </div>
+          </div>
+        ) : null}
         <div className="flex justify-end gap-2">
           <button
             type="button"
@@ -177,6 +221,7 @@ function AuthedSidebar({
 }: EditorSidebarProps & { sub: string }) {
   const navigate = useNavigate();
   const lib = useCvLibrary();
+  const store = useCvStore();
   const toast = useToast();
   const isTrashFolder = (folderId: string) => {
     const f = lib.folders.find((x) => x.id === folderId);
@@ -206,14 +251,16 @@ function AuthedSidebar({
       toast.push("Échec de la suppression", { variant: "error" });
     }
   };
-  const createCvWithName = async (title: string) => {
+  const createCvWithName = async (title: string, mode: StartMode) => {
     const templateId = activeTemplateId ?? "classique";
     setCvNameModalOpen(false);
     try {
-      const created = await lib.createCv(
-        { title, templateId },
-        createEmptyCv(),
-      );
+      let body = createEmptyCv();
+      if (mode === "copy" && activeCvId) {
+        const current = await store.read(activeCvId);
+        if (current) body = current;
+      }
+      const created = await lib.createCv({ title, templateId }, body);
       onCvCreated?.(created as unknown as CvLibraryRecord);
       try {
         window.localStorage.setItem(TEMPLATE_SELECTION_KEY, templateId);
@@ -620,7 +667,11 @@ function AuthedSidebar({
 
       {cvNameModalOpen ? (
         <CvNameModal
-          onConfirm={(name) => void createCvWithName(name)}
+          canCopy={Boolean(activeCvId)}
+          currentCvTitle={
+            lib.active.find((c) => c.id === activeCvId)?.title
+          }
+          onConfirm={(name, mode) => void createCvWithName(name, mode)}
           onCancel={() => setCvNameModalOpen(false)}
         />
       ) : null}
@@ -878,6 +929,7 @@ function AnonSidebar({
 
       {cvNameModalOpen ? (
         <CvNameModal
+          canCopy={false}
           onConfirm={(name) => createCvWithName(name)}
           onCancel={() => setCvNameModalOpen(false)}
         />
