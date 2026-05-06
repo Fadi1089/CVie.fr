@@ -24,27 +24,25 @@ export function LoginButton({ className, compact = false }: LoginButtonProps) {
   }
 
   return (
-    <div
-      className="flex items-center gap-3 overflow-hidden"
-      title={compact ? "Se connecter" : undefined}
-    >
+    <>
       <button
         type="button"
         onClick={onClick}
         title="Se connecter"
         aria-label="Se connecter"
-        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-rule)] bg-white/85 text-[var(--color-ink)] hover:bg-white"
+        className="absolute left-0 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--color-rule)] bg-white/85 text-[var(--color-ink)] hover:bg-white"
       >
         <LogIn className="h-4 w-4" aria-hidden />
       </button>
       <span
         className={cn(
-          "truncate text-[13px] text-[var(--color-ink)]",
-          compact && "hidden",
+          "absolute left-11 right-3 top-1/2 -translate-y-1/2 truncate text-[13px] text-[var(--color-ink)]",
+          "transition-opacity duration-[180ms]",
+          compact ? "opacity-0" : "opacity-100",
         )}
       >
         Se connecter
       </span>
-    </div>
+    </>
   );
 }

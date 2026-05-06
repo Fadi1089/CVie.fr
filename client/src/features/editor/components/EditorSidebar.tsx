@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { ChevronLeft, ChevronRight, FileText, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, FileText, Plus, Trash2 } from "lucide-react";
 import { templateRegistry, type TemplateId } from "@cvie/shared";
 import { useAuth0 } from "@auth0/auth0-react";
 import { cn } from "@/lib/utils";
@@ -162,6 +162,7 @@ function AuthedSidebar({
   const [deleteFolderTarget, setDeleteFolderTarget] = useState<Folder | null>(
     null,
   );
+  const [replierSpin, setReplierSpin] = useState(collapsed ? 180 : 0);
 
   useEffect(() => {
     writeFolderCollapsed(sub, folderCollapsed);
@@ -455,36 +456,45 @@ function AuthedSidebar({
         ) : null}
       </nav>
 
-      <div className="flex h-14 items-center border-t border-[var(--color-rule)]/80 px-4">
+      <div className="relative h-14 border-t border-[var(--color-rule)]/80 px-4">
         <AuthGate
           anon={<LoginButton compact={collapsed} />}
           authed={<UserMenu compact={collapsed} />}
         />
       </div>
 
-      <div className="border-t border-[var(--color-rule)]/80 px-3 py-2.5">
-        <button
-          type="button"
-          onClick={() => onCollapsedChange(!collapsed)}
-          aria-label={collapsed ? "Deplier la barre laterale" : "Replier la barre laterale"}
-          aria-pressed={collapsed}
-          title={collapsed ? "Deplier" : "Replier"}
+      <button
+        type="button"
+        onClick={() => {
+          setReplierSpin((s) => s + 180);
+          onCollapsedChange(!collapsed);
+        }}
+        aria-label={collapsed ? "Deplier la barre laterale" : "Replier la barre laterale"}
+        aria-pressed={collapsed}
+        title={collapsed ? "Deplier" : "Replier"}
+        className={cn(
+          "relative h-12 w-full border-t border-[var(--color-rule)]/80 text-[12px] text-[var(--color-ink-soft)] transition-colors",
+          "hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/25",
+        )}
+      >
+        <ChevronLeft
+          aria-hidden
+          className="absolute left-[25px] h-4 w-4 transition-transform duration-[320ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
+          style={{
+            top: "50%",
+            transform: `translateY(-50%) rotate(${replierSpin}deg)`,
+          }}
+        />
+        <span
           className={cn(
-            "inline-flex items-center gap-2 rounded-md text-[12px] text-[var(--color-ink-soft)] transition-colors",
-            "hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/25",
-            collapsed ? "h-9 w-full justify-center" : "h-9 px-2",
+            "font-mono-caps absolute left-[44px] right-3 top-1/2 -translate-y-1/2 truncate text-left text-[10px] tracking-[0.18em]",
+            "transition-opacity duration-[180ms]",
+            collapsed ? "opacity-0" : "opacity-100",
           )}
         >
-          {collapsed ? (
-            <ChevronRight className="h-4 w-4" aria-hidden />
-          ) : (
-            <>
-              <ChevronLeft className="h-4 w-4" aria-hidden />
-              <span className="font-mono-caps text-[10px] tracking-[0.18em]">Replier</span>
-            </>
-          )}
-        </button>
-      </div>
+          Replier
+        </span>
+      </button>
 
       {contextMenu ? (
         <CvContextMenu
@@ -538,6 +548,7 @@ function AnonSidebar({
 }: EditorSidebarProps) {
   const navigate = useNavigate();
   const [library, setLibrary] = useState<CvLibraryRecord[]>(() => readCvLibrary());
+  const [replierSpin, setReplierSpin] = useState(collapsed ? 180 : 0);
 
   useEffect(() => {
     setLibrary(readCvLibrary());
@@ -727,36 +738,45 @@ function AnonSidebar({
         </ul>
       </nav>
 
-      <div className="flex h-14 items-center border-t border-[var(--color-rule)]/80 px-4">
+      <div className="relative h-14 border-t border-[var(--color-rule)]/80 px-4">
         <AuthGate
           anon={<LoginButton compact={collapsed} />}
           authed={<UserMenu compact={collapsed} />}
         />
       </div>
 
-      <div className="border-t border-[var(--color-rule)]/80 px-3 py-2.5">
-        <button
-          type="button"
-          onClick={() => onCollapsedChange(!collapsed)}
-          aria-label={collapsed ? "Deplier la barre laterale" : "Replier la barre laterale"}
-          aria-pressed={collapsed}
-          title={collapsed ? "Deplier" : "Replier"}
+      <button
+        type="button"
+        onClick={() => {
+          setReplierSpin((s) => s + 180);
+          onCollapsedChange(!collapsed);
+        }}
+        aria-label={collapsed ? "Deplier la barre laterale" : "Replier la barre laterale"}
+        aria-pressed={collapsed}
+        title={collapsed ? "Deplier" : "Replier"}
+        className={cn(
+          "relative h-12 w-full border-t border-[var(--color-rule)]/80 text-[12px] text-[var(--color-ink-soft)] transition-colors",
+          "hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/25",
+        )}
+      >
+        <ChevronLeft
+          aria-hidden
+          className="absolute left-[25px] h-4 w-4 transition-transform duration-[320ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
+          style={{
+            top: "50%",
+            transform: `translateY(-50%) rotate(${replierSpin}deg)`,
+          }}
+        />
+        <span
           className={cn(
-            "inline-flex items-center gap-2 rounded-md text-[12px] text-[var(--color-ink-soft)] transition-colors",
-            "hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/25",
-            collapsed ? "h-9 w-full justify-center" : "h-9 px-2",
+            "font-mono-caps absolute left-[44px] right-3 top-1/2 -translate-y-1/2 truncate text-left text-[10px] tracking-[0.18em]",
+            "transition-opacity duration-[180ms]",
+            collapsed ? "opacity-0" : "opacity-100",
           )}
         >
-          {collapsed ? (
-            <ChevronRight className="h-4 w-4" aria-hidden />
-          ) : (
-            <>
-              <ChevronLeft className="h-4 w-4" aria-hidden />
-              <span className="font-mono-caps text-[10px] tracking-[0.18em]">Replier</span>
-            </>
-          )}
-        </button>
-      </div>
+          Replier
+        </span>
+      </button>
     </aside>
   );
 }
