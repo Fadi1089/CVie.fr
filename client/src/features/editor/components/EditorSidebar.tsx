@@ -270,27 +270,27 @@ function AuthedSidebar({
           const cvs = cvsByFolder.get(folder.id) ?? [];
           return (
             <div key={folder.id}>
-              {!collapsed ? (
-                <FolderHeader
-                  folder={folder}
-                  count={cvs.length}
-                  expanded={!isCollapsed}
-                  onToggle={() => toggleFolder(folder.id)}
-                  onRename={
-                    folder.isSystem
-                      ? undefined
-                      : async (next) => {
-                          await lib.renameFolder(folder.id, next);
-                        }
-                  }
-                  onDelete={
-                    folder.isSystem
-                      ? undefined
-                      : () => setDeleteFolderTarget(folder)
-                  }
-                />
-              ) : null}
-              {!isCollapsed && cvs.length > 0 ? (
+              <FolderHeader
+                folder={folder}
+                count={cvs.length}
+                expanded={!isCollapsed}
+                collapsed={collapsed}
+                onToggle={() => toggleFolder(folder.id)}
+                onExpandSidebar={() => onCollapsedChange(false)}
+                onRename={
+                  folder.isSystem
+                    ? undefined
+                    : async (next) => {
+                        await lib.renameFolder(folder.id, next);
+                      }
+                }
+                onDelete={
+                  folder.isSystem
+                    ? undefined
+                    : () => setDeleteFolderTarget(folder)
+                }
+              />
+              {!collapsed && !isCollapsed && cvs.length > 0 ? (
                 <ul className="flex flex-col gap-0.5">
                   {cvs.map((cv, idx) => {
                     const isActive = cv.id === activeCvId;
@@ -316,12 +316,10 @@ function AuthedSidebar({
                             });
                           }}
                           aria-current={isActive ? "page" : undefined}
-                          title={collapsed ? cv.title : `${cv.title} — ${templateName}`}
+                          title={`${cv.title} — ${templateName}`}
                           className={cn(
-                            "editor-sidebar__item relative flex h-9 w-full items-center gap-2 overflow-hidden rounded-lg text-left transition-colors motion-reduce:transition-none",
+                            "editor-sidebar__item relative flex h-9 w-full items-center gap-2 overflow-hidden rounded-lg px-3 pr-8 text-left transition-colors motion-reduce:transition-none",
                             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/25",
-                            "px-2 transition-[padding] duration-[240ms] ease-[cubic-bezier(0.32,0.72,0.24,1)]",
-                            !collapsed && "pr-8",
                             isActive
                               ? "bg-[var(--color-paper-deep)]/85 text-[var(--color-ink)]"
                               : "text-[var(--color-ink)] hover:bg-white/60",
@@ -331,26 +329,14 @@ function AuthedSidebar({
                             className="h-3.5 w-3.5 shrink-0 text-[var(--color-ink-soft)]"
                             aria-hidden
                           />
-                          <span
-                            className={cn(
-                              "font-display flex-1 truncate text-[14px] tracking-[-0.01em]",
-                              "transition-opacity duration-[180ms]",
-                              collapsed ? "opacity-0" : "opacity-100",
-                            )}
-                          >
+                          <span className="font-display flex-1 truncate text-[14px] tracking-[-0.01em]">
                             {cv.title}
                           </span>
-                          <span
-                            className={cn(
-                              "font-mono-caps shrink-0 text-[9px] tabular-nums text-[var(--color-ink-soft)]",
-                              "transition-opacity duration-[180ms]",
-                              collapsed ? "opacity-0" : "opacity-100",
-                            )}
-                          >
+                          <span className="font-mono-caps shrink-0 text-[9px] tabular-nums text-[var(--color-ink-soft)]">
                             {String(idx + 1).padStart(2, "0")}
                           </span>
                         </button>
-                        {!collapsed && !isInTrashFolder && trashFolder ? (
+                        {!isInTrashFolder && trashFolder ? (
                           <button
                             type="button"
                             onClick={(e) => {
@@ -416,7 +402,7 @@ function AuthedSidebar({
       <div
         className={cn(
           "flex h-14 items-center border-t border-[var(--color-rule)]/80",
-          "transition-[padding] duration-[240ms] ease-[cubic-bezier(0.32,0.72,0.24,1)]",
+          "transition-[padding] duration-[320ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
           collapsed ? "px-4" : "px-3",
         )}
       >
@@ -672,7 +658,7 @@ function AnonSidebar({
       <div
         className={cn(
           "flex h-14 items-center border-t border-[var(--color-rule)]/80",
-          "transition-[padding] duration-[240ms] ease-[cubic-bezier(0.32,0.72,0.24,1)]",
+          "transition-[padding] duration-[320ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
           collapsed ? "px-4" : "px-3",
         )}
       >
