@@ -485,7 +485,7 @@ function AuthedSidebar({
           title="Creer un nouveau CV"
         >
           <Plus
-            className="absolute left-[11px] top-1/2 h-4 w-4 -translate-y-1/2"
+            className="absolute left-[10.5px] top-1/2 h-4 w-4 -translate-y-1/2"
             aria-hidden
           />
           <span
