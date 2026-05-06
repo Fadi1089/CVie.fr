@@ -262,10 +262,7 @@ function AuthedSidebar({
       </div>
 
       <nav
-        className={cn(
-          "editor-sidebar__list min-h-0 flex-1 overflow-y-auto",
-          collapsed ? "px-1.5 py-1" : "px-2 py-1",
-        )}
+        className="editor-sidebar__list min-h-0 flex-1 overflow-y-auto px-2 py-1"
         aria-label="Bibliothèque par dossier"
       >
         {sortedFolders.map((folder) => {
@@ -321,33 +318,37 @@ function AuthedSidebar({
                           aria-current={isActive ? "page" : undefined}
                           title={collapsed ? cv.title : `${cv.title} — ${templateName}`}
                           className={cn(
-                            "editor-sidebar__item relative flex w-full items-center gap-2 overflow-hidden rounded-lg text-left transition-colors motion-reduce:transition-none",
+                            "editor-sidebar__item relative flex h-9 w-full items-center gap-2 overflow-hidden rounded-lg text-left transition-colors motion-reduce:transition-none",
                             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/25",
-                            collapsed ? "h-9 justify-center px-2" : "px-3 py-2 pr-8",
+                            "px-2 transition-[padding] duration-[240ms] ease-[cubic-bezier(0.32,0.72,0.24,1)]",
+                            !collapsed && "pr-8",
                             isActive
                               ? "bg-[var(--color-paper-deep)]/85 text-[var(--color-ink)]"
                               : "text-[var(--color-ink)] hover:bg-white/60",
                           )}
                         >
-                          {collapsed ? (
-                            <FileText
-                              className="h-3.5 w-3.5 text-[var(--color-ink-soft)]"
-                              aria-hidden
-                            />
-                          ) : (
-                            <>
-                              <FileText
-                                className="h-3.5 w-3.5 shrink-0 text-[var(--color-ink-soft)]"
-                                aria-hidden
-                              />
-                              <span className="font-display flex-1 truncate text-[14px] tracking-[-0.01em]">
-                                {cv.title}
-                              </span>
-                              <span className="font-mono-caps shrink-0 text-[9px] tabular-nums text-[var(--color-ink-soft)]">
-                                {String(idx + 1).padStart(2, "0")}
-                              </span>
-                            </>
-                          )}
+                          <FileText
+                            className="h-3.5 w-3.5 shrink-0 text-[var(--color-ink-soft)]"
+                            aria-hidden
+                          />
+                          <span
+                            className={cn(
+                              "font-display flex-1 truncate text-[14px] tracking-[-0.01em]",
+                              "transition-opacity duration-[180ms]",
+                              collapsed ? "opacity-0" : "opacity-100",
+                            )}
+                          >
+                            {cv.title}
+                          </span>
+                          <span
+                            className={cn(
+                              "font-mono-caps shrink-0 text-[9px] tabular-nums text-[var(--color-ink-soft)]",
+                              "transition-opacity duration-[180ms]",
+                              collapsed ? "opacity-0" : "opacity-100",
+                            )}
+                          >
+                            {String(idx + 1).padStart(2, "0")}
+                          </span>
                         </button>
                         {!collapsed && !isInTrashFolder && trashFolder ? (
                           <button
