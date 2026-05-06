@@ -123,13 +123,26 @@ export function useCvLibrary(): UseCvLibrary {
       void refresh();
     },
     createFolder: async (name) => {
-      const f = await store.createFolder(name);
-      // Optimistic: append immediately so the sidebar shows the new folder
-      // without waiting for the listFolders round-trip. refresh runs in the
-      // background to reconcile with server-side ordering / metadata.
-      setFolders((prev) => [...prev.filter((p) => p.id !== f.id), f]);
-      void refresh();
-      return f;
+      // Append a temp placeholder synchronously so the sidebar updates the
+      // moment the user hits Enter; swap it for the real row when the
+      // server responds. Roll back if the create fails.
+      const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const tempFolder: Folder = {
+        id: tempId,
+        name,
+        isSystem: false,
+        ttlDays: null,
+      };
+      setFolders((prev) => [...prev, tempFolder]);
+      try {
+        const f = await store.createFolder(name);
+        setFolders((prev) => prev.map((p) => (p.id === tempId ? f : p)));
+        void refresh();
+        return f;
+      } catch (err) {
+        setFolders((prev) => prev.filter((p) => p.id !== tempId));
+        throw err;
+      }
     },
     renameFolder: async (id, name) => {
       const f = await store.renameFolder(id, name);

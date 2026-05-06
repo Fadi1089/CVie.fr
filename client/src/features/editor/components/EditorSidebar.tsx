@@ -403,19 +403,20 @@ function AuthedSidebar({
     );
   };
 
-  const submitNewFolder = async () => {
+  const submitNewFolder = () => {
     const name = folderDraft.trim();
     if (!name) {
       setCreatingFolder(false);
       return;
     }
-    try {
-      await lib.createFolder(name);
-      setFolderDraft("");
-      setCreatingFolder(false);
-    } catch {
-      /* surface inline error in a future iteration */
-    }
+    // Reset the input UI synchronously — useCvLibrary.createFolder appends a
+    // placeholder folder immediately, so the user sees the new row before
+    // the server round-trip completes.
+    setFolderDraft("");
+    setCreatingFolder(false);
+    void lib.createFolder(name).catch(() => {
+      toast.push("Échec de la création du dossier", { variant: "error" });
+    });
   };
 
   return (
