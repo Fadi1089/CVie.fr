@@ -23,6 +23,26 @@ import type { Folder } from "@/features/cv-library/store/types";
 const TEMPLATE_SELECTION_KEY = "cvie.template.selected";
 const SIDEBAR_COLLAPSED_KEY = "cvie.editor.sidebar.collapsed";
 const FOLDER_COLLAPSED_KEY_PREFIX = "cvie.editor.folders.collapsed";
+const SELECTED_FOLDER_KEY_PREFIX = "cvie.editor.selectedFolder";
+
+function readSelectedFolder(sub: string): string | null {
+  try {
+    return window.localStorage.getItem(`${SELECTED_FOLDER_KEY_PREFIX}.${sub}`);
+  } catch {
+    return null;
+  }
+}
+
+function writeSelectedFolder(sub: string, id: string | null): void {
+  try {
+    if (id)
+      window.localStorage.setItem(`${SELECTED_FOLDER_KEY_PREFIX}.${sub}`, id);
+    else
+      window.localStorage.removeItem(`${SELECTED_FOLDER_KEY_PREFIX}.${sub}`);
+  } catch {
+    /* ignore */
+  }
+}
 
 type EditorSidebarProps = {
   activeCvId: string;
@@ -260,11 +280,10 @@ function AuthedSidebar({
         const current = await store.read(activeCvId);
         if (current) body = current;
       }
-      // Drop new CV into the same folder as the currently selected one,
-      // unless that folder is the trash (then default to Mes CV).
-      const selectedRow = lib.active.find((c) => c.id === activeCvId);
-      const selectedFolder = selectedRow
-        ? lib.folders.find((f) => f.id === selectedRow.folderId)
+      // Drop new CV into the user-selected folder, unless that folder is the
+      // trash (then let the server default to Mes CV).
+      const selectedFolder = selectedFolderId
+        ? lib.folders.find((f) => f.id === selectedFolderId)
         : undefined;
       const targetFolderId =
         selectedFolder &&
@@ -305,10 +324,42 @@ function AuthedSidebar({
   );
   const [replierSpin, setReplierSpin] = useState(collapsed ? 180 : 0);
   const [cvNameModalOpen, setCvNameModalOpen] = useState(false);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(() =>
+    readSelectedFolder(sub),
+  );
 
   useEffect(() => {
     writeFolderCollapsed(sub, folderCollapsed);
   }, [sub, folderCollapsed]);
+
+  useEffect(() => {
+    writeSelectedFolder(sub, selectedFolderId);
+  }, [sub, selectedFolderId]);
+
+  // Auto-track the active CV's folder so opening a CV from URL or another
+  // surface lights up its folder. Falls back to the default Mes CV folder
+  // when the persisted selection no longer exists.
+  useEffect(() => {
+    if (lib.folders.length === 0) return;
+    const activeCv =
+      lib.active.find((c) => c.id === activeCvId) ??
+      lib.trash.find((c) => c.id === activeCvId);
+    if (activeCv?.folderId) {
+      if (activeCv.folderId !== selectedFolderId) {
+        setSelectedFolderId(activeCv.folderId);
+      }
+      return;
+    }
+    if (
+      selectedFolderId &&
+      lib.folders.some((f) => f.id === selectedFolderId)
+    ) {
+      return;
+    }
+    const fallback = lib.folders.find((f) => f.isSystem && f.ttlDays === null);
+    if (fallback) setSelectedFolderId(fallback.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCvId, lib.active, lib.trash, lib.folders]);
 
   const sortedFolders = useMemo(
     () => [...lib.folders].sort(compareFolders),
@@ -338,6 +389,10 @@ function AuthedSidebar({
   };
 
   const openCv = (cv: CvLibraryRecord) => {
+    const fullRow =
+      lib.active.find((c) => c.id === cv.id) ??
+      lib.trash.find((c) => c.id === cv.id);
+    if (fullRow?.folderId) setSelectedFolderId(fullRow.folderId);
     try {
       window.localStorage.setItem(TEMPLATE_SELECTION_KEY, cv.templateId);
     } catch {
@@ -459,9 +514,12 @@ function AuthedSidebar({
                 count={cvs.length}
                 expanded={!isCollapsed}
                 collapsed={collapsed}
-                selected={cvs.some((c) => c.id === activeCvId)}
+                selected={folder.id === selectedFolderId}
                 accentColor={folderAccent(folder)}
-                onToggle={() => toggleFolder(folder.id)}
+                onToggle={() => {
+                  setSelectedFolderId(folder.id);
+                  toggleFolder(folder.id);
+                }}
                 onExpandSidebar={() => onCollapsedChange(false)}
                 onRename={
                   folder.isSystem

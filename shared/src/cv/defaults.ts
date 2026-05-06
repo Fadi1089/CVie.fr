@@ -10,8 +10,23 @@ import type { CvData } from "../types/cv";
  * shape so every field has a defined value on first render.
  */
 export function createEmptyCv(): CvData {
+  // Every field is explicit so RHF's `reset(emptyCv)` clears every previously
+  // registered field. A sparse object would leave already-typed values like
+  // email/phone in place when switching to a fresh CV.
   return {
-    personalInfo: { firstName: "", lastName: "", portfolioDisplay: "clickable" },
+    personalInfo: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      city: "",
+      jobTitle: "",
+      summary: "",
+      linkedinUrl: "",
+      portfolioUrl: "",
+      portfolioDisplay: "clickable",
+      photoUrl: "",
+    },
     formations: [],
     experiences: [],
     skills: [],
