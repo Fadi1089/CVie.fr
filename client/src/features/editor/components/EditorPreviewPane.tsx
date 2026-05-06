@@ -635,12 +635,6 @@ export function EditorPreviewPane({
               </div>
             </div>
 
-            {phase === "error" && message ? (
-              <div className="absolute inset-x-4 bottom-4 rounded-xl border border-amber-500/30 bg-amber-50/95 px-4 py-3 text-[12px] text-amber-900 shadow-sm backdrop-blur">
-                <p className="font-medium">Aperçu temporairement gelé</p>
-                <p className="mt-1 text-amber-900/80">{message}</p>
-              </div>
-            ) : null}
           </>
         ) : (
           <div className="flex h-full min-h-[420px] items-center justify-center px-6 text-center">
