@@ -726,13 +726,23 @@ function AuthedSidebar({
       {deleteFolderTarget ? (
         <DeleteFolderModal
           folder={deleteFolderTarget}
-          reassignTargets={sortedFolders.filter(
-            (f) => f.id !== deleteFolderTarget.id,
-          )}
           cvCount={(cvsByFolder.get(deleteFolderTarget.id) ?? []).length}
-          onConfirm={async (moveCvsTo) => {
-            await lib.deleteFolder(deleteFolderTarget.id, moveCvsTo);
-            setDeleteFolderTarget(null);
+          onConfirm={async () => {
+            const trash = sortedFolders.find(
+              (f) => f.isSystem && f.ttlDays !== null,
+            );
+            if (!trash) {
+              toast.push("Corbeille introuvable", { variant: "error" });
+              return;
+            }
+            try {
+              await lib.deleteFolder(deleteFolderTarget.id, trash.id);
+              toast.push("Dossier supprimé", { variant: "info" });
+            } catch {
+              toast.push("Échec de la suppression", { variant: "error" });
+            } finally {
+              setDeleteFolderTarget(null);
+            }
           }}
           onCancel={() => setDeleteFolderTarget(null)}
         />
