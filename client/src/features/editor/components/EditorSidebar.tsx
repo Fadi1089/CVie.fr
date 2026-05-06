@@ -471,13 +471,13 @@ function AuthedSidebar({
         aria-pressed={collapsed}
         title={collapsed ? "Deplier" : "Replier"}
         className={cn(
-          "relative h-12 w-full border-t border-[var(--color-rule)]/80 text-[12px] text-[var(--color-ink-soft)] transition-colors",
+          "relative h-14 w-full border-t border-[var(--color-rule)]/80 text-[12px] text-[var(--color-ink-soft)] transition-colors",
           "hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/25",
         )}
       >
         <ChevronLeft
           aria-hidden
-          className="absolute left-[25px] h-4 w-4 transition-transform duration-[320ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
+          className="absolute left-6 h-4 w-4 transition-transform duration-[320ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
           style={{
             top: "50%",
             transform: `translateY(-50%) rotate(${replierSpin}deg)`,
@@ -485,7 +485,7 @@ function AuthedSidebar({
         />
         <span
           className={cn(
-            "font-mono-caps absolute left-[44px] right-3 top-1/2 -translate-y-1/2 truncate text-left text-[10px] tracking-[0.18em]",
+            "font-mono-caps absolute left-[60px] right-3 top-1/2 -translate-y-1/2 truncate text-left text-[10px] tracking-[0.18em]",
             "transition-opacity duration-[180ms]",
             collapsed ? "opacity-0" : "opacity-100",
           )}
@@ -756,13 +756,13 @@ function AnonSidebar({
         aria-pressed={collapsed}
         title={collapsed ? "Deplier" : "Replier"}
         className={cn(
-          "relative h-12 w-full border-t border-[var(--color-rule)]/80 text-[12px] text-[var(--color-ink-soft)] transition-colors",
+          "relative h-14 w-full border-t border-[var(--color-rule)]/80 text-[12px] text-[var(--color-ink-soft)] transition-colors",
           "hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/25",
         )}
       >
         <ChevronLeft
           aria-hidden
-          className="absolute left-[25px] h-4 w-4 transition-transform duration-[320ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
+          className="absolute left-6 h-4 w-4 transition-transform duration-[320ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
           style={{
             top: "50%",
             transform: `translateY(-50%) rotate(${replierSpin}deg)`,
@@ -770,7 +770,7 @@ function AnonSidebar({
         />
         <span
           className={cn(
-            "font-mono-caps absolute left-[44px] right-3 top-1/2 -translate-y-1/2 truncate text-left text-[10px] tracking-[0.18em]",
+            "font-mono-caps absolute left-[60px] right-3 top-1/2 -translate-y-1/2 truncate text-left text-[10px] tracking-[0.18em]",
             "transition-opacity duration-[180ms]",
             collapsed ? "opacity-0" : "opacity-100",
           )}
