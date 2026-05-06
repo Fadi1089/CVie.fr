@@ -55,14 +55,19 @@ function writeFolderCollapsed(sub: string, ids: Set<string>): void {
   }
 }
 
-const FOLDER_PALETTE = ["#bf3ec1", "#2c8335", "#ff8302", "#019fe0", "#ac3b9a"];
-
 function folderAccent(folder: Folder): string {
   if (folder.isSystem && folder.ttlDays === null) return "#206aab";
   if (folder.isSystem && folder.ttlDays !== null) return "#b33d3b";
-  let hash = 0;
-  for (const ch of folder.id) hash = (hash + ch.charCodeAt(0)) | 0;
-  return FOLDER_PALETTE[Math.abs(hash) % FOLDER_PALETTE.length];
+  // djb2 hash of id → hue, with yellow-green band (60-130) skipped to
+  // avoid clashing with the warm cream paper background. Saturation /
+  // lightness are pinned so every accent reads at the same visual
+  // weight as the pre-defined system colors.
+  let hash = 5381;
+  for (const c of folder.id) hash = ((hash << 5) + hash + c.charCodeAt(0)) | 0;
+  const allowed = 360 - 70;
+  let hue = Math.abs(hash) % allowed;
+  if (hue >= 60) hue += 70;
+  return `hsl(${hue} 48% 41%)`;
 }
 
 function compareFolders(a: Folder, b: Folder): number {
@@ -228,52 +233,72 @@ function AuthedSidebar({
     >
       <div className="editor-sidebar__seam" aria-hidden="true" />
 
-      <div
-        className={cn(
-          "flex items-center gap-2 border-b border-[var(--color-rule)]/80",
-          collapsed ? "h-16 justify-center px-0" : "h-16 px-5",
-        )}
-      >
-        <div className="editor-sidebar__mark" aria-hidden="true">
+      <div className="relative h-16 border-b border-[var(--color-rule)]/80">
+        <div
+          className="editor-sidebar__mark absolute left-4 top-1/2 -translate-y-1/2"
+          aria-hidden="true"
+        >
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-            <path d="M5 4h10l4 4v12H5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-            <path d="M15 4v4h4" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-            <path d="M8 12h8M8 15.5h6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M14 2v4a2 2 0 0 0 2 2h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M10 9H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            <path d="M16 13H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            <path d="M16 17H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+          <svg
+            className="editor-sidebar__gemini absolute -right-1 -top-1"
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            aria-hidden="true"
+          >
+            <path
+              d="M12 0c0 6.6 5.4 12 12 12-6.6 0-12 5.4-12 12 0-6.6-5.4-12-12-12 6.6 0 12-5.4 12-12z"
+              fill="currentColor"
+            />
           </svg>
         </div>
-        {!collapsed ? (
-          <div className="min-w-0">
-            <p className="font-display text-[18px] leading-none tracking-[-0.02em] text-[var(--color-ink)]">
-              CVie<span className="text-[var(--color-gold)]">.</span>fr
-            </p>
-            <p className="font-mono-caps mt-1 text-[9px] tracking-[0.18em] text-[var(--color-ink-soft)]">
-              Bibliotheque
-            </p>
-          </div>
-        ) : null}
+        <div
+          className={cn(
+            "absolute left-[60px] right-3 top-1/2 -translate-y-1/2 truncate",
+            "transition-opacity duration-[180ms]",
+            collapsed ? "opacity-0" : "opacity-100",
+          )}
+        >
+          <p className="font-display text-[18px] leading-none tracking-[-0.02em] text-[var(--color-ink)]">
+            CVie<span className="text-[var(--color-gold)]">.</span>fr
+          </p>
+          <p className="font-mono-caps mt-1 text-[9px] tracking-[0.18em] text-[var(--color-ink-soft)]">
+            Bibliotheque
+          </p>
+        </div>
       </div>
 
-      <div className={cn("p-3", collapsed && "px-2")}>
+      <div className="p-3">
         <button
           type="button"
           onClick={onCreateCv}
           className={cn(
-            "editor-sidebar__create relative flex items-center gap-2 overflow-hidden rounded-full border border-[var(--color-rule)] bg-white/82 text-[13px] font-medium text-[var(--color-ink)] transition motion-reduce:transition-none",
+            "editor-sidebar__create relative h-10 w-full overflow-hidden rounded-full border border-[var(--color-rule)] bg-white/82 text-[13px] font-medium text-[var(--color-ink)] transition-colors motion-reduce:transition-none",
             "hover:border-[var(--color-ink-soft)]/50 hover:bg-white",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/25",
-            collapsed ? "h-10 w-10 justify-center p-0" : "h-10 w-full justify-center px-4",
           )}
           aria-label="Creer un nouveau CV"
           title="Creer un nouveau CV"
         >
-          {collapsed ? (
-            <Plus className="h-4 w-4 shrink-0" aria-hidden />
-          ) : (
-            <>
-              <Plus className="absolute left-4 h-4 w-4" aria-hidden />
-              <span>Nouveau CV</span>
-            </>
-          )}
+          <Plus
+            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
+            aria-hidden
+          />
+          <span
+            className={cn(
+              "absolute left-9 right-3 top-1/2 -translate-y-1/2 truncate text-left",
+              "transition-opacity duration-[180ms]",
+              collapsed ? "opacity-0" : "opacity-100",
+            )}
+          >
+            Nouveau CV
+          </span>
         </button>
       </div>
 
@@ -307,8 +332,22 @@ function AuthedSidebar({
                     : () => setDeleteFolderTarget(folder)
                 }
               />
-              {!collapsed && !isCollapsed && cvs.length > 0 ? (
-                <ul className="flex flex-col gap-0.5">
+              <div
+                className={cn(
+                  "grid transition-[grid-template-rows] duration-[320ms] ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none",
+                  collapsed || isCollapsed || cvs.length === 0
+                    ? "grid-rows-[0fr]"
+                    : "grid-rows-[1fr]",
+                )}
+                aria-hidden={collapsed || isCollapsed ? "true" : undefined}
+              >
+                <ul
+                  className={cn(
+                    "flex flex-col gap-0.5 overflow-hidden",
+                    "transition-opacity duration-[200ms]",
+                    collapsed || isCollapsed ? "opacity-0" : "opacity-100",
+                  )}
+                >
                   {cvs.map((cv, idx) => {
                     const isActive = cv.id === activeCvId;
                     const templateName =
@@ -375,7 +414,7 @@ function AuthedSidebar({
                     );
                   })}
                 </ul>
-              ) : null}
+              </div>
               {/* Place "+ Nouveau dossier" inline before the trash folder */}
               {!collapsed &&
               folder.isSystem &&
@@ -562,29 +601,45 @@ function AnonSidebar({
     >
       <div className="editor-sidebar__seam" aria-hidden="true" />
 
-      <div
-        className={cn(
-          "flex items-center gap-2 border-b border-[var(--color-rule)]/80",
-          collapsed ? "h-16 justify-center px-0" : "h-16 px-5",
-        )}
-      >
-        <div className="editor-sidebar__mark" aria-hidden="true">
+      <div className="relative h-16 border-b border-[var(--color-rule)]/80">
+        <div
+          className="editor-sidebar__mark absolute left-4 top-1/2 -translate-y-1/2"
+          aria-hidden="true"
+        >
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-            <path d="M5 4h10l4 4v12H5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-            <path d="M15 4v4h4" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-            <path d="M8 12h8M8 15.5h6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M14 2v4a2 2 0 0 0 2 2h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M10 9H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            <path d="M16 13H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            <path d="M16 17H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+          <svg
+            className="editor-sidebar__gemini absolute -right-1 -top-1"
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            aria-hidden="true"
+          >
+            <path
+              d="M12 0c0 6.6 5.4 12 12 12-6.6 0-12 5.4-12 12 0-6.6-5.4-12-12-12 6.6 0 12-5.4 12-12z"
+              fill="currentColor"
+            />
           </svg>
         </div>
-        {!collapsed ? (
-          <div className="min-w-0">
-            <p className="font-display text-[18px] leading-none tracking-[-0.02em] text-[var(--color-ink)]">
-              CVie<span className="text-[var(--color-gold)]">.</span>fr
-            </p>
-            <p className="font-mono-caps mt-1 text-[9px] tracking-[0.18em] text-[var(--color-ink-soft)]">
-              Bibliotheque
-            </p>
-          </div>
-        ) : null}
+        <div
+          className={cn(
+            "absolute left-[60px] right-3 top-1/2 -translate-y-1/2 truncate",
+            "transition-opacity duration-[180ms]",
+            collapsed ? "opacity-0" : "opacity-100",
+          )}
+        >
+          <p className="font-display text-[18px] leading-none tracking-[-0.02em] text-[var(--color-ink)]">
+            CVie<span className="text-[var(--color-gold)]">.</span>fr
+          </p>
+          <p className="font-mono-caps mt-1 text-[9px] tracking-[0.18em] text-[var(--color-ink-soft)]">
+            Bibliotheque
+          </p>
+        </div>
       </div>
 
       <div className={cn("p-3", collapsed && "px-2")}>

@@ -770,6 +770,11 @@ select:-webkit-autofill {
   letter-spacing: -0.005em;
 }
 
+.editor-sidebar__gemini {
+  color: #ffffff;
+  filter: drop-shadow(0 1px 1.5px rgba(10, 10, 10, 0.35));
+}
+
 .editor-sidebar__list {
   scrollbar-width: thin;
   scrollbar-color: var(--color-rule) transparent;
