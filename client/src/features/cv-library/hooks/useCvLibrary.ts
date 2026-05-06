@@ -76,12 +76,47 @@ export function useCvLibrary(): UseCvLibrary {
       return r;
     },
     moveCv: async (id, folderId) => {
-      await store.moveCv(id, folderId);
-      await refresh();
+      // Optimistic: pull the row out of active/trash and slot it under the
+      // target folder so the UI updates instantly. Background-refresh
+      // reconciles with the server's source of truth.
+      const prevActive = active;
+      const prevTrash = trash;
+      const target = folders.find((f) => f.id === folderId);
+      const isTargetTrash =
+        target?.isSystem === true && target?.ttlDays !== null;
+      const removed =
+        prevActive.find((r) => r.id === id) ??
+        prevTrash.find((r) => r.id === id);
+      if (removed) {
+        setActive(prevActive.filter((r) => r.id !== id));
+        setTrash(prevTrash.filter((r) => r.id !== id));
+        const moved: CvLibraryRecord = { ...removed, folderId };
+        if (isTargetTrash) setTrash([moved, ...prevTrash.filter((r) => r.id !== id)]);
+        else setActive([moved, ...prevActive.filter((r) => r.id !== id)]);
+      }
+      try {
+        await store.moveCv(id, folderId);
+      } catch (err) {
+        // Roll back on failure.
+        setActive(prevActive);
+        setTrash(prevTrash);
+        throw err;
+      }
+      void refresh();
     },
     hardDeleteCv: async (id) => {
-      await store.hardDeleteCv(id);
-      await refresh();
+      const prevActive = active;
+      const prevTrash = trash;
+      setActive(prevActive.filter((r) => r.id !== id));
+      setTrash(prevTrash.filter((r) => r.id !== id));
+      try {
+        await store.hardDeleteCv(id);
+      } catch (err) {
+        setActive(prevActive);
+        setTrash(prevTrash);
+        throw err;
+      }
+      void refresh();
     },
     createFolder: async (name) => {
       const f = await store.createFolder(name);
