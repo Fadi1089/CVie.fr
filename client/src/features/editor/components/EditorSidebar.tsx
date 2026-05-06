@@ -412,19 +412,20 @@ function AuthedSidebar({
         ) : null}
       </nav>
 
-      <div className="border-t border-[var(--color-rule)]/80 px-3 py-3">
+      <div
+        className={cn(
+          "flex h-14 items-center border-t border-[var(--color-rule)]/80",
+          "transition-[padding] duration-[240ms] ease-[cubic-bezier(0.32,0.72,0.24,1)]",
+          collapsed ? "px-4" : "px-3",
+        )}
+      >
         <AuthGate
           anon={<LoginButton compact={collapsed} />}
           authed={<UserMenu compact={collapsed} />}
         />
       </div>
 
-      <div
-        className={cn(
-          "border-t border-[var(--color-rule)]/80",
-          collapsed ? "px-2 py-2" : "px-3 py-2.5",
-        )}
-      >
+      <div className="border-t border-[var(--color-rule)]/80 px-3 py-2.5">
         <button
           type="button"
           onClick={() => onCollapsedChange(!collapsed)}
@@ -667,19 +668,20 @@ function AnonSidebar({
         </ul>
       </nav>
 
-      <div className="border-t border-[var(--color-rule)]/80 px-3 py-3">
+      <div
+        className={cn(
+          "flex h-14 items-center border-t border-[var(--color-rule)]/80",
+          "transition-[padding] duration-[240ms] ease-[cubic-bezier(0.32,0.72,0.24,1)]",
+          collapsed ? "px-4" : "px-3",
+        )}
+      >
         <AuthGate
           anon={<LoginButton compact={collapsed} />}
           authed={<UserMenu compact={collapsed} />}
         />
       </div>
 
-      <div
-        className={cn(
-          "border-t border-[var(--color-rule)]/80",
-          collapsed ? "px-2 py-2" : "px-3 py-2.5",
-        )}
-      >
+      <div className="border-t border-[var(--color-rule)]/80 px-3 py-2.5">
         <button
           type="button"
           onClick={() => onCollapsedChange(!collapsed)}
