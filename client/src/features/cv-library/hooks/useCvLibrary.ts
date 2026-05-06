@@ -124,17 +124,27 @@ export function useCvLibrary(): UseCvLibrary {
     },
     createFolder: async (name) => {
       const f = await store.createFolder(name);
-      await refresh();
+      // Optimistic: append immediately so the sidebar shows the new folder
+      // without waiting for the listFolders round-trip. refresh runs in the
+      // background to reconcile with server-side ordering / metadata.
+      setFolders((prev) => [...prev.filter((p) => p.id !== f.id), f]);
+      void refresh();
       return f;
     },
     renameFolder: async (id, name) => {
       const f = await store.renameFolder(id, name);
-      await refresh();
+      setFolders((prev) => prev.map((p) => (p.id === id ? f : p)));
+      void refresh();
       return f;
     },
     deleteFolder: async (id, moveCvsTo) => {
       await store.deleteFolder(id, moveCvsTo);
-      await refresh();
+      setFolders((prev) => prev.filter((p) => p.id !== id));
+      // CVs were re-parented server-side; surface that in active/trash too.
+      setActive((prev) =>
+        prev.map((c) => (c.folderId === id ? { ...c, folderId: moveCvsTo } : c)),
+      );
+      void refresh();
     },
     bulkImport: async (records) => {
       const r = await store.bulkImport(records);
