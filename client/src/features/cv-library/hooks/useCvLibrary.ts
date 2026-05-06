@@ -72,7 +72,11 @@ export function useCvLibrary(): UseCvLibrary {
     refresh,
     createCv: async (record, body) => {
       const r = await store.create(record, body);
-      await refresh();
+      // Optimistic: surface the new row instantly so the caller can navigate
+      // and the sidebar render reads it on the next pass without waiting on
+      // the listActive round-trip.
+      setActive((prev) => [r, ...prev.filter((p) => p.id !== r.id)]);
+      void refresh();
       return r;
     },
     moveCv: async (id, folderId) => {
