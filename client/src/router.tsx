@@ -261,7 +261,7 @@ function EditorRouteGate() {
     return <Navigate to="/" replace />;
   }
   return (
-    <EditorErrorBoundary>
+    <EditorErrorBoundary key={cvId}>
       <CvEditor />
     </EditorErrorBoundary>
   );
