@@ -13,6 +13,7 @@ type Props = {
   onToggle: () => void;
   onRename?: (newName: string) => Promise<void>;
   onDelete?: () => void;
+  onEmptyTrash?: () => void;
   onExpandSidebar?: () => void;
 };
 
@@ -26,6 +27,7 @@ export function FolderHeader({
   onToggle,
   onRename,
   onDelete,
+  onEmptyTrash,
   onExpandSidebar,
 }: Props) {
   const [editing, setEditing] = useState(false);
@@ -130,6 +132,21 @@ export function FolderHeader({
           className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 opacity-0 transition group-hover:opacity-100 hover:text-red-600"
         >
           <Trash2 className="h-3.5 w-3.5" aria-hidden />
+        </button>
+      ) : null}
+      {!collapsed && isTrash && onEmptyTrash && count > 0 ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEmptyTrash();
+          }}
+          aria-label="Vider la corbeille"
+          title="Vider la corbeille"
+          className="font-mono-caps absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-2 py-1 text-[9px] tracking-[0.18em] opacity-0 transition group-hover:opacity-100"
+          style={{ color: accentColor ?? "var(--color-ink-soft)" }}
+        >
+          VIDER
         </button>
       ) : null}
     </div>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router";
-import { ChevronLeft, FileText, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, FileText, Plus, Trash2, X } from "lucide-react";
 import { createEmptyCv, templateRegistry, type TemplateId } from "@cvie/shared";
 import { useAuth0 } from "@auth0/auth0-react";
 import { cn } from "@/lib/utils";
@@ -534,6 +534,31 @@ function AuthedSidebar({
                     ? undefined
                     : () => setDeleteFolderTarget(folder)
                 }
+                onEmptyTrash={
+                  folder.isSystem && folder.ttlDays !== null
+                    ? () => {
+                        const trashCvs =
+                          cvsByFolder.get(folder.id) ?? [];
+                        if (trashCvs.length === 0) return;
+                        if (
+                          !window.confirm(
+                            `Vider la corbeille ? ${trashCvs.length} CV seront supprimés définitivement.`,
+                          )
+                        )
+                          return;
+                        void (async () => {
+                          for (const cv of trashCvs) {
+                            try {
+                              await lib.hardDeleteCv(cv.id);
+                            } catch {
+                              /* continue */
+                            }
+                          }
+                          toast.push("Corbeille vidée", { variant: "info" });
+                        })();
+                      }
+                    : undefined
+                }
               />
               <div
                 className={cn(
@@ -595,7 +620,30 @@ function AuthedSidebar({
                             {String(idx + 1).padStart(2, "0")}
                           </span>
                         </button>
-                        {!isInTrashFolder && trashFolder ? (
+                        {isInTrashFolder ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (
+                                window.confirm(
+                                  `Supprimer définitivement « ${cv.title} » ? Cette action est irréversible.`,
+                                )
+                              ) {
+                                void hardDeleteCvWithToast(cv.id);
+                              }
+                            }}
+                            aria-label="Supprimer définitivement"
+                            title="Supprimer définitivement"
+                            className={cn(
+                              "absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 opacity-0 transition-opacity",
+                              "text-[var(--color-ink-soft)] group-hover:opacity-100 hover:text-red-600",
+                              "focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/25",
+                            )}
+                          >
+                            <X className="h-3.5 w-3.5" aria-hidden />
+                          </button>
+                        ) : trashFolder ? (
                           <button
                             type="button"
                             onClick={(e) => {
