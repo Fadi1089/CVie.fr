@@ -86,6 +86,8 @@ export function FolderHeader({
               "transition-opacity duration-[180ms]",
               expanded ? "rotate-90" : "rotate-0",
               "opacity-100",
+              // increase icon size when menu is collapsed
+              collapsed && "h-4 w-4",
             )}
             style={{ color: accentColor ?? "var(--color-ink-soft)" }}
           >
@@ -94,10 +96,7 @@ export function FolderHeader({
         ) : null}
         <span
           aria-hidden
-          className={cn(
-            "absolute top-1/2 -translate-y-1/2",
-            collapsed ? "left-1/2 -translate-x-1/2" : "left-[17px]",
-          )}
+          className="absolute left-[17px] top-1/2 -translate-y-1/2"
           style={{ color: accentColor ?? "var(--color-ink-soft)" }}
         >
           <Icon className="h-3.5 w-3.5" />
