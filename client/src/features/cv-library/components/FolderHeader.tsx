@@ -96,10 +96,10 @@ export function FolderHeader({
         ) : null}
         <span
           aria-hidden
-          className="absolute left-[17px] top-1/2 -translate-y-1/2"
+          className="absolute left-4 top-1/2 -translate-y-1/2"
           style={{ color: accentColor ?? "var(--color-ink-soft)" }}
         >
-          <Icon className="h-3.5 w-3.5" />
+          <Icon className="h-4 w-4" />
         </span>
         {!editing ? (
           <span
