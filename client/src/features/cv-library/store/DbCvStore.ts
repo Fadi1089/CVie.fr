@@ -94,6 +94,7 @@ export class DbCvStore implements CvStore {
       (err as CvStoreError & { httpStatus?: number }).httpStatus = res.status;
       throw err;
     }
+    if (res.status === 204) return undefined as T;
     return (await res.json()) as T;
   }
 
@@ -311,7 +312,8 @@ export class DbCvStore implements CvStore {
         this.queue.delete(id);
         this.setStatus("saved");
       }
-    } catch (err) {
+    } catch (caught) {
+      let err: unknown = caught;
       entry.inflight = false;
       entry.attempts += 1;
       const httpStatus =

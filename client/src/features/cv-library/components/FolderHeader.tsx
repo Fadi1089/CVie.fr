@@ -1,4 +1,4 @@
-import { Folder as FolderIcon, FolderOpen, Trash2 } from "lucide-react";
+import { ChevronRight, Folder as FolderIcon, FolderOpen, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { Folder } from "../store/types";
@@ -13,6 +13,7 @@ type Props = {
   onToggle: () => void;
   onRename?: (newName: string) => Promise<void>;
   onDelete?: () => void;
+  onEmptyTrash?: () => void;
   onExpandSidebar?: () => void;
 };
 
@@ -26,6 +27,7 @@ export function FolderHeader({
   onToggle,
   onRename,
   onDelete,
+  onEmptyTrash,
   onExpandSidebar,
 }: Props) {
   const [editing, setEditing] = useState(false);
@@ -58,23 +60,23 @@ export function FolderHeader({
 
   return (
     <div
-      className={cn(
-        "group relative h-9 w-full overflow-hidden rounded-lg transition-colors",
-        selected ? "bg-[var(--color-paper-deep)]/55" : "hover:bg-white/40",
-      )}
+      className="group relative h-9 w-full"
       onContextMenu={(e) => {
         if (collapsed || folder.isSystem) return;
         e.preventDefault();
         setEditing(true);
       }}
     >
-      {selected ? (
-        <span
-          aria-hidden
-          className="absolute left-1 top-1.5 bottom-1.5 w-[2px] rounded-full"
-          style={{ background: accentColor ?? "var(--color-ink)" }}
-        />
-      ) : null}
+      <span
+        aria-hidden
+        className={cn(
+          "absolute inset-y-0 rounded-lg transition-[left,right,background-color] duration-[320ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
+          collapsed ? "left-1.5 right-1.5" : "left-0 right-0",
+          selected
+            ? "bg-[var(--color-paper-deep)]/99"
+            : "bg-transparent group-hover:bg-[var(--color-paper-deep)]/40",
+        )}
+      />
       <button
         type="button"
         onClick={handleClick}
@@ -82,17 +84,34 @@ export function FolderHeader({
         aria-label={collapsed ? folder.name : undefined}
         className="block h-full w-full text-left"
       >
+        {!collapsed ? (
+          <span
+            aria-hidden
+            className={cn(
+              "absolute left-1 top-1/2 -translate-y-1/2",
+              "transition-transform duration-[180ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
+              "transition-opacity duration-[180ms]",
+              expanded ? "rotate-90" : "rotate-0",
+              "opacity-100",
+              // increase icon size when menu is collapsed
+              collapsed && "h-4 w-4",
+            )}
+            style={{ color: accentColor ?? "var(--color-ink-soft)" }}
+          >
+            <ChevronRight className="h-3 w-3" />
+          </span>
+        ) : null}
         <span
           aria-hidden
-          className="absolute left-[17px] top-1/2 -translate-y-1/2"
+          className="absolute left-4 top-1/2 -translate-y-1/2"
           style={{ color: accentColor ?? "var(--color-ink-soft)" }}
         >
-          <Icon className="h-3.5 w-3.5" />
+          <Icon className="h-4 w-4" />
         </span>
         {!editing ? (
           <span
             className={cn(
-              "font-mono-caps absolute left-9 right-3 top-1/2 -translate-y-1/2 truncate text-[10px] tracking-[0.18em]",
+              "font-mono-caps absolute left-10 right-3 top-1/2 -translate-y-1/2 truncate text-[10px] tracking-[0.18em]",
               "transition-opacity duration-[180ms]",
               collapsed ? "opacity-0" : "opacity-100",
             )}
@@ -130,6 +149,21 @@ export function FolderHeader({
           className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 opacity-0 transition group-hover:opacity-100 hover:text-red-600"
         >
           <Trash2 className="h-3.5 w-3.5" aria-hidden />
+        </button>
+      ) : null}
+      {!collapsed && isTrash && onEmptyTrash && count > 0 ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEmptyTrash();
+          }}
+          aria-label="Vider la corbeille"
+          title="Vider la corbeille"
+          className="font-mono-caps absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-2 py-1 text-[9px] tracking-[0.18em] opacity-0 transition group-hover:opacity-100"
+          style={{ color: accentColor ?? "var(--color-ink-soft)" }}
+        >
+          VIDER
         </button>
       ) : null}
     </div>

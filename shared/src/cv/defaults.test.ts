@@ -8,7 +8,15 @@ describe("createEmptyCv", () => {
     expect(cv.personalInfo).toEqual({
       firstName: "",
       lastName: "",
+      email: "",
+      phone: "",
+      city: "",
+      jobTitle: "",
+      summary: "",
+      linkedinUrl: "",
+      portfolioUrl: "",
       portfolioDisplay: "clickable",
+      photoUrl: "",
     });
     expect(cv.formations).toEqual([]);
     expect(cv.experiences).toEqual([]);

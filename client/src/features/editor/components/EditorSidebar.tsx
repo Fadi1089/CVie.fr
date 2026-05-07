@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router";
-import { ChevronLeft, FileText, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, FileText, Plus, Trash2, X } from "lucide-react";
 import { createEmptyCv, templateRegistry, type TemplateId } from "@cvie/shared";
 import { useAuth0 } from "@auth0/auth0-react";
 import { cn } from "@/lib/utils";
@@ -403,19 +403,20 @@ function AuthedSidebar({
     );
   };
 
-  const submitNewFolder = async () => {
+  const submitNewFolder = () => {
     const name = folderDraft.trim();
     if (!name) {
       setCreatingFolder(false);
       return;
     }
-    try {
-      await lib.createFolder(name);
-      setFolderDraft("");
-      setCreatingFolder(false);
-    } catch {
-      /* surface inline error in a future iteration */
-    }
+    // Reset the input UI synchronously — useCvLibrary.createFolder appends a
+    // placeholder folder immediately, so the user sees the new row before
+    // the server round-trip completes.
+    setFolderDraft("");
+    setCreatingFolder(false);
+    void lib.createFolder(name).catch(() => {
+      toast.push("Échec de la création du dossier", { variant: "error" });
+    });
   };
 
   return (
@@ -533,6 +534,31 @@ function AuthedSidebar({
                     ? undefined
                     : () => setDeleteFolderTarget(folder)
                 }
+                onEmptyTrash={
+                  folder.isSystem && folder.ttlDays !== null
+                    ? () => {
+                        const trashCvs =
+                          cvsByFolder.get(folder.id) ?? [];
+                        if (trashCvs.length === 0) return;
+                        if (
+                          !window.confirm(
+                            `Vider la corbeille ? ${trashCvs.length} CV seront supprimés définitivement.`,
+                          )
+                        )
+                          return;
+                        void (async () => {
+                          for (const cv of trashCvs) {
+                            try {
+                              await lib.hardDeleteCv(cv.id);
+                            } catch {
+                              /* continue */
+                            }
+                          }
+                          toast.push("Corbeille vidée", { variant: "info" });
+                        })();
+                      }
+                    : undefined
+                }
               />
               <div
                 className={cn(
@@ -576,7 +602,7 @@ function AuthedSidebar({
                           aria-current={isActive ? "page" : undefined}
                           title={`${cv.title} — ${templateName}`}
                           className={cn(
-                            "editor-sidebar__item relative flex h-9 w-full items-center gap-2 overflow-hidden rounded-lg px-3 pr-8 text-left transition-colors motion-reduce:transition-none",
+                            "editor-sidebar__item relative flex h-9 w-full items-center gap-2 overflow-hidden rounded-lg pl-[26px] pr-8 text-left transition-colors motion-reduce:transition-none",
                             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/25",
                             isActive
                               ? "bg-[var(--color-paper-deep)]/85 text-[var(--color-ink)]"
@@ -594,7 +620,30 @@ function AuthedSidebar({
                             {String(idx + 1).padStart(2, "0")}
                           </span>
                         </button>
-                        {!isInTrashFolder && trashFolder ? (
+                        {isInTrashFolder ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (
+                                window.confirm(
+                                  `Supprimer définitivement « ${cv.title} » ? Cette action est irréversible.`,
+                                )
+                              ) {
+                                void hardDeleteCvWithToast(cv.id);
+                              }
+                            }}
+                            aria-label="Supprimer définitivement"
+                            title="Supprimer définitivement"
+                            className={cn(
+                              "absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 opacity-0 transition-opacity",
+                              "text-[var(--color-ink-soft)] group-hover:opacity-100 hover:text-red-600",
+                              "focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/25",
+                            )}
+                          >
+                            <X className="h-3.5 w-3.5" aria-hidden />
+                          </button>
+                        ) : trashFolder ? (
                           <button
                             type="button"
                             onClick={(e) => {
@@ -726,13 +775,23 @@ function AuthedSidebar({
       {deleteFolderTarget ? (
         <DeleteFolderModal
           folder={deleteFolderTarget}
-          reassignTargets={sortedFolders.filter(
-            (f) => f.id !== deleteFolderTarget.id,
-          )}
           cvCount={(cvsByFolder.get(deleteFolderTarget.id) ?? []).length}
-          onConfirm={async (moveCvsTo) => {
-            await lib.deleteFolder(deleteFolderTarget.id, moveCvsTo);
-            setDeleteFolderTarget(null);
+          onConfirm={async () => {
+            const trash = sortedFolders.find(
+              (f) => f.isSystem && f.ttlDays !== null,
+            );
+            if (!trash) {
+              toast.push("Corbeille introuvable", { variant: "error" });
+              return;
+            }
+            try {
+              await lib.deleteFolder(deleteFolderTarget.id, trash.id);
+              toast.push("Dossier supprimé", { variant: "info" });
+            } catch {
+              toast.push("Échec de la suppression", { variant: "error" });
+            } finally {
+              setDeleteFolderTarget(null);
+            }
           }}
           onCancel={() => setDeleteFolderTarget(null)}
         />

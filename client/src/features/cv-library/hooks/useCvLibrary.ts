@@ -123,18 +123,41 @@ export function useCvLibrary(): UseCvLibrary {
       void refresh();
     },
     createFolder: async (name) => {
-      const f = await store.createFolder(name);
-      await refresh();
-      return f;
+      // Append a temp placeholder synchronously so the sidebar updates the
+      // moment the user hits Enter; swap it for the real row when the
+      // server responds. Roll back if the create fails.
+      const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const tempFolder: Folder = {
+        id: tempId,
+        name,
+        isSystem: false,
+        ttlDays: null,
+      };
+      setFolders((prev) => [...prev, tempFolder]);
+      try {
+        const f = await store.createFolder(name);
+        setFolders((prev) => prev.map((p) => (p.id === tempId ? f : p)));
+        void refresh();
+        return f;
+      } catch (err) {
+        setFolders((prev) => prev.filter((p) => p.id !== tempId));
+        throw err;
+      }
     },
     renameFolder: async (id, name) => {
       const f = await store.renameFolder(id, name);
-      await refresh();
+      setFolders((prev) => prev.map((p) => (p.id === id ? f : p)));
+      void refresh();
       return f;
     },
     deleteFolder: async (id, moveCvsTo) => {
       await store.deleteFolder(id, moveCvsTo);
-      await refresh();
+      setFolders((prev) => prev.filter((p) => p.id !== id));
+      // CVs were re-parented server-side; surface that in active/trash too.
+      setActive((prev) =>
+        prev.map((c) => (c.folderId === id ? { ...c, folderId: moveCvsTo } : c)),
+      );
+      void refresh();
     },
     bulkImport: async (records) => {
       const r = await store.bulkImport(records);
