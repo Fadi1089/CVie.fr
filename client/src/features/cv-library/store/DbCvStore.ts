@@ -312,7 +312,8 @@ export class DbCvStore implements CvStore {
         this.queue.delete(id);
         this.setStatus("saved");
       }
-    } catch (err) {
+    } catch (caught) {
+      let err: unknown = caught;
       entry.inflight = false;
       entry.attempts += 1;
       const httpStatus =
