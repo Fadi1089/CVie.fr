@@ -132,7 +132,7 @@ describe("cvService", () => {
       ).rejects.toMatchObject({ code: "LIMIT_EXCEEDED" });
     });
 
-    it("rejects invalid CV data via cvDataSchema", async () => {
+    it("accepts partial/empty CV data on create — strict validation lives in patchCv", async () => {
       folderFindFirstMock.mockResolvedValueOnce({
         id: "f_default",
         userId: "u_1",
@@ -141,13 +141,23 @@ describe("cvService", () => {
         ttlDays: null,
       });
       cvCountMock.mockResolvedValueOnce(0);
-      await expect(
-        createCv("u_1", {
-          title: "Bad",
-          templateId: "classique",
-          data: { personalInfo: {} },
-        }),
-      ).rejects.toMatchObject({ code: "VALIDATION" });
+      cvCreateMock.mockResolvedValueOnce({
+        id: "cv_partial",
+        userId: "u_1",
+        folderId: "f_default",
+        title: "Bad",
+        templateId: "classique",
+        data: { personalInfo: {} },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      const cv = await createCv("u_1", {
+        title: "Bad",
+        templateId: "classique",
+        data: { personalInfo: {} },
+      });
+      expect(cv.id).toBe("cv_partial");
+      expect(cvCreateMock).toHaveBeenCalled();
     });
   });
 
