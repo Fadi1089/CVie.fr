@@ -70,13 +70,6 @@ export function FolderHeader({
         setEditing(true);
       }}
     >
-      {selected ? (
-        <span
-          aria-hidden
-          className="absolute left-1 top-1.5 bottom-1.5 w-[2px] rounded-full"
-          style={{ background: accentColor ?? "var(--color-ink)" }}
-        />
-      ) : null}
       <button
         type="button"
         onClick={handleClick}
