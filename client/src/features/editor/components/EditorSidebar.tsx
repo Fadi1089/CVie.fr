@@ -602,7 +602,7 @@ function AuthedSidebar({
                           aria-current={isActive ? "page" : undefined}
                           title={`${cv.title} — ${templateName}`}
                           className={cn(
-                            "editor-sidebar__item relative flex h-9 w-full items-center gap-2 overflow-hidden rounded-lg px-3 pr-8 text-left transition-colors motion-reduce:transition-none",
+                            "editor-sidebar__item relative flex h-9 w-full items-center gap-2 overflow-hidden rounded-lg pl-[26px] pr-8 text-left transition-colors motion-reduce:transition-none",
                             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/25",
                             isActive
                               ? "bg-[var(--color-paper-deep)]/85 text-[var(--color-ink)]"

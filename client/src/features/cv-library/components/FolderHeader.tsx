@@ -1,4 +1,4 @@
-import { Folder as FolderIcon, FolderOpen, Trash2 } from "lucide-react";
+import { ChevronRight, Folder as FolderIcon, FolderOpen, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { Folder } from "../store/types";
@@ -84,6 +84,21 @@ export function FolderHeader({
         aria-label={collapsed ? folder.name : undefined}
         className="block h-full w-full text-left"
       >
+        {!collapsed ? (
+          <span
+            aria-hidden
+            className={cn(
+              "absolute left-1 top-1/2 -translate-y-1/2",
+              "transition-transform duration-[180ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
+              "transition-opacity duration-[180ms]",
+              expanded ? "rotate-90" : "rotate-0",
+              "opacity-100",
+            )}
+            style={{ color: accentColor ?? "var(--color-ink-soft)" }}
+          >
+            <ChevronRight className="h-3 w-3" />
+          </span>
+        ) : null}
         <span
           aria-hidden
           className="absolute left-[17px] top-1/2 -translate-y-1/2"
@@ -94,7 +109,7 @@ export function FolderHeader({
         {!editing ? (
           <span
             className={cn(
-              "font-mono-caps absolute left-9 right-3 top-1/2 -translate-y-1/2 truncate text-[10px] tracking-[0.18em]",
+              "font-mono-caps absolute left-10 right-3 top-1/2 -translate-y-1/2 truncate text-[10px] tracking-[0.18em]",
               "transition-opacity duration-[180ms]",
               collapsed ? "opacity-0" : "opacity-100",
             )}
