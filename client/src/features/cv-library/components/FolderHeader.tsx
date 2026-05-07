@@ -62,7 +62,7 @@ export function FolderHeader({
     <div
       className={cn(
         "group relative h-9 w-full overflow-hidden rounded-lg transition-colors",
-        selected ? "bg-[var(--color-paper-deep)]/55" : "hover:bg-white/40",
+        selected ? "bg-[var(--color-paper-deep)]/99" : "hover:bg-[var(--color-paper-deep)]/40",
       )}
       onContextMenu={(e) => {
         if (collapsed || folder.isSystem) return;
@@ -94,7 +94,10 @@ export function FolderHeader({
         ) : null}
         <span
           aria-hidden
-          className="absolute left-[17px] top-1/2 -translate-y-1/2"
+          className={cn(
+            "absolute top-1/2 -translate-y-1/2",
+            collapsed ? "left-1/2 -translate-x-1/2" : "left-[17px]",
+          )}
           style={{ color: accentColor ?? "var(--color-ink-soft)" }}
         >
           <Icon className="h-3.5 w-3.5" />
