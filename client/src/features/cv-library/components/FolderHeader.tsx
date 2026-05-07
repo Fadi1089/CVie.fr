@@ -61,7 +61,8 @@ export function FolderHeader({
   return (
     <div
       className={cn(
-        "group relative h-9 w-full overflow-hidden rounded-lg transition-colors",
+        "group relative w-full overflow-hidden rounded-lg transition-colors",
+        collapsed ? "h-12" : "h-9",
         selected ? "bg-[var(--color-paper-deep)]/99" : "hover:bg-[var(--color-paper-deep)]/40",
       )}
       onContextMenu={(e) => {
