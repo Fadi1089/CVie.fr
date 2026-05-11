@@ -3,6 +3,7 @@ import { createBrowserRouter, Link, Navigate, Outlet, useSearchParams } from "re
 import { renderCvHtml, sampleCv } from "@cvie/shared";
 import { useAuth0 } from "@auth0/auth0-react";
 import { Auth0ProviderWithNavigate, AuthCallback, useMe } from "./features/auth";
+import { AiKeysPage } from "./features/settings";
 import { ImportLocalCvsModal } from "./features/cv-library/components/ImportLocalCvsModal";
 import { LocalCvStore } from "./features/cv-library/store/LocalCvStore";
 import { useCvLibrary } from "./features/cv-library/hooks/useCvLibrary";
@@ -235,36 +236,78 @@ function EditorRouteGate() {
   const { isAuthenticated, isLoading } = useAuth0();
   const cvId = params.get("cv");
 
-  // Authed users land on a CV id that exists server-side. The DB list isn't
-  // available synchronously, so block render with a transient "loading"
-  // (Auth0 isLoading) and let the editor itself surface "no CV selected"
-  // when the URL has no ?cv= and the library is empty. We avoid the anon
-  // localStorage gate entirely for authed sessions because anon-style ids
-  // (`cv-${Date.now()}`) won't exist in the DB and would force every save
-  // into a 404 loop.
-  if (!cvId || !cvId.trim()) {
-    if (isLoading) {
-      return null;
-    }
-    if (!isAuthenticated) {
-      const library = readCvLibrary();
-      const target = library[0] ?? createCvRecord("classique");
-      const next = new URLSearchParams();
-      next.set("template", target.templateId);
-      next.set("cv", target.id);
-      return <Navigate to={`/editor?${next.toString()}`} replace />;
-    }
-    // Authed: defer to the sidebar — it lists the user's DB CVs and the
-    // user picks one, or clicks "+ Nouveau CV" which creates a server row
-    // and navigates with the new id. Send them back to the home page in
-    // the meantime so we don't render an editor pinned to a missing id.
-    return <Navigate to="/" replace />;
+  if (cvId && cvId.trim()) {
+    return (
+      <EditorErrorBoundary>
+        <CvEditor />
+      </EditorErrorBoundary>
+    );
   }
-  return (
-    <EditorErrorBoundary>
-      <CvEditor />
-    </EditorErrorBoundary>
-  );
+
+  if (isLoading) return null;
+
+  if (!isAuthenticated) {
+    const library = readCvLibrary();
+    const target = library[0] ?? createCvRecord("classique");
+    const next = new URLSearchParams();
+    next.set("template", target.templateId);
+    next.set("cv", target.id);
+    return <Navigate to={`/editor?${next.toString()}`} replace />;
+  }
+
+  return <AuthedEditorEntry />;
+}
+
+// Authed users without ?cv=: load DB library async, redirect to most recent
+// CV. If empty, create one server-side and navigate. We avoid the anon
+// localStorage gate (anon-style ids like `cv-${Date.now()}` would 404 in DB
+// and force a save loop).
+function AuthedEditorEntry() {
+  const lib = useCvLibrary();
+  const [createError, setCreateError] = useState<string | null>(null);
+  const triedCreateRef = useRef(false);
+
+  useEffect(() => {
+    if (lib.loading || lib.active.length > 0 || triedCreateRef.current) return;
+    triedCreateRef.current = true;
+    void lib
+      .createCv({ title: "Nouveau CV", templateId: "classique" }, sampleCv)
+      .catch((err) => {
+        setCreateError(
+          err instanceof Error ? err.message : "Création du CV impossible.",
+        );
+      });
+  }, [lib]);
+
+  const target = lib.active[0];
+  if (target) {
+    const next = new URLSearchParams();
+    next.set("template", target.templateId);
+    next.set("cv", target.id);
+    return <Navigate to={`/editor?${next.toString()}`} replace />;
+  }
+
+  if (lib.loading) return null;
+
+  if (createError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-6 text-center">
+        <div>
+          <p className="text-[14px] text-[var(--color-ink-soft)]">
+            {createError}
+          </p>
+          <Link
+            to="/"
+            className="mt-4 inline-block font-mono-caps text-[10px] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
+          >
+            ← Accueil
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }
 
 function MeBootstrap() {
@@ -339,6 +382,7 @@ export const router = createBrowserRouter([
       { path: "/editor", element: <EditorRouteGate /> },
       { path: "/template-demo", element: <TemplateDemoPage /> },
       { path: "/auth/callback", element: <AuthCallback /> },
+      { path: "/settings/ai-keys", element: <AiKeysPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
   },
