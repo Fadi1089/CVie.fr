@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { isToolUIPart, type UIMessage, type UIMessagePart } from "ai";
+import { MessageMarkdown } from "./MessageMarkdown";
 
 type Props = {
   messages: UIMessage[];
@@ -107,11 +108,14 @@ export function ChatBody({ messages, status, error }: Props) {
                   }
                   const text = partText(part as never);
                   if (text) {
-                    return (
-                      <div key={i} className="whitespace-pre-wrap break-words">
-                        {text}
-                      </div>
-                    );
+                    if (isUser) {
+                      return (
+                        <div key={i} className="whitespace-pre-wrap break-words">
+                          {text}
+                        </div>
+                      );
+                    }
+                    return <MessageMarkdown key={i}>{text}</MessageMarkdown>;
                   }
                   const label = toolLabel(part as never);
                   if (label) {
