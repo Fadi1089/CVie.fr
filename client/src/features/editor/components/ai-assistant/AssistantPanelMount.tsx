@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { AssistantHandle } from "./AssistantHandle";
 
 // Heavy: pulls in `ai` + `@ai-sdk/react` (+ tooling for streaming / form ops).
@@ -11,27 +11,33 @@ type Props = {
   cvId: string | null | undefined;
 };
 
-export function AssistantPanelMount({ cvId }: Props) {
-  const [expanded, setExpanded] = useState(false);
-  // Once expanded, keep the panel mounted so conversation + pending changes
-  // survive a collapse/expand cycle. The lazy panel renders both collapsed
-  // and expanded states internally so the pending-changes badge stays live.
-  const [hasMounted, setHasMounted] = useState(false);
+function CollapsedShell({ onExpand }: { onExpand: () => void }) {
+  return (
+    <div
+      id="cv-assistant-panel"
+      className="flex w-full flex-col overflow-hidden rounded-t-2xl border-t border-[var(--color-rule)] bg-white shadow-[0_-6px_18px_0_rgba(0,0,0,0.08)]"
+      style={{ height: "52px" }}
+    >
+      <AssistantHandle onExpand={onExpand} />
+    </div>
+  );
+}
 
-  useEffect(() => {
-    if (expanded) setHasMounted(true);
-  }, [expanded]);
+export function AssistantPanelMount({ cvId }: Props) {
+  const [hasMounted, setHasMounted] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const handleExpand = () => {
+    setExpanded(true);
+    if (!hasMounted) setHasMounted(true);
+  };
 
   if (!hasMounted) {
-    return <AssistantHandle onExpand={() => setExpanded(true)} />;
+    return <CollapsedShell onExpand={handleExpand} />;
   }
 
   return (
-    <Suspense
-      fallback={
-        <AssistantHandle onExpand={() => setExpanded(true)} />
-      }
-    >
+    <Suspense fallback={<CollapsedShell onExpand={handleExpand} />}>
       <AssistantPanel
         cvId={cvId}
         expanded={expanded}

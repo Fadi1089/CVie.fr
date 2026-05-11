@@ -1,4 +1,5 @@
 import { useAuth0 } from "@auth0/auth0-react";
+import { useEffect, useState } from "react";
 import { useAssistantChat } from "../../hooks/useAssistantChat";
 import { AssistantHandle } from "./AssistantHandle";
 import { AssistantToolbar } from "./AssistantToolbar";
@@ -25,13 +26,22 @@ export function AssistantPanel({ cvId, expanded, onExpand, onCollapse }: Props) 
   const busy = status === "submitted" || status === "streaming";
   const hasMessages = messages.length > 0;
 
+  // First paint at collapsed height so the height transition has a starting
+  // value to animate from when the chunk loads with expanded=true.
+  const [primed, setPrimed] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setPrimed(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  const open = primed && expanded;
+
   return (
     <div
       id="cv-assistant-panel"
       className="flex w-full flex-col overflow-hidden rounded-t-2xl border-t border-[var(--color-rule)] bg-white shadow-[0_-6px_18px_0_rgba(0,0,0,0.08)] transition-[height] duration-300 ease-out"
-      style={{ height: expanded ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT }}
+      style={{ height: open ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT }}
     >
-      {expanded ? (
+      {open ? (
         <AssistantToolbar
           onCollapse={onCollapse}
           onReset={reset}
