@@ -10,42 +10,28 @@ export function AssistantToolbar({ onCollapse, onReset, resetDisabled }: Props) 
       <button
         type="button"
         onClick={onCollapse}
-        className="flex items-center gap-2 text-[10px] font-medium text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
+        className="flex items-center gap-1.5 text-[11px] font-medium text-[var(--color-ink-soft)] transition-colors hover:text-[var(--color-ink)]"
         aria-label="Réduire le panneau"
       >
-        <span
-          aria-hidden
-          className="inline-block h-1.5 w-3 rounded-[1px] bg-current"
-        />
         Réduire
+        <svg viewBox="0 0 10 6" className="h-1.5 w-2.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M1 1l4 4 4-4" />
+        </svg>
       </button>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onReset}
-          disabled={resetDisabled}
-          className="flex h-5 w-5 items-center justify-center rounded-full border-[1.5px] border-[var(--color-ink-soft)] text-[var(--color-ink-soft)] transition-colors hover:border-[var(--color-ink)] hover:text-[var(--color-ink)] disabled:cursor-not-allowed disabled:opacity-40"
-          aria-label="Nouvelle conversation"
-          title="Nouvelle conversation"
-        >
-          <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M3 8a5 5 0 1 1 1.5 3.5" strokeLinecap="round" />
-            <path d="M3 4v3.5h3.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-        <button
-          type="button"
-          onClick={onReset}
-          disabled={resetDisabled}
-          className="flex h-5 w-5 items-center justify-center rounded-full border-[1.5px] border-[var(--color-ink-soft)] text-[var(--color-ink-soft)] transition-colors hover:border-[var(--color-ink)] hover:text-[var(--color-ink)] disabled:cursor-not-allowed disabled:opacity-40"
-          aria-label="Effacer le contexte"
-          title="Effacer le contexte"
-        >
-          <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M3 4h10M6 4V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1M5 4l1 9a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1l1-9" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={onReset}
+        disabled={resetDisabled}
+        className="flex items-center gap-1.5 rounded-full border border-[var(--color-rule)] bg-white px-2.5 py-1 text-[11px] font-medium text-[var(--color-ink-soft)] transition-colors hover:border-[var(--color-ink-soft)] hover:text-[var(--color-ink)] disabled:cursor-not-allowed disabled:opacity-40"
+        aria-label="Nouvelle conversation"
+        title="Nouvelle conversation"
+      >
+        <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M11.5 2.5l2 2-7 7-2.5.5.5-2.5z" />
+          <path d="M13 7v5.5A1.5 1.5 0 0 1 11.5 14h-8A1.5 1.5 0 0 1 2 12.5v-8A1.5 1.5 0 0 1 3.5 3H9" />
+        </svg>
+        Nouvelle conversation
+      </button>
     </div>
   );
 }

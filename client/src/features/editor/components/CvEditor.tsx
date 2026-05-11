@@ -488,7 +488,7 @@ function EditorShell({
                     setSectionRef={setSectionRef}
                     setItemRef={setItemRef}
                   />
-                  <div className="sticky bottom-2 z-20 mt-6 -mx-4 md:-mx-8 px-4 md:px-8">
+                  <div className="sticky bottom-0 z-20 -mx-4 md:-mx-8">
                     <AssistantPanelMount cvId={cvId} />
                   </div>
                 </>

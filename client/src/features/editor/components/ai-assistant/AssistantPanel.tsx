@@ -43,7 +43,7 @@ export function AssistantPanel({ cvId, expanded, onExpand, onCollapse }: Props) 
         <div className="overflow-hidden">
           <div
             id="cv-assistant-panel"
-            className="flex h-[min(60vh,560px)] w-full flex-col overflow-hidden border border-[var(--color-rule)] bg-white shadow-[0_-6px_18px_0_rgba(0,0,0,0.1)]"
+            className="flex h-[min(60vh,560px)] w-full flex-col overflow-hidden rounded-t-2xl border-x border-t border-[var(--color-rule)] bg-white shadow-[0_-6px_18px_0_rgba(0,0,0,0.1)]"
           >
             <AssistantToolbar
               onCollapse={onCollapse}
