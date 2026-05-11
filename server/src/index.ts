@@ -6,6 +6,7 @@ import { cvRoutes } from "./routes/cv";
 import { avatarRoutes } from "./routes/avatar";
 import { cvImportRoutes } from "./routes/cvImport";
 import { cvTranslateRoutes } from "./routes/cvTranslate";
+import { cvAssistantRoutes } from "./routes/cvAssistant";
 import { folderRoutes } from "./routes/folders";
 import { aiKeyRoutes } from "./routes/aiKeys";
 import { aiPreferenceRoutes } from "./routes/aiPreferences";
@@ -24,6 +25,7 @@ app.get("/api/v1/health", (c) => {
 app.route("/api/v1", authRoutes); // exposes /api/v1/me
 app.route("/api/v1/cv/import", cvImportRoutes);
 app.route("/api/v1/cv/translate", cvTranslateRoutes);
+app.route("/api/v1/cv/assistant", cvAssistantRoutes);
 app.route("/api/v1/cv", cvRoutes);
 app.route("/api/v1/avatar", avatarRoutes);
 app.route("/api/v1/folders", folderRoutes);
