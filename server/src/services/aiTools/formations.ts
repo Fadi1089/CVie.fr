@@ -42,7 +42,7 @@ export function formationTools(state: AssistantState) {
         const insertAt = Math.min(position ?? before.length, before.length);
         const after = [...before.slice(0, insertAt), item, ...before.slice(insertAt)];
         return commit(state, { ...state.cv, formations: after }, [
-          { path: `formations[${insertAt}]`, before: null, after: item },
+          { path: "formations", before, after },
         ]);
       },
     }),
@@ -78,10 +78,10 @@ export function formationTools(state: AssistantState) {
         if (idx === -1) {
           return { ok: false, error: `Aucune formation avec id="${id}".` };
         }
-        const before = state.cv.formations[idx]!;
-        const arr = state.cv.formations.filter((f) => f.id !== id);
+        const before = state.cv.formations;
+        const arr = before.filter((f) => f.id !== id);
         return commit(state, { ...state.cv, formations: arr }, [
-          { path: `formations[${idx}]`, before, after: null },
+          { path: "formations", before, after: arr },
         ]);
       },
     }),

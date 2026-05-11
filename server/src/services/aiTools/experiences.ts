@@ -53,7 +53,7 @@ export function experienceTools(state: AssistantState) {
         const insertAt = Math.min(position ?? before.length, before.length);
         const after = [...before.slice(0, insertAt), item, ...before.slice(insertAt)];
         return commit(state, { ...state.cv, experiences: after }, [
-          { path: `experiences[${insertAt}]`, before: null, after: item },
+          { path: "experiences", before, after },
         ]);
       },
     }),
@@ -94,10 +94,10 @@ export function experienceTools(state: AssistantState) {
         if (idx === -1) {
           return { ok: false, error: `Aucune expérience avec id="${id}".` };
         }
-        const before = state.cv.experiences[idx]!;
-        const arr = state.cv.experiences.filter((e) => e.id !== id);
+        const before = state.cv.experiences;
+        const arr = before.filter((e) => e.id !== id);
         return commit(state, { ...state.cv, experiences: arr }, [
-          { path: `experiences[${idx}]`, before, after: null },
+          { path: "experiences", before, after: arr },
         ]);
       },
     }),
@@ -148,7 +148,7 @@ export function experienceTools(state: AssistantState) {
         const arr = [...state.cv.experiences];
         arr[idx] = merged;
         return commit(state, { ...state.cv, experiences: arr }, [
-          { path: `experiences[${idx}].bullets[${insertAt}]`, before: null, after: text },
+          { path: `experiences[${idx}]`, before: exp, after: merged },
         ]);
       },
     }),
@@ -197,13 +197,12 @@ export function experienceTools(state: AssistantState) {
           return { ok: false, error: `Index ${index} hors limites.` };
         }
         const bullets = [...exp.bullets];
-        const before = bullets[index];
         bullets.splice(index, 1);
         const merged: Experience = { ...exp, bullets };
         const arr = [...state.cv.experiences];
         arr[idx] = merged;
         return commit(state, { ...state.cv, experiences: arr }, [
-          { path: `experiences[${idx}].bullets[${index}]`, before, after: null },
+          { path: `experiences[${idx}]`, before: exp, after: merged },
         ]);
       },
     }),

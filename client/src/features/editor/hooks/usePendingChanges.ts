@@ -27,12 +27,45 @@ export type UsePendingChangesReturn = {
   clear: () => void;
 };
 
+const SECTION_RE = /^(experiences|formations|skills|languages|interests)$/;
+const ITEM_RE = /^(experiences|formations|skills|languages|interests)\[(\d+)\]$/;
+
 function usePendingChangesState(): UsePendingChangesReturn {
-  const { setValue, getValues } = useFormContext<CvData>();
+  const { setValue, getValues, reset } = useFormContext<CvData>();
   const [byPath, setByPath] = useState<Map<string, PendingChange>>(() => new Map());
 
   const applyToForm = useCallback(
     (path: string, value: unknown) => {
+      // Whole-array patches (path = "skills", "experiences", …) and whole-item
+      // patches ("experiences[2]") need form.reset so useFieldArray re-syncs
+      // its internal fields list. Plain setValue would update the form data
+      // but leave the rendered field array stale.
+      const sectionMatch = path.match(SECTION_RE);
+      if (sectionMatch) {
+        const current = getValues();
+        const next = {
+          ...current,
+          [sectionMatch[1]!]: value,
+        } as CvData;
+        reset(next, { keepDirty: true, keepTouched: true, keepErrors: true });
+        return;
+      }
+      const itemMatch = path.match(ITEM_RE);
+      if (itemMatch) {
+        const section = itemMatch[1]!;
+        const idx = parseInt(itemMatch[2]!, 10);
+        const current = getValues();
+        const arr = [
+          ...((current as unknown as Record<string, unknown[]>)[section] ?? []),
+        ];
+        arr[idx] = value;
+        const next = {
+          ...current,
+          [section]: arr,
+        } as CvData;
+        reset(next, { keepDirty: true, keepTouched: true, keepErrors: true });
+        return;
+      }
       // RHF paths are typed against CvData; assistant emits arbitrary paths
       // matched by name, not by static type. Cast to escape the path union.
       (setValue as (n: string, v: unknown, o?: object) => void)(path, value, {
@@ -40,7 +73,7 @@ function usePendingChangesState(): UsePendingChangesReturn {
         shouldTouch: true,
       });
     },
-    [setValue],
+    [setValue, getValues, reset],
   );
 
   const readFromForm = useCallback(

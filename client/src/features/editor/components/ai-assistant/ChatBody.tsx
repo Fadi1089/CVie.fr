@@ -18,6 +18,7 @@ function partText(part: UIMessagePart<Record<string, never>, Record<string, neve
 }
 
 function extractMessagePaths(m: UIMessage): string[] {
+  const seen = new Set<string>();
   const out: string[] = [];
   for (const part of m.parts) {
     if (!isToolUIPart(part as never)) continue;
@@ -26,7 +27,10 @@ function extractMessagePaths(m: UIMessage): string[] {
     const o = tp.output;
     if (!o?.ok || !Array.isArray(o.patches)) continue;
     for (const p of o.patches) {
-      if (typeof p.path === "string") out.push(p.path);
+      if (typeof p.path !== "string") continue;
+      if (seen.has(p.path)) continue;
+      seen.add(p.path);
+      out.push(p.path);
     }
   }
   return out;

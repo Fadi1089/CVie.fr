@@ -55,7 +55,7 @@ function arrayCrud<T extends { id: string }>(
         const insertAt = Math.min(position ?? before.length, before.length);
         const after = [...before.slice(0, insertAt), built, ...before.slice(insertAt)];
         return commit(state, { ...state.cv, [section]: after }, [
-          { path: `${section}[${insertAt}]`, before: null, after: built },
+          { path: section, before, after },
         ]);
       },
     }),
@@ -80,10 +80,10 @@ function arrayCrud<T extends { id: string }>(
       execute: async ({ id }): Promise<ToolResult> => {
         const idx = findIndexById(list(), id);
         if (idx === -1) return { ok: false, error: `Aucun ${labelFr} avec id="${id}".` };
-        const before = list()[idx]!;
-        const arr = list().filter((e) => e.id !== id);
+        const before = list();
+        const arr = before.filter((e) => e.id !== id);
         return commit(state, { ...state.cv, [section]: arr }, [
-          { path: `${section}[${idx}]`, before, after: null },
+          { path: section, before, after: arr },
         ]);
       },
     }),
