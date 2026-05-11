@@ -5,3 +5,4 @@ export * from "./cv";
 export * from "./cvImport";
 export * from "./cvTranslate";
 export { folderRoutes } from "./folders";
+export { aiKeyRoutes } from "./aiKeys";

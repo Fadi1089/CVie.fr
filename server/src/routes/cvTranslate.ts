@@ -1,7 +1,9 @@
 import { Hono } from "hono";
-import { cvDataSchema, localeSchema } from "@cvie/shared";
+import { cvDataSchema, localeSchema, type AiProvider } from "@cvie/shared";
 import { rateLimit } from "../middleware/rateLimit";
 import { translateCv } from "../services/cvTranslateService";
+import { resolveProviderKey } from "../services/aiKeyResolver";
+import { getUserIdByAuth0Sub } from "../services/userService";
 
 const CV_TRANSLATE_RATE_LIMIT_PER_MIN = (() => {
   const raw = process.env.CV_TRANSLATE_RATE_LIMIT_PER_MIN;
@@ -10,10 +12,11 @@ const CV_TRANSLATE_RATE_LIMIT_PER_MIN = (() => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 5;
 })();
 
-function hasApiKey(): boolean {
-  const provider = (process.env.AI_PROVIDER ?? "anthropic").toLowerCase();
-  if (provider === "openai") return Boolean(process.env.OPENAI_API_KEY);
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+function pickProvider(): AiProvider {
+  const raw = (process.env.AI_PROVIDER ?? "anthropic").toLowerCase();
+  if (raw === "openai") return "openai";
+  if (raw === "google") return "google";
+  return "anthropic";
 }
 
 export const cvTranslateRoutes = new Hono();
@@ -24,10 +27,15 @@ cvTranslateRoutes.use(
 );
 
 cvTranslateRoutes.post("/", async (c) => {
-  if (!hasApiKey()) {
+  const provider = pickProvider();
+  const claims = c.get("userClaims");
+  const userId = claims ? await getUserIdByAuth0Sub(claims.sub) : null;
+  const resolved = await resolveProviderKey(userId, provider);
+
+  if (!resolved) {
     console.error(
-      "[cv/translate] AI API key not set for provider:",
-      process.env.AI_PROVIDER ?? "anthropic",
+      "[cv/translate] AI API key not available for provider:",
+      provider,
     );
     return c.json(
       { error: "Service de traduction non configuré.", code: "SERVICE_UNAVAILABLE" },
@@ -65,7 +73,16 @@ cvTranslateRoutes.post("/", async (c) => {
   }
 
   try {
-    const translated = await translateCv(parsed.data, targetParsed.data);
+    const translated = await translateCv(
+      parsed.data,
+      targetParsed.data,
+      provider,
+      resolved.key,
+    );
+    console.info(
+      "[cv/translate] success",
+      JSON.stringify({ source: resolved.source, provider }),
+    );
     return c.json(translated);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Traduction échouée";

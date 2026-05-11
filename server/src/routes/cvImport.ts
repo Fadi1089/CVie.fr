@@ -1,6 +1,9 @@
 import { Hono } from "hono";
+import type { AiProvider } from "@cvie/shared";
 import { rateLimit } from "../middleware/rateLimit";
 import { extractCvFromPdf } from "../services/cvImportService";
+import { resolveProviderKey } from "../services/aiKeyResolver";
+import { getUserIdByAuth0Sub } from "../services/userService";
 
 const MAX_PDF_BYTES = 5 * 1024 * 1024;
 
@@ -11,10 +14,11 @@ const CV_IMPORT_RATE_LIMIT_PER_MIN = (() => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 5;
 })();
 
-function hasApiKey(): boolean {
-  const provider = (process.env.AI_PROVIDER ?? "anthropic").toLowerCase();
-  if (provider === "openai") return Boolean(process.env.OPENAI_API_KEY);
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+function pickProvider(): AiProvider {
+  const raw = (process.env.AI_PROVIDER ?? "anthropic").toLowerCase();
+  if (raw === "openai") return "openai";
+  if (raw === "google") return "google";
+  return "anthropic";
 }
 
 export const cvImportRoutes = new Hono();
@@ -22,8 +26,13 @@ export const cvImportRoutes = new Hono();
 cvImportRoutes.use("*", rateLimit({ max: CV_IMPORT_RATE_LIMIT_PER_MIN, windowMs: 60_000 }));
 
 cvImportRoutes.post("/", async (c) => {
-  if (!hasApiKey()) {
-    console.error("[cv/import] AI API key not set for provider:", process.env.AI_PROVIDER ?? "anthropic");
+  const provider = pickProvider();
+  const claims = c.get("userClaims");
+  const userId = claims ? await getUserIdByAuth0Sub(claims.sub) : null;
+  const resolved = await resolveProviderKey(userId, provider);
+
+  if (!resolved) {
+    console.error("[cv/import] AI API key not available for provider:", provider);
     return c.json({ error: "Service d'import non configuré.", code: "SERVICE_UNAVAILABLE" }, 503);
   }
 
@@ -49,13 +58,13 @@ cvImportRoutes.post("/", async (c) => {
 
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  // Verify PDF magic bytes (%PDF-)
   if (!buffer.subarray(0, 5).equals(Buffer.from("%PDF-"))) {
     return c.json({ error: "Le fichier n'est pas un PDF valide.", code: "INVALID_TYPE" }, 400);
   }
 
   try {
-    const cvData = await extractCvFromPdf(buffer);
+    const cvData = await extractCvFromPdf(buffer, provider, resolved.key);
+    console.info("[cv/import] success", JSON.stringify({ source: resolved.source, provider }));
     return c.json({ data: cvData });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Extraction échouée";

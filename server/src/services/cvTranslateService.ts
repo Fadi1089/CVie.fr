@@ -1,7 +1,12 @@
 import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
-import { openai } from "@ai-sdk/openai";
-import { cvDataSchema, type CvData, type LocaleCode } from "@cvie/shared";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createOpenAI } from "@ai-sdk/openai";
+import {
+  cvDataSchema,
+  type AiProvider,
+  type CvData,
+  type LocaleCode,
+} from "@cvie/shared";
 
 const LANGUAGE_LABEL: Record<LocaleCode, string> = {
   fr: "français",
@@ -26,12 +31,11 @@ Règles strictes — appliquer toutes :
 
 Retourne UNIQUEMENT le CV traduit en JSON valide, sans markdown, sans backticks, sans texte avant/après. Le JSON doit être directement parsable.`;
 
-function resolveModel() {
-  const provider = (process.env.AI_PROVIDER ?? "anthropic").toLowerCase();
+function buildModel(provider: AiProvider, apiKey: string) {
   if (provider === "openai") {
-    return openai("gpt-4o-mini");
+    return createOpenAI({ apiKey })("gpt-4o-mini");
   }
-  return anthropic("claude-haiku-4-5-20251001");
+  return createAnthropic({ apiKey })("claude-haiku-4-5-20251001");
 }
 
 function stripJsonFences(raw: string): string {
@@ -45,10 +49,12 @@ function stripJsonFences(raw: string): string {
 export async function translateCv(
   cv: CvData,
   target: LocaleCode,
+  provider: AiProvider,
+  apiKey: string,
 ): Promise<CvData> {
   const label = LANGUAGE_LABEL[target];
   const { text } = await generateText({
-    model: resolveModel(),
+    model: buildModel(provider, apiKey),
     system: SYSTEM_PROMPT(label),
     prompt: `CV source (JSON) à traduire en ${label} :\n\n${JSON.stringify(cv)}`,
   });

@@ -10,10 +10,24 @@ const MOCK_CV = {
   formations: [], experiences: [], skills: [], languages: [], interests: [],
 };
 
-const mockExtractCvFromPdf = mock(async (_buf: Buffer) => MOCK_CV);
+const mockExtractCvFromPdf = mock(
+  async (_buf: Buffer, _provider: string, _key: string) => MOCK_CV,
+);
 
 mock.module("../../services/cvImportService", () => ({
   extractCvFromPdf: mockExtractCvFromPdf,
+}));
+
+const getUserIdByAuth0SubMock = mock(async (_sub: string) => null as string | null);
+mock.module("../../services/userService", () => ({
+  getUserIdByAuth0Sub: getUserIdByAuth0SubMock,
+}));
+
+const getDecryptedKeyMock = mock(
+  async (_userId: string, _provider: string) => null as string | null,
+);
+mock.module("../../services/aiKeyService", () => ({
+  getDecryptedKey: getDecryptedKeyMock,
 }));
 
 import { cvImportRoutes } from "../cvImport";
@@ -33,6 +47,8 @@ function makePdfForm(bytes: Uint8Array = PDF_MAGIC) {
 describe("POST /import", () => {
   beforeEach(() => {
     mockExtractCvFromPdf.mockClear();
+    getUserIdByAuth0SubMock.mockClear();
+    getDecryptedKeyMock.mockClear();
     process.env.ANTHROPIC_API_KEY = "sk-test";
     process.env.AI_PROVIDER = "anthropic";
   });
@@ -89,6 +105,28 @@ describe("POST /import", () => {
     expect(res.status).toBe(503);
     const body = await res.json() as { code: string };
     expect(body.code).toBe("SERVICE_UNAVAILABLE");
+  });
+
+  it("uses BYOK key when authed user has one stored", async () => {
+    // Simulate authed request: middleware would set userClaims; route fetches userId; resolver finds BYOK row.
+    const authedApp = new Hono();
+    authedApp.use("*", async (c, next) => {
+      c.set("userClaims", { sub: "auth0|u1", email: "u1@example.com" });
+      await next();
+    });
+    authedApp.route("/import", cvImportRoutes);
+
+    getUserIdByAuth0SubMock.mockResolvedValueOnce("u_1");
+    getDecryptedKeyMock.mockResolvedValueOnce("sk-ant-user-byok-key");
+
+    const res = await authedApp.request("/import", { method: "POST", body: makePdfForm() });
+    expect(res.status).toBe(200);
+
+    expect(getUserIdByAuth0SubMock).toHaveBeenCalledWith("auth0|u1");
+    expect(getDecryptedKeyMock).toHaveBeenCalledWith("u_1", "anthropic");
+    const callArgs = mockExtractCvFromPdf.mock.calls[0];
+    expect(callArgs?.[1]).toBe("anthropic");
+    expect(callArgs?.[2]).toBe("sk-ant-user-byok-key");
   });
 
   it("returns 422 when extraction fails", async () => {

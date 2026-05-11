@@ -1,8 +1,8 @@
 import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
-import { openai } from "@ai-sdk/openai";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createOpenAI } from "@ai-sdk/openai";
 import { PDFParse } from "pdf-parse";
-import { cvDataSchema, type CvData } from "@cvie/shared";
+import { cvDataSchema, type AiProvider, type CvData } from "@cvie/shared";
 
 const EXTRACTION_SYSTEM_PROMPT = `Tu es un assistant expert en extraction de données de CV.
 Tu reçois le texte brut extrait d'un CV PDF et tu dois en extraire les informations structurées.
@@ -34,15 +34,19 @@ Schéma attendu:
   "interests": [{ "id": string, "name": string }]
 }`;
 
-function resolveModel() {
-  const provider = (process.env.AI_PROVIDER ?? "anthropic").toLowerCase();
+function buildModel(provider: AiProvider, apiKey: string) {
   if (provider === "openai") {
-    return openai("gpt-4o-mini");
+    return createOpenAI({ apiKey })("gpt-4o-mini");
   }
-  return anthropic("claude-haiku-4-5-20251001");
+  // anthropic + (google not supported by import yet, treat as anthropic)
+  return createAnthropic({ apiKey })("claude-haiku-4-5-20251001");
 }
 
-export async function extractCvFromPdf(pdfBuffer: Buffer): Promise<CvData> {
+export async function extractCvFromPdf(
+  pdfBuffer: Buffer,
+  provider: AiProvider,
+  apiKey: string,
+): Promise<CvData> {
   const parser = new PDFParse({ data: pdfBuffer });
   const parsed = await parser.getText();
   const cvText = parsed.text.trim();
@@ -52,7 +56,7 @@ export async function extractCvFromPdf(pdfBuffer: Buffer): Promise<CvData> {
   }
 
   const { text } = await generateText({
-    model: resolveModel(),
+    model: buildModel(provider, apiKey),
     system: EXTRACTION_SYSTEM_PROMPT,
     prompt: EXTRACTION_USER_TEMPLATE.replace("{CV_TEXT}", cvText.slice(0, 12_000)),
     maxOutputTokens: 4096,
