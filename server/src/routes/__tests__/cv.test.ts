@@ -38,6 +38,16 @@ const patchMock = mock(async () => ({
   createdAt: new Date(),
   updatedAt: new Date(),
 }));
+const resetMock = mock(async () => ({
+  id: "cv_1",
+  userId: meUserId,
+  folderId: "f_default",
+  title: "Mon CV",
+  templateId: "classique",
+  data: SAMPLE_DATA,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+}));
 const moveMock = mock(async () => ({} as unknown));
 const hardDeleteMock = mock(async () => undefined);
 const bulkImportMock = mock(async () => ({ imported: [], skipped: [] }));
@@ -48,6 +58,7 @@ mock.module("../../services/cvService", () => ({
   readCv: readMock,
   createCv: createMock,
   patchCv: patchMock,
+  resetCv: resetMock,
   moveCv: moveMock,
   hardDeleteCv: hardDeleteMock,
   bulkImportCvs: bulkImportMock,
@@ -83,6 +94,7 @@ describe("cv routes", () => {
     readMock.mockClear();
     createMock.mockClear();
     patchMock.mockClear();
+    resetMock.mockClear();
     moveMock.mockClear();
     hardDeleteMock.mockClear();
     bulkImportMock.mockClear();
@@ -134,6 +146,15 @@ describe("cv routes", () => {
       body: JSON.stringify({ title: "Renamed" }),
     });
     expect(res.status).toBe(200);
+  });
+
+  it("POST /api/v1/cv/:id/reset calls resetCv", async () => {
+    const app = buildApp();
+    const res = await app.request("/api/v1/cv/cv_1/reset", {
+      method: "POST",
+    });
+    expect(res.status).toBe(200);
+    expect(resetMock).toHaveBeenCalledWith(meUserId, "cv_1");
   });
 
   it("POST /api/v1/cv/:id/move calls moveCv", async () => {
