@@ -9,7 +9,7 @@ export function AssistantHandle({ onExpand, pendingCount }: Props) {
     <button
       type="button"
       onClick={onExpand}
-      className="flex w-full items-center gap-2.5 overflow-hidden rounded-t-2xl border-x border-t border-[var(--color-rule)] bg-white px-4 py-3 transition-colors hover:bg-[var(--color-paper-soft,#fafaf7)]"
+      className="flex h-[52px] w-full shrink-0 items-center gap-2.5 overflow-hidden bg-white px-4 transition-colors hover:bg-[var(--color-paper-soft,#fafaf7)]"
       aria-expanded={false}
       aria-controls="cv-assistant-panel"
     >

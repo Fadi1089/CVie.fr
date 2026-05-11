@@ -6,7 +6,7 @@ type Props = {
 
 export function AssistantToolbar({ onCollapse, onReset, resetDisabled }: Props) {
   return (
-    <div className="flex items-center justify-between border-b border-[var(--color-rule)] bg-white px-3 py-2">
+    <div className="flex h-[52px] shrink-0 items-center justify-between border-b border-[var(--color-rule)] bg-white px-3">
       <button
         type="button"
         onClick={onReset}
