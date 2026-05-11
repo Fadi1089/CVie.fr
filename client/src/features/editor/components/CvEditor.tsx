@@ -452,7 +452,7 @@ function EditorShell({
             <form
               noValidate
               onSubmit={(e) => e.preventDefault()}
-              className="px-4 pt-4 pb-24 md:h-[calc(100vh-64px)] md:overflow-y-auto md:px-8 md:py-8"
+              className="px-4 pt-4 pb-24 md:h-[calc(100vh-64px)] md:overflow-y-auto md:px-8 md:pt-8 md:pb-0"
               aria-label="Formulaire CV"
             >
               <EditorTabs value={editorTab} onChange={setEditorTab} />
@@ -488,7 +488,7 @@ function EditorShell({
                     setSectionRef={setSectionRef}
                     setItemRef={setItemRef}
                   />
-                  <div className="sticky bottom-0 z-20 -mx-4 -mb-4 md:-mx-8 md:-mb-8">
+                  <div className="sticky bottom-0 z-20 -mx-4 mt-6 md:-mx-8">
                     <AssistantPanelMount cvId={cvId} />
                   </div>
                 </>
