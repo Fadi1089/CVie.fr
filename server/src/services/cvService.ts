@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma";
-import { cvDataSchema, type CvData, type TemplateId } from "@cvie/shared";
+import { createEmptyCv, cvDataSchema, type CvData, type TemplateId } from "@cvie/shared";
 import {
   SYSTEM_FOLDER_DEFAULT,
   SYSTEM_FOLDER_TRASH,
@@ -152,6 +152,21 @@ export async function patchCv(
   return prisma.cv.update({
     where: { id: cvId },
     data,
+  });
+}
+
+// Blanks a CV's body without deleting the row. Used by the editor's
+// "Effacer le CV" button. createEmptyCv() is intentionally schema-invalid
+// (firstName.min(1)), so we bypass cvDataSchema and write the empty shape
+// directly — the editor hydrates it fine.
+export async function resetCv(userId: string, cvId: string): Promise<CvRow> {
+  const existing = await prisma.cv.findUnique({ where: { id: cvId } });
+  if (!existing || existing.userId !== userId) {
+    throw new CvError("CV_NOT_FOUND", "CV not found.");
+  }
+  return prisma.cv.update({
+    where: { id: cvId },
+    data: { data: createEmptyCv() as unknown as object },
   });
 }
 

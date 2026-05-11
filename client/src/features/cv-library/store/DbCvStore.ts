@@ -404,9 +404,23 @@ export class DbCvStore implements CvStore {
   }
 
   async clearDraft(id: string): Promise<void> {
-    // Drop the local cache so a stale body can't rehydrate the form on the
-    // next mount. The server copy stays put — UI semantics treat this as
-    // "blank the editor" rather than "delete the row".
+    // Drop any queued PATCH for this id so a stale body can't land on the
+    // server after we've reset it.
+    this.queue.delete(id);
+    // Blank the row server-side. Without this, reload re-fetches the old
+    // body via read() and rehydrates the form.
+    try {
+      await this.request<unknown>(
+        `/api/v1/cv/${encodeURIComponent(id)}/reset`,
+        { method: "POST" },
+      );
+    } catch (err) {
+      // 404 = row doesn't exist server-side yet (anon or unsynced draft);
+      // local clear below still does the right thing.
+      if (!(err instanceof CvStoreError && err.code === "NOT_FOUND")) {
+        throw err;
+      }
+    }
     await this.opts.local.clearDraft(id);
   }
 

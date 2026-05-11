@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.71",
+    "@ai-sdk/google": "^3.0.71",
     "@ai-sdk/openai": "^3.0.53",
     "@cvie/shared": "workspace:*",
     "ai": "^6.0.168",

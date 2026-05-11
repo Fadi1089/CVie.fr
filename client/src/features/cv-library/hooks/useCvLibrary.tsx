@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { useCvStore } from "./useCvStore";
 import type {
   AnonExport,
@@ -22,6 +22,8 @@ export type UseCvLibrary = {
     body: CvData,
   ) => Promise<CvLibraryRecord>;
   moveCv: (id: string, folderId: string) => Promise<void>;
+  renameCv: (id: string, title: string) => Promise<void>;
+  setCvTemplate: (id: string, templateId: TemplateId) => Promise<void>;
   hardDeleteCv: (id: string) => Promise<void>;
   createFolder: (name: string) => Promise<Folder>;
   renameFolder: (id: string, name: string) => Promise<Folder>;
@@ -29,7 +31,13 @@ export type UseCvLibrary = {
   bulkImport: (records: AnonExport[]) => Promise<ImportResult>;
 };
 
-export function useCvLibrary(): UseCvLibrary {
+const CvLibraryContext = createContext<UseCvLibrary | null>(null);
+
+// Internal hook — instantiates state + store wiring. Kept separate from the
+// public `useCvLibrary` so multiple consumers can share one instance via the
+// provider rather than each spawning their own state (which caused renames
+// in the editor to not propagate to the sidebar until refresh).
+function useCvLibraryState(): UseCvLibrary {
   const store = useCvStore();
   const [active, setActive] = useState<CvLibraryRecord[]>([]);
   const [trash, setTrash] = useState<CvLibraryRecord[]>([]);
@@ -108,6 +116,42 @@ export function useCvLibrary(): UseCvLibrary {
       }
       void refresh();
     },
+    renameCv: async (id, title) => {
+      const trimmed = title.trim();
+      if (!trimmed) return;
+      const prevActive = active;
+      const prevTrash = trash;
+      setActive((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, title: trimmed } : r)),
+      );
+      setTrash((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, title: trimmed } : r)),
+      );
+      try {
+        await store.patch(id, { title: trimmed });
+      } catch (err) {
+        setActive(prevActive);
+        setTrash(prevTrash);
+        throw err;
+      }
+    },
+    setCvTemplate: async (id, templateId) => {
+      const prevActive = active;
+      const prevTrash = trash;
+      setActive((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, templateId } : r)),
+      );
+      setTrash((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, templateId } : r)),
+      );
+      try {
+        await store.patch(id, { templateId });
+      } catch (err) {
+        setActive(prevActive);
+        setTrash(prevTrash);
+        throw err;
+      }
+    },
     hardDeleteCv: async (id) => {
       const prevActive = active;
       const prevTrash = trash;
@@ -165,4 +209,23 @@ export function useCvLibrary(): UseCvLibrary {
       return r;
     },
   };
+}
+
+export function CvLibraryProvider({ children }: { children: ReactNode }) {
+  const value = useCvLibraryState();
+  return (
+    <CvLibraryContext.Provider value={value}>
+      {children}
+    </CvLibraryContext.Provider>
+  );
+}
+
+export function useCvLibrary(): UseCvLibrary {
+  const ctx = useContext(CvLibraryContext);
+  if (!ctx) {
+    throw new Error(
+      "useCvLibrary must be used within a CvLibraryProvider — wrap the route in <CvLibraryProvider>",
+    );
+  }
+  return ctx;
 }

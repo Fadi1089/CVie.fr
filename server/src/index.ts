@@ -7,6 +7,8 @@ import { avatarRoutes } from "./routes/avatar";
 import { cvImportRoutes } from "./routes/cvImport";
 import { cvTranslateRoutes } from "./routes/cvTranslate";
 import { folderRoutes } from "./routes/folders";
+import { aiKeyRoutes } from "./routes/aiKeys";
+import { aiPreferenceRoutes } from "./routes/aiPreferences";
 import { shutdownPdfService, warmupPdfService } from "./services/pdfService";
 
 const app = new Hono();
@@ -25,6 +27,8 @@ app.route("/api/v1/cv/translate", cvTranslateRoutes);
 app.route("/api/v1/cv", cvRoutes);
 app.route("/api/v1/avatar", avatarRoutes);
 app.route("/api/v1/folders", folderRoutes);
+app.route("/api/v1/ai-keys", aiKeyRoutes);
+app.route("/api/v1/ai-preferences", aiPreferenceRoutes);
 
 // Serve the built SPA's static assets from the client workspace
 app.use("/*", serveStatic({ root: "../client/dist" }));

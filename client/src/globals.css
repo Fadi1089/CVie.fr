@@ -37,14 +37,6 @@
   --color-dot: #d8d5cc;
   --color-gold: #b89968;
 
-  /* Spacing — 4px base grid (Apple HIG-aligned) */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-  --spacing-2xl: 48px;
-  --spacing-3xl: 64px;
 }
 
 @theme inline {

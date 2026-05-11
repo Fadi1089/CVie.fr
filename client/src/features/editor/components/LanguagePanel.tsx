@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { cvDataSchema, SUPPORTED_LOCALES, type CvData, type LocaleCode } from "@cvie/shared";
 import { cn } from "@/lib/utils";
+import { useAuthApi } from "@/features/auth/hooks/useAuthApi";
 
 const LANGUAGES: ReadonlyArray<{
   code: LocaleCode;
@@ -21,6 +22,7 @@ type TranslateStatus = "idle" | "pending" | "error" | "success";
 
 export function LanguagePanel() {
   const { control, setValue, getValues, reset } = useFormContext<CvData>();
+  const { fetch: authFetch } = useAuthApi();
   const locale = useWatch({ control, name: "appearance.locale" }) ?? DEFAULT_LOCALE;
   const [status, setStatus] = useState<TranslateStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export function LanguagePanel() {
     setErrorMessage(null);
     try {
       const cv = getValues();
-      const res = await fetch("/api/v1/cv/translate", {
+      const res = await authFetch("/api/v1/cv/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cv, targetLang: locale }),

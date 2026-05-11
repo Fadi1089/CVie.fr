@@ -21,6 +21,14 @@ function isAuth0SubConflict(err: unknown): boolean {
   return false;
 }
 
+export async function getUserIdByAuth0Sub(sub: string): Promise<string | null> {
+  const row = await prisma.user.findUnique({
+    where: { auth0Sub: sub },
+    select: { id: true },
+  });
+  return row?.id ?? null;
+}
+
 export async function upsertUserByAuth0Sub(claims: Auth0Claims): Promise<AppUser> {
   if (!claims.sub) {
     throw new Error("Auth0 claims missing required `sub`.");

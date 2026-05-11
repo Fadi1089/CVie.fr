@@ -1,7 +1,18 @@
 import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
-import { openai } from "@ai-sdk/openai";
-import { cvDataSchema, type CvData, type LocaleCode } from "@cvie/shared";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createOpenAI } from "@ai-sdk/openai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import {
+  cvDataSchema,
+  type AiProvider,
+  type CvData,
+  type LocaleCode,
+} from "@cvie/shared";
+import {
+  JSON_OUTPUT_CONTRACT,
+  jsonResponseProviderOptions,
+  parseAiJson,
+} from "./aiJson";
 
 const LANGUAGE_LABEL: Record<LocaleCode, string> = {
   fr: "français",
@@ -24,40 +35,46 @@ Règles strictes — appliquer toutes :
 - Conserver toutes les structures, tableaux, et clés exactement comme reçus.
 - Si appearance.locale est présent, le mettre à jour vers la langue cible.
 
-Retourne UNIQUEMENT le CV traduit en JSON valide, sans markdown, sans backticks, sans texte avant/après. Le JSON doit être directement parsable.`;
+${JSON_OUTPUT_CONTRACT}`;
 
-function resolveModel() {
-  const provider = (process.env.AI_PROVIDER ?? "anthropic").toLowerCase();
+function buildModel(provider: AiProvider, apiKey: string, model: string) {
   if (provider === "openai") {
-    return openai("gpt-4o-mini");
+    return createOpenAI({ apiKey })(model);
   }
-  return anthropic("claude-haiku-4-5-20251001");
-}
-
-function stripJsonFences(raw: string): string {
-  let s = raw.trim();
-  if (s.startsWith("```")) {
-    s = s.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "");
+  if (provider === "google") {
+    return createGoogleGenerativeAI({ apiKey })(model);
   }
-  return s.trim();
+  return createAnthropic({ apiKey })(model);
 }
 
 export async function translateCv(
   cv: CvData,
   target: LocaleCode,
+  provider: AiProvider,
+  apiKey: string,
+  model: string,
 ): Promise<CvData> {
   const label = LANGUAGE_LABEL[target];
   const { text } = await generateText({
-    model: resolveModel(),
+    model: buildModel(provider, apiKey, model),
     system: SYSTEM_PROMPT(label),
     prompt: `CV source (JSON) à traduire en ${label} :\n\n${JSON.stringify(cv)}`,
+    providerOptions: jsonResponseProviderOptions(provider),
   });
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(stripJsonFences(text));
-  } catch {
-    throw new Error("Réponse IA non JSON");
+    parsed = parseAiJson(text);
+  } catch (err) {
+    console.error(
+      "[cv/translate] raw model output (first 500 chars):",
+      text.slice(0, 500),
+    );
+    throw new Error(
+      err instanceof Error
+        ? `Réponse IA non JSON. ${err.message}`
+        : "Réponse IA non JSON",
+    );
   }
 
   const result = cvDataSchema.safeParse(parsed);

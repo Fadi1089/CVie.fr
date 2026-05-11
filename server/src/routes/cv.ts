@@ -11,6 +11,7 @@ import {
   readCv,
   createCv,
   patchCv,
+  resetCv,
   moveCv,
   hardDeleteCv,
   bulkImportCvs,
@@ -312,6 +313,21 @@ authedCv.patch("/:id", async (c) => {
   }
   try {
     const cv = await patchCv(userId, c.req.param("id"), parsed.data);
+    c.header("Cache-Control", "no-store");
+    return c.json({ cv });
+  } catch (err) {
+    if (err instanceof CvError) {
+      const { status, code } = cvErrorToResponse(err);
+      return c.json({ error: err.message, code }, status);
+    }
+    throw err;
+  }
+});
+
+authedCv.post("/:id/reset", async (c) => {
+  const userId = c.get("userId") as string;
+  try {
+    const cv = await resetCv(userId, c.req.param("id"));
     c.header("Cache-Control", "no-store");
     return c.json({ cv });
   } catch (err) {

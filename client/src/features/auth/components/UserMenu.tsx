@@ -1,4 +1,6 @@
 import { useAuth0 } from "@auth0/auth0-react";
+import { Link } from "react-router";
+import { Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoutButton } from "./LogoutButton";
 
@@ -45,7 +47,17 @@ export function UserMenu({ compact = false }: UserMenuProps) {
         <span className="block truncate text-[13px] text-[var(--color-ink)]">
           {user.email}
         </span>
-        <LogoutButton className="-ml-1 inline-flex items-center gap-1 px-1 py-0 text-[11px] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]" />
+        <div className="flex items-center gap-2">
+          <Link
+            to="/settings"
+            aria-label="Paramètres"
+            title="Paramètres"
+            className="-ml-1 inline-flex items-center px-1 py-0 text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink)]"
+          >
+            <Settings size={13} strokeWidth={1.5} aria-hidden="true" />
+          </Link>
+          <LogoutButton className="inline-flex items-center gap-1 px-1 py-0 text-[11px] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]" />
+        </div>
       </div>
     </>
   );

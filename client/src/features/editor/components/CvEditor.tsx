@@ -9,11 +9,8 @@ import {
   type TemplateId,
 } from "@cvie/shared";
 import { cn } from "@/lib/utils";
-import {
-  readCvLibrary,
-  upsertCvRecord,
-  type CvLibraryRecord,
-} from "@/features/cv-library/storage";
+import type { CvLibraryRecord } from "@/features/cv-library/store/types";
+import { useCvLibrary } from "@/features/cv-library/hooks/useCvLibrary";
 import { EditorSidebar, useSidebarCollapsed } from "./EditorSidebar";
 import { EditorSplitter } from "./EditorSplitter";
 import { useEditorSplit } from "../hooks/useEditorSplit";
@@ -133,12 +130,20 @@ export function CvEditor() {
     templateRegistry[0] ??
     SAFE_FALLBACK_META;
 
-  const [cvRecord, setCvRecord] = useState<CvLibraryRecord | null>(null);
+  const lib = useCvLibrary();
+  const cvRecord = useMemo<CvLibraryRecord | null>(() => {
+    if (!cvId) return null;
+    return (
+      lib.active.find((c) => c.id === cvId) ??
+      lib.trash.find((c) => c.id === cvId) ??
+      null
+    );
+  }, [cvId, lib.active, lib.trash]);
   const [cvTitleInput, setCvTitleInput] = useState("Nouveau CV");
   const handleDraftPersisted = useCallback(() => {
     if (!cvId) return;
-    upsertCvRecord(cvId, {});
-  }, [cvId]);
+    void lib.refresh();
+  }, [cvId, lib]);
   const handleCvIdChanged = useCallback(
     (newId: string) => {
       const next = new URLSearchParams(params);
@@ -157,18 +162,6 @@ export function CvEditor() {
   const [unknownBannerDismissed, setUnknownBannerDismissed] = useState(false);
   const [resetNonce, setResetNonce] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useSidebarCollapsed();
-
-  useEffect(() => {
-    if (!cvId) return;
-    const existing = readCvLibrary().find((record) => record.id === cvId) ?? null;
-    const ensured =
-      existing ??
-      upsertCvRecord(cvId, {
-        title: "Nouveau CV",
-        templateId,
-      });
-    setCvRecord(ensured);
-  }, [cvId, templateId]);
 
   useEffect(() => {
     setCvTitleInput(cvRecord?.title ?? "Nouveau CV");
@@ -191,8 +184,7 @@ export function CvEditor() {
       return next;
     });
     if (cvId) {
-      const updated = upsertCvRecord(cvId, { templateId: nextTemplateId });
-      setCvRecord(updated);
+      void lib.setCvTemplate(cvId, nextTemplateId);
     }
   };
 
@@ -207,10 +199,9 @@ export function CvEditor() {
       setCvTitleInput(normalized);
       if (!cvId) return;
       if (cvRecord?.title === normalized) return;
-      const updated = upsertCvRecord(cvId, { title: normalized });
-      setCvRecord(updated);
+      void lib.renameCv(cvId, normalized);
     },
-    [cvId, cvRecord?.title, cvTitleInput],
+    [cvId, cvRecord?.title, cvTitleInput, lib],
   );
 
   useEffect(() => {

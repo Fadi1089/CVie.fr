@@ -47,6 +47,22 @@ VITE_AUTH0_AUDIENCE=https://api.cvie.fr
 
 Full dashboard config (callbacks, allowed origins, post-login Action) lives in `docs/superpowers/specs/2026-04-29-auth0-integration-design.md` § 10.1.
 
+## BYOK (Bring Your Own Key)
+
+Authed users can store their own AI provider keys (Anthropic, OpenAI, Google) at
+`/settings/ai-keys`. Keys are encrypted at rest with AES-256-GCM via a single
+server-side master key:
+
+```
+BYOK_MASTER_KEY=$(openssl rand -base64 32)
+```
+
+The resolver (`server/src/services/aiKeyResolver.ts`) prefers a user's BYOK
+over the shared `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GOOGLE_API_KEY` env
+keys. **Loss of `BYOK_MASTER_KEY` renders all stored user keys unrecoverable**
+— back it up out-of-band. Spec:
+`docs/superpowers/specs/2026-05-07-byok-design.md`.
+
 ## Dev
 
 ```bash
