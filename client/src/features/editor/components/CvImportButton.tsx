@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Upload } from "lucide-react";
+import { findModel, PROVIDER_LABELS } from "@cvie/shared";
 import { cn } from "@/lib/utils";
-import { useCvImport } from "../hooks/useCvImport";
+import { useCvImport, type ImportMeta } from "../hooks/useCvImport";
 
 const PHASES = [
   {
@@ -81,16 +82,26 @@ function WarningIcon() {
 
 type OverlayStatus = "loading" | "success" | "error";
 
+function formatMeta(meta: ImportMeta): string {
+  const modelLabel =
+    findModel(meta.provider, meta.model)?.label ?? meta.model;
+  const sourceLabel =
+    meta.source === "byok" ? "votre clé" : "clé serveur partagée";
+  return `Via ${modelLabel} · ${PROVIDER_LABELS[meta.provider]} · ${sourceLabel}`;
+}
+
 function AnalysisOverlay({
   status,
   error,
   fileName,
+  meta,
   onCancel,
   onDismiss,
 }: {
   status: OverlayStatus;
   error: string | null;
   fileName: string | null;
+  meta: ImportMeta | null;
   onCancel: () => void;
   onDismiss: () => void;
 }) {
@@ -114,12 +125,12 @@ function AnalysisOverlay({
     };
   }, [status]);
 
-  // Auto-dismiss after success
+  // Auto-dismiss after success — longer when meta is shown so users can read it.
   useEffect(() => {
     if (status !== "success") return;
-    const t = setTimeout(onDismiss, 2200);
+    const t = setTimeout(onDismiss, meta ? 3800 : 2200);
     return () => clearTimeout(t);
-  }, [status, onDismiss]);
+  }, [status, meta, onDismiss]);
 
   const truncatedName = fileName && fileName.length > 36
     ? `${fileName.slice(0, 33)}…`
@@ -228,6 +239,11 @@ function AnalysisOverlay({
               <p className="mt-1.5 text-[13px] text-[var(--color-ink-soft)]">
                 Les champs ont été remplis automatiquement.
               </p>
+              {meta ? (
+                <p className="font-mono-caps mt-3 text-[9px] tracking-[0.18em] text-[var(--color-ink-soft)]">
+                  {formatMeta(meta)}
+                </p>
+              ) : null}
             </div>
           )}
 
@@ -257,7 +273,7 @@ function AnalysisOverlay({
 }
 
 export function CvImportButton() {
-  const { status, error, fileName, importPdf, cancelImport } = useCvImport();
+  const { status, error, fileName, meta, importPdf, cancelImport } = useCvImport();
   const inputRef = useRef<HTMLInputElement>(null);
   const [showOverlay, setShowOverlay] = useState(false);
 
@@ -319,6 +335,7 @@ export function CvImportButton() {
           status={overlayStatus}
           error={error}
           fileName={fileName}
+          meta={meta}
           onCancel={handleCancel}
           onDismiss={handleDismiss}
         />,

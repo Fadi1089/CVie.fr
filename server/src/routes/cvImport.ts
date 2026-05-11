@@ -73,7 +73,10 @@ cvImportRoutes.post("/", async (c) => {
       "[cv/import] success",
       JSON.stringify({ source: resolved.source, provider, model }),
     );
-    return c.json({ data: cvData });
+    return c.json({
+      data: cvData,
+      meta: { source: resolved.source, provider, model },
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Extraction échouée";
     console.error("[cv/import] extraction failed:", err);
