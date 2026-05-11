@@ -51,7 +51,7 @@ export function AssistantPanel({ cvId, expanded, onExpand, onCollapse }: Props) 
         <AssistantHandle onExpand={onExpand} pendingCount={pending.count} />
       )}
       <PendingChangesHeader
-        changes={pending.changes}
+        count={pending.count}
         onKeepAll={pending.keepAll}
         onRevertAll={pending.revertAll}
       />

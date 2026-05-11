@@ -1,17 +1,15 @@
-import type { PendingChange } from "../../hooks/usePendingChanges";
-
 type Props = {
-  changes: PendingChange[];
+  count: number;
   onKeepAll: () => void;
   onRevertAll: () => void;
 };
 
-export function PendingChangesHeader({ changes, onKeepAll, onRevertAll }: Props) {
-  if (changes.length === 0) return null;
+export function PendingChangesHeader({ count, onKeepAll, onRevertAll }: Props) {
+  if (count === 0) return null;
   return (
     <div className="flex items-center justify-between border-b border-[var(--color-rule)] bg-white px-3.5 py-2.5">
       <span className="text-[12px] font-semibold text-[var(--color-ink)]">
-        {changes.length} changement{changes.length > 1 ? "s" : ""}
+        {count} changement{count > 1 ? "s" : ""}
       </span>
       <div className="flex items-center gap-2">
         <button
