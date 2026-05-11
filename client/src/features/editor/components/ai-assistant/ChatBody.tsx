@@ -77,6 +77,28 @@ export function ChatBody({ messages, status, error }: Props) {
                 }
               >
                 {m.parts.map((part, i) => {
+                  const p = part as { type?: string; text?: string; mediaType?: string; filename?: string; url?: string };
+                  if (p.type === "file" && p.mediaType?.startsWith("image/") && p.url) {
+                    return (
+                      <img
+                        key={i}
+                        src={p.url}
+                        alt={p.filename ?? "Pièce jointe"}
+                        className="mt-1 max-h-40 max-w-full rounded border border-[var(--color-rule)]"
+                      />
+                    );
+                  }
+                  if (p.type === "file") {
+                    return (
+                      <div
+                        key={i}
+                        className={`mt-1 flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] ${isUser ? "bg-white/10 text-white" : "bg-[var(--color-paper-soft,#fbf7f0)] text-[var(--color-ink-soft)]"}`}
+                      >
+                        <span aria-hidden>📄</span>
+                        <span className="truncate">{p.filename ?? "Pièce jointe"}</span>
+                      </div>
+                    );
+                  }
                   const text = partText(part as never);
                   if (text) {
                     return (

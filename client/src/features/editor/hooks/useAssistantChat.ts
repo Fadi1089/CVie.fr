@@ -95,9 +95,16 @@ export function useAssistantChat({ cvId }: UseAssistantChatOptions) {
   const lastErrorString = chat.error?.message ?? null;
 
   const send = useCallback(
-    (text: string) => {
+    (text: string, files?: File[]) => {
       const trimmed = text.trim();
-      if (!trimmed) return;
+      const hasFiles = files && files.length > 0;
+      if (!trimmed && !hasFiles) return;
+      if (hasFiles) {
+        const list = new DataTransfer();
+        for (const f of files) list.items.add(f);
+        void chat.sendMessage({ text: trimmed, files: list.files });
+        return;
+      }
       void chat.sendMessage({ text: trimmed });
     },
     [chat],

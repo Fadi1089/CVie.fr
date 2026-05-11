@@ -35,6 +35,64 @@ const bodySchema = z.object({
   messages: z.array(uiMessageSchema).min(1).max(60),
 });
 
+const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024; // 8 MB decoded
+const MAX_ATTACHMENTS_PER_MESSAGE = 3;
+const ALLOWED_FILE_MEDIA_PREFIXES = ["image/", "application/pdf"];
+
+type AttachmentValidation =
+  | { ok: true }
+  | { ok: false; reason: string };
+
+// File parts carry data URLs. Cap count + decoded size + media type so a
+// runaway client can't exhaust memory or smuggle arbitrary binaries to the
+// upstream provider.
+function validateAttachments(
+  messages: Array<{ parts: unknown[] }>,
+): AttachmentValidation {
+  for (const message of messages) {
+    let fileCount = 0;
+    for (const rawPart of message.parts) {
+      if (!rawPart || typeof rawPart !== "object") continue;
+      const part = rawPart as { type?: unknown; url?: unknown; mediaType?: unknown };
+      if (part.type !== "file") continue;
+      fileCount += 1;
+      if (fileCount > MAX_ATTACHMENTS_PER_MESSAGE) {
+        return { ok: false, reason: `Maximum ${MAX_ATTACHMENTS_PER_MESSAGE} pièce(s) jointe(s) par message.` };
+      }
+      if (typeof part.mediaType !== "string") {
+        return { ok: false, reason: "Pièce jointe sans type MIME." };
+      }
+      const accepted = ALLOWED_FILE_MEDIA_PREFIXES.some((p) =>
+        (part.mediaType as string).startsWith(p),
+      );
+      if (!accepted) {
+        return {
+          ok: false,
+          reason: `Type de pièce jointe non supporté: ${part.mediaType}.`,
+        };
+      }
+      if (typeof part.url !== "string" || !part.url.startsWith("data:")) {
+        return { ok: false, reason: "Pièce jointe doit être encodée en data URL." };
+      }
+      const commaIdx = part.url.indexOf(",");
+      if (commaIdx === -1) {
+        return { ok: false, reason: "Pièce jointe invalide." };
+      }
+      const base64 = part.url.slice(commaIdx + 1);
+      // base64 decodes to ceil(n/4)*3 minus padding; rough byte count.
+      const padding = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
+      const decodedBytes = Math.floor((base64.length * 3) / 4) - padding;
+      if (decodedBytes > MAX_ATTACHMENT_BYTES) {
+        return {
+          ok: false,
+          reason: `Pièce jointe trop volumineuse (limite ${MAX_ATTACHMENT_BYTES / (1024 * 1024)} Mo).`,
+        };
+      }
+    }
+  }
+  return { ok: true };
+}
+
 export const cvAssistantRoutes = new Hono();
 
 cvAssistantRoutes.use("*", (c, next) => requireAuthModule.requireAuth()(c, next));
@@ -59,6 +117,16 @@ cvAssistantRoutes.post("/chat", async (c) => {
         code: "VALIDATION",
         message: parsed.error.issues[0]?.message ?? "Schéma non respecté.",
       },
+      400,
+    );
+  }
+
+  const attachmentCheck = validateAttachments(
+    parsed.data.messages as Array<{ parts: unknown[] }>,
+  );
+  if (!attachmentCheck.ok) {
+    return c.json(
+      { error: attachmentCheck.reason, code: "ATTACHMENT_REJECTED" },
       400,
     );
   }
