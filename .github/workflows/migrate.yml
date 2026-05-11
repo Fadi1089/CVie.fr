@@ -24,7 +24,22 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
-        run: bunx prisma migrate status
+        # `prisma migrate status` exits non-zero whenever pending migrations
+        # exist — which is the whole point of a PR that adds one. We only want
+        # to fail on real drift (DB has migrations not present in the repo).
+        run: |
+          set +e
+          out=$(bunx prisma migrate status 2>&1)
+          code=$?
+          echo "$out"
+          if echo "$out" | grep -q "are not found locally"; then
+            echo "::error::Drift detected — database has migrations missing from the repo."
+            exit 1
+          fi
+          if echo "$out" | grep -qE "Following migration have not yet been applied|have not yet been applied|Database schema is up to date"; then
+            exit 0
+          fi
+          exit $code
 
   deploy:
     if: github.event_name == 'push'
