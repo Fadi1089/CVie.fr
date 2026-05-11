@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { AutofillSyncContext, useAutofillSync } from "../hooks/useAutofillSync";
 import { PendingChangesProvider } from "../hooks/usePendingChanges";
+import { EditorJumpContext, resolvePathToJump } from "../hooks/useEditorJump";
 import { useCvDraft, type PersistStatus } from "../hooks/useCvDraft";
 import { useAuth0 } from "@auth0/auth0-react";
 import { SyncStatusBadge } from "@/features/cv-library/components/SyncStatusBadge";
@@ -305,6 +306,7 @@ function EditorShell({
   setSidebarCollapsed,
 }: EditorShellProps) {
   const autofillSync = useAutofillSync<CvData>();
+  const { getValues } = useFormContext<CvData>();
   const { ratio, setRatio, resetRatio } = useEditorSplit();
   const splitContainerRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<EditorSectionId, HTMLElement | null>>({
@@ -404,7 +406,18 @@ function EditorShell({
     });
   };
 
+  const jumpToPath = (path: string) => {
+    const cv = getValues();
+    const resolved = resolvePathToJump(path, cv);
+    if (!resolved) return;
+    handlePreviewSectionClick({
+      sectionId: resolved.sectionId,
+      itemId: resolved.itemId || undefined,
+    });
+  };
+
   return (
+    <EditorJumpContext.Provider value={jumpToPath}>
     <AutofillSyncContext.Provider value={autofillSync}>
       <div
         ref={(node) => {
@@ -549,6 +562,7 @@ function EditorShell({
         </div>
       </div>
     </AutofillSyncContext.Provider>
+    </EditorJumpContext.Provider>
   );
 }
 

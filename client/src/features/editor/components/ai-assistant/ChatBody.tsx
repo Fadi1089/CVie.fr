@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { isToolUIPart, type UIMessage, type UIMessagePart } from "ai";
 import { MessageMarkdown } from "./MessageMarkdown";
+import { ChangeChip } from "./ChangeChip";
+import { useEditorJump } from "../../hooks/useEditorJump";
 
 type Props = {
   messages: UIMessage[];
@@ -15,31 +17,24 @@ function partText(part: UIMessagePart<Record<string, never>, Record<string, neve
   return "";
 }
 
-function toolLabel(part: UIMessagePart<Record<string, never>, Record<string, never>>): string | null {
-  if (!isToolUIPart(part)) return null;
-  const name = part.type.replace(/^tool-/, "");
-  if (part.state === "input-streaming" || part.state === "input-available") {
-    return `→ ${name}…`;
-  }
-  if (part.state === "output-available") {
-    const out = part.output as { ok?: boolean; patches?: unknown[]; error?: string } | undefined;
-    if (out?.ok === true && Array.isArray(out.patches)) {
-      const n = out.patches.length;
-      return `✓ ${name} · ${n} patch${n > 1 ? "es" : ""}`;
+function extractMessagePaths(m: UIMessage): string[] {
+  const out: string[] = [];
+  for (const part of m.parts) {
+    if (!isToolUIPart(part as never)) continue;
+    const tp = part as { state?: string; output?: { ok?: boolean; patches?: Array<{ path: string }> } };
+    if (tp.state !== "output-available") continue;
+    const o = tp.output;
+    if (!o?.ok || !Array.isArray(o.patches)) continue;
+    for (const p of o.patches) {
+      if (typeof p.path === "string") out.push(p.path);
     }
-    if (out?.ok === false) {
-      return `✗ ${name} · ${out.error ?? "erreur"}`;
-    }
-    return `✓ ${name}`;
   }
-  if (part.state === "output-error") {
-    return `✗ ${name} · ${part.errorText ?? "erreur"}`;
-  }
-  return `· ${name}`;
+  return out;
 }
 
 export function ChatBody({ messages, status, error }: Props) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const jump = useEditorJump();
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -71,66 +66,66 @@ export function ChatBody({ messages, status, error }: Props) {
       <ul className="flex flex-col gap-3">
         {messages.map((m) => {
           const isUser = m.role === "user";
+          const paths = !isUser ? extractMessagePaths(m) : [];
           return (
-            <li
-              key={m.id}
-              className={isUser ? "flex justify-end" : "flex justify-start"}
-            >
-              <div
-                className={
-                  isUser
-                    ? "max-w-[85%] rounded-lg bg-[var(--color-ink)] px-3 py-2 text-white"
-                    : "max-w-[85%] rounded-lg border border-[var(--color-rule)] bg-white px-3 py-2"
-                }
-              >
-                {m.parts.map((part, i) => {
-                  const p = part as { type?: string; text?: string; mediaType?: string; filename?: string; url?: string };
-                  if (p.type === "file" && p.mediaType?.startsWith("image/") && p.url) {
-                    return (
-                      <img
-                        key={i}
-                        src={p.url}
-                        alt={p.filename ?? "Pièce jointe"}
-                        className="mt-1 max-h-40 max-w-full rounded border border-[var(--color-rule)]"
-                      />
-                    );
+            <li key={m.id} className="flex flex-col gap-1.5">
+              <div className={isUser ? "flex justify-end" : "flex justify-start"}>
+                <div
+                  className={
+                    isUser
+                      ? "max-w-[85%] rounded-lg bg-[var(--color-ink)] px-3 py-2 text-white"
+                      : "max-w-[85%] rounded-lg border border-[var(--color-rule)] bg-white px-3 py-2"
                   }
-                  if (p.type === "file") {
-                    return (
-                      <div
-                        key={i}
-                        className={`mt-1 flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] ${isUser ? "bg-white/10 text-white" : "bg-[var(--color-paper-soft,#fbf7f0)] text-[var(--color-ink-soft)]"}`}
-                      >
-                        <span aria-hidden>📄</span>
-                        <span className="truncate">{p.filename ?? "Pièce jointe"}</span>
-                      </div>
-                    );
-                  }
-                  const text = partText(part as never);
-                  if (text) {
-                    if (isUser) {
+                >
+                  {m.parts.map((part, i) => {
+                    const p = part as { type?: string; text?: string; mediaType?: string; filename?: string; url?: string };
+                    if (p.type === "file" && p.mediaType?.startsWith("image/") && p.url) {
                       return (
-                        <div key={i} className="whitespace-pre-wrap break-words">
-                          {text}
+                        <img
+                          key={i}
+                          src={p.url}
+                          alt={p.filename ?? "Pièce jointe"}
+                          className="mt-1 max-h-40 max-w-full rounded border border-[var(--color-rule)]"
+                        />
+                      );
+                    }
+                    if (p.type === "file") {
+                      return (
+                        <div
+                          key={i}
+                          className={`mt-1 flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] ${isUser ? "bg-white/10 text-white" : "bg-[var(--color-paper-soft,#fbf7f0)] text-[var(--color-ink-soft)]"}`}
+                        >
+                          <span aria-hidden>📄</span>
+                          <span className="truncate">{p.filename ?? "Pièce jointe"}</span>
                         </div>
                       );
                     }
-                    return <MessageMarkdown key={i}>{text}</MessageMarkdown>;
-                  }
-                  const label = toolLabel(part as never);
-                  if (label) {
-                    return (
-                      <div
-                        key={i}
-                        className="font-mono-caps mt-1 text-[10px] text-[var(--color-ink-soft)]"
-                      >
-                        {label}
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
+                    const text = partText(part as never);
+                    if (text) {
+                      if (isUser) {
+                        return (
+                          <div key={i} className="whitespace-pre-wrap break-words">
+                            {text}
+                          </div>
+                        );
+                      }
+                      return <MessageMarkdown key={i}>{text}</MessageMarkdown>;
+                    }
+                    return null;
+                  })}
+                </div>
               </div>
+              {paths.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pl-1">
+                  {paths.map((path, i) => (
+                    <ChangeChip
+                      key={`${m.id}-${i}-${path}`}
+                      path={path}
+                      onClick={() => jump?.(path)}
+                    />
+                  ))}
+                </div>
+              )}
             </li>
           );
         })}
