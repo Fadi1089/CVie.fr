@@ -8,6 +8,11 @@ import {
   type CvData,
   type LocaleCode,
 } from "@cvie/shared";
+import {
+  JSON_OUTPUT_CONTRACT,
+  jsonResponseProviderOptions,
+  parseAiJson,
+} from "./aiJson";
 
 const LANGUAGE_LABEL: Record<LocaleCode, string> = {
   fr: "français",
@@ -30,7 +35,7 @@ Règles strictes — appliquer toutes :
 - Conserver toutes les structures, tableaux, et clés exactement comme reçus.
 - Si appearance.locale est présent, le mettre à jour vers la langue cible.
 
-Retourne UNIQUEMENT le CV traduit en JSON valide, sans markdown, sans backticks, sans texte avant/après. Le JSON doit être directement parsable.`;
+${JSON_OUTPUT_CONTRACT}`;
 
 function buildModel(provider: AiProvider, apiKey: string, model: string) {
   if (provider === "openai") {
@@ -40,14 +45,6 @@ function buildModel(provider: AiProvider, apiKey: string, model: string) {
     return createGoogleGenerativeAI({ apiKey })(model);
   }
   return createAnthropic({ apiKey })(model);
-}
-
-function stripJsonFences(raw: string): string {
-  let s = raw.trim();
-  if (s.startsWith("```")) {
-    s = s.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "");
-  }
-  return s.trim();
 }
 
 export async function translateCv(
@@ -62,13 +59,22 @@ export async function translateCv(
     model: buildModel(provider, apiKey, model),
     system: SYSTEM_PROMPT(label),
     prompt: `CV source (JSON) à traduire en ${label} :\n\n${JSON.stringify(cv)}`,
+    providerOptions: jsonResponseProviderOptions(provider),
   });
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(stripJsonFences(text));
-  } catch {
-    throw new Error("Réponse IA non JSON");
+    parsed = parseAiJson(text);
+  } catch (err) {
+    console.error(
+      "[cv/translate] raw model output (first 500 chars):",
+      text.slice(0, 500),
+    );
+    throw new Error(
+      err instanceof Error
+        ? `Réponse IA non JSON. ${err.message}`
+        : "Réponse IA non JSON",
+    );
   }
 
   const result = cvDataSchema.safeParse(parsed);
