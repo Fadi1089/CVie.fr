@@ -11,7 +11,8 @@ const MOCK_CV = {
 };
 
 const mockExtractCvFromPdf = mock(
-  async (_buf: Buffer, _provider: string, _key: string) => MOCK_CV,
+  async (_buf: Buffer, _provider: string, _key: string, _model: string) =>
+    MOCK_CV,
 );
 
 mock.module("../../services/cvImportService", () => ({
@@ -28,6 +29,16 @@ const getDecryptedKeyMock = mock(
 );
 mock.module("../../services/aiKeyService", () => ({
   getDecryptedKey: getDecryptedKeyMock,
+}));
+
+const resolveFeaturePreferenceMock = mock(
+  async (_userId: string | null, _feature: string, fallback: string) => ({
+    provider: fallback,
+    model: "claude-haiku-4-5-20251001",
+  }),
+);
+mock.module("../../services/aiPreferenceService", () => ({
+  resolveFeaturePreference: resolveFeaturePreferenceMock,
 }));
 
 import { cvImportRoutes } from "../cvImport";
@@ -49,6 +60,7 @@ describe("POST /import", () => {
     mockExtractCvFromPdf.mockClear();
     getUserIdByAuth0SubMock.mockClear();
     getDecryptedKeyMock.mockClear();
+    resolveFeaturePreferenceMock.mockClear();
     process.env.ANTHROPIC_API_KEY = "sk-test";
     process.env.AI_PROVIDER = "anthropic";
   });
@@ -127,6 +139,7 @@ describe("POST /import", () => {
     const callArgs = mockExtractCvFromPdf.mock.calls[0];
     expect(callArgs?.[1]).toBe("anthropic");
     expect(callArgs?.[2]).toBe("sk-ant-user-byok-key");
+    expect(callArgs?.[3]).toBe("claude-haiku-4-5-20251001");
   });
 
   it("returns 422 when extraction fails", async () => {

@@ -3,7 +3,12 @@ import { createBrowserRouter, Link, Navigate, Outlet, useSearchParams } from "re
 import { renderCvHtml, sampleCv } from "@cvie/shared";
 import { useAuth0 } from "@auth0/auth0-react";
 import { Auth0ProviderWithNavigate, AuthCallback, useMe } from "./features/auth";
-import { AiKeysPage } from "./features/settings";
+import {
+  AiKeysPage,
+  ModelsPage,
+  ProfilePage,
+  SettingsLayout,
+} from "./features/settings";
 import { ImportLocalCvsModal } from "./features/cv-library/components/ImportLocalCvsModal";
 import { LocalCvStore } from "./features/cv-library/store/LocalCvStore";
 import { useCvLibrary } from "./features/cv-library/hooks/useCvLibrary";
@@ -382,7 +387,15 @@ export const router = createBrowserRouter([
       { path: "/editor", element: <EditorRouteGate /> },
       { path: "/template-demo", element: <TemplateDemoPage /> },
       { path: "/auth/callback", element: <AuthCallback /> },
-      { path: "/settings/ai-keys", element: <AiKeysPage /> },
+      {
+        path: "/settings",
+        element: <SettingsLayout />,
+        children: [
+          { path: "profile", element: <ProfilePage /> },
+          { path: "ai-keys", element: <AiKeysPage /> },
+          { path: "models", element: <ModelsPage /> },
+        ],
+      },
       { path: "*", element: <NotFoundPage /> },
     ],
   },

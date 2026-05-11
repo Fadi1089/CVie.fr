@@ -1,6 +1,7 @@
 import { generateText } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import {
   cvDataSchema,
   type AiProvider,
@@ -31,11 +32,14 @@ Règles strictes — appliquer toutes :
 
 Retourne UNIQUEMENT le CV traduit en JSON valide, sans markdown, sans backticks, sans texte avant/après. Le JSON doit être directement parsable.`;
 
-function buildModel(provider: AiProvider, apiKey: string) {
+function buildModel(provider: AiProvider, apiKey: string, model: string) {
   if (provider === "openai") {
-    return createOpenAI({ apiKey })("gpt-4o-mini");
+    return createOpenAI({ apiKey })(model);
   }
-  return createAnthropic({ apiKey })("claude-haiku-4-5-20251001");
+  if (provider === "google") {
+    return createGoogleGenerativeAI({ apiKey })(model);
+  }
+  return createAnthropic({ apiKey })(model);
 }
 
 function stripJsonFences(raw: string): string {
@@ -51,10 +55,11 @@ export async function translateCv(
   target: LocaleCode,
   provider: AiProvider,
   apiKey: string,
+  model: string,
 ): Promise<CvData> {
   const label = LANGUAGE_LABEL[target];
   const { text } = await generateText({
-    model: buildModel(provider, apiKey),
+    model: buildModel(provider, apiKey, model),
     system: SYSTEM_PROMPT(label),
     prompt: `CV source (JSON) à traduire en ${label} :\n\n${JSON.stringify(cv)}`,
   });

@@ -3,6 +3,7 @@ import type { AiProvider } from "@cvie/shared";
 import { rateLimit } from "../middleware/rateLimit";
 import { extractCvFromPdf } from "../services/cvImportService";
 import { resolveProviderKey } from "../services/aiKeyResolver";
+import { resolveFeaturePreference } from "../services/aiPreferenceService";
 import { getUserIdByAuth0Sub } from "../services/userService";
 
 const MAX_PDF_BYTES = 5 * 1024 * 1024;
@@ -14,7 +15,7 @@ const CV_IMPORT_RATE_LIMIT_PER_MIN = (() => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 5;
 })();
 
-function pickProvider(): AiProvider {
+function envProvider(): AiProvider {
   const raw = (process.env.AI_PROVIDER ?? "anthropic").toLowerCase();
   if (raw === "openai") return "openai";
   if (raw === "google") return "google";
@@ -26,9 +27,13 @@ export const cvImportRoutes = new Hono();
 cvImportRoutes.use("*", rateLimit({ max: CV_IMPORT_RATE_LIMIT_PER_MIN, windowMs: 60_000 }));
 
 cvImportRoutes.post("/", async (c) => {
-  const provider = pickProvider();
   const claims = c.get("userClaims");
   const userId = claims ? await getUserIdByAuth0Sub(claims.sub) : null;
+  const { provider, model } = await resolveFeaturePreference(
+    userId,
+    "cvImport",
+    envProvider(),
+  );
   const resolved = await resolveProviderKey(userId, provider);
 
   if (!resolved) {
@@ -63,8 +68,11 @@ cvImportRoutes.post("/", async (c) => {
   }
 
   try {
-    const cvData = await extractCvFromPdf(buffer, provider, resolved.key);
-    console.info("[cv/import] success", JSON.stringify({ source: resolved.source, provider }));
+    const cvData = await extractCvFromPdf(buffer, provider, resolved.key, model);
+    console.info(
+      "[cv/import] success",
+      JSON.stringify({ source: resolved.source, provider, model }),
+    );
     return c.json({ data: cvData });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Extraction échouée";

@@ -3,6 +3,7 @@ import { cvDataSchema, localeSchema, type AiProvider } from "@cvie/shared";
 import { rateLimit } from "../middleware/rateLimit";
 import { translateCv } from "../services/cvTranslateService";
 import { resolveProviderKey } from "../services/aiKeyResolver";
+import { resolveFeaturePreference } from "../services/aiPreferenceService";
 import { getUserIdByAuth0Sub } from "../services/userService";
 
 const CV_TRANSLATE_RATE_LIMIT_PER_MIN = (() => {
@@ -12,7 +13,7 @@ const CV_TRANSLATE_RATE_LIMIT_PER_MIN = (() => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 5;
 })();
 
-function pickProvider(): AiProvider {
+function envProvider(): AiProvider {
   const raw = (process.env.AI_PROVIDER ?? "anthropic").toLowerCase();
   if (raw === "openai") return "openai";
   if (raw === "google") return "google";
@@ -27,9 +28,13 @@ cvTranslateRoutes.use(
 );
 
 cvTranslateRoutes.post("/", async (c) => {
-  const provider = pickProvider();
   const claims = c.get("userClaims");
   const userId = claims ? await getUserIdByAuth0Sub(claims.sub) : null;
+  const { provider, model } = await resolveFeaturePreference(
+    userId,
+    "cvTranslate",
+    envProvider(),
+  );
   const resolved = await resolveProviderKey(userId, provider);
 
   if (!resolved) {
@@ -78,10 +83,11 @@ cvTranslateRoutes.post("/", async (c) => {
       targetParsed.data,
       provider,
       resolved.key,
+      model,
     );
     console.info(
       "[cv/translate] success",
-      JSON.stringify({ source: resolved.source, provider }),
+      JSON.stringify({ source: resolved.source, provider, model }),
     );
     return c.json(translated);
   } catch (err) {

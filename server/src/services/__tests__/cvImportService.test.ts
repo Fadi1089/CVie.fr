@@ -59,6 +59,10 @@ mock.module("@ai-sdk/openai", () => ({
   openai: (modelId: string) => ({ provider: "openai", modelId }),
 }));
 
+mock.module("@ai-sdk/google", () => ({
+  google: (modelId: string) => ({ provider: "google", modelId }),
+}));
+
 // Mock pdf-parse v2 class-based API
 mock.module("pdf-parse", () => ({
   PDFParse: class {
@@ -77,7 +81,7 @@ describe("extractCvFromPdf", () => {
   });
 
   it("returns parsed CvData when AI returns valid JSON", async () => {
-    const result = await extractCvFromPdf(Buffer.from("fake-pdf-bytes"), "anthropic", "sk-ant-test-key-1234567890");
+    const result = await extractCvFromPdf(Buffer.from("fake-pdf-bytes"), "anthropic", "sk-ant-test-key-1234567890", "claude-haiku-4-5-20251001");
 
     expect(result.personalInfo.firstName).toBe("Jean");
     expect(result.personalInfo.lastName).toBe("Dupont");
@@ -91,7 +95,7 @@ describe("extractCvFromPdf", () => {
   it("throws when AI returns invalid JSON", async () => {
     mockGenerateText.mockImplementationOnce(async () => ({ text: "not json at all" }));
 
-    await expect(extractCvFromPdf(Buffer.from("fake"), "anthropic", "sk-ant-test-key-1234567890")).rejects.toThrow(
+    await expect(extractCvFromPdf(Buffer.from("fake"), "anthropic", "sk-ant-test-key-1234567890", "claude-haiku-4-5-20251001")).rejects.toThrow(
       "L'IA n'a pas retourné un JSON valide",
     );
   });
@@ -101,7 +105,7 @@ describe("extractCvFromPdf", () => {
       text: JSON.stringify({ personalInfo: { firstName: "" } }),
     }));
 
-    await expect(extractCvFromPdf(Buffer.from("fake"), "anthropic", "sk-ant-test-key-1234567890")).rejects.toThrow("Données extraites invalides");
+    await expect(extractCvFromPdf(Buffer.from("fake"), "anthropic", "sk-ant-test-key-1234567890", "claude-haiku-4-5-20251001")).rejects.toThrow("Données extraites invalides");
   });
 
   it("throws when PDF has no extractable text", async () => {
@@ -117,7 +121,7 @@ describe("extractCvFromPdf", () => {
     // Re-import to pick up the new mock (Bun hoists mock.module calls)
     const { extractCvFromPdf: extract } = await import("../cvImportService");
     await expect(
-      extract(Buffer.from("fake"), "anthropic", "sk-ant-test-key-1234567890"),
+      extract(Buffer.from("fake"), "anthropic", "sk-ant-test-key-1234567890", "claude-haiku-4-5-20251001"),
     ).rejects.toThrow("Aucun texte trouvé");
   });
 });

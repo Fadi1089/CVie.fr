@@ -1,6 +1,7 @@
 import { generateText } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { PDFParse } from "pdf-parse";
 import { cvDataSchema, type AiProvider, type CvData } from "@cvie/shared";
 
@@ -34,18 +35,21 @@ Schéma attendu:
   "interests": [{ "id": string, "name": string }]
 }`;
 
-function buildModel(provider: AiProvider, apiKey: string) {
+function buildModel(provider: AiProvider, apiKey: string, model: string) {
   if (provider === "openai") {
-    return createOpenAI({ apiKey })("gpt-4o-mini");
+    return createOpenAI({ apiKey })(model);
   }
-  // anthropic + (google not supported by import yet, treat as anthropic)
-  return createAnthropic({ apiKey })("claude-haiku-4-5-20251001");
+  if (provider === "google") {
+    return createGoogleGenerativeAI({ apiKey })(model);
+  }
+  return createAnthropic({ apiKey })(model);
 }
 
 export async function extractCvFromPdf(
   pdfBuffer: Buffer,
   provider: AiProvider,
   apiKey: string,
+  model: string,
 ): Promise<CvData> {
   const parser = new PDFParse({ data: pdfBuffer });
   const parsed = await parser.getText();
@@ -56,7 +60,7 @@ export async function extractCvFromPdf(
   }
 
   const { text } = await generateText({
-    model: buildModel(provider, apiKey),
+    model: buildModel(provider, apiKey, model),
     system: EXTRACTION_SYSTEM_PROMPT,
     prompt: EXTRACTION_USER_TEMPLATE.replace("{CV_TEXT}", cvText.slice(0, 12_000)),
     maxOutputTokens: 4096,

@@ -6,3 +6,4 @@ export * from "./cvImport";
 export * from "./cvTranslate";
 export { folderRoutes } from "./folders";
 export { aiKeyRoutes } from "./aiKeys";
+export { aiPreferenceRoutes } from "./aiPreferences";
