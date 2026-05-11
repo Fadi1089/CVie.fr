@@ -11,7 +11,7 @@ import {
 } from "./features/settings";
 import { ImportLocalCvsModal } from "./features/cv-library/components/ImportLocalCvsModal";
 import { LocalCvStore } from "./features/cv-library/store/LocalCvStore";
-import { useCvLibrary } from "./features/cv-library/hooks/useCvLibrary";
+import { CvLibraryProvider, useCvLibrary } from "./features/cv-library/hooks/useCvLibrary";
 import { ToastProvider } from "./features/ui/Toast";
 import type { AnonExport } from "./features/cv-library/store/types";
 import { CvEditor } from "./features/editor";
@@ -369,9 +369,11 @@ function RootLayout() {
   return (
     <Auth0ProviderWithNavigate>
       <ToastProvider>
-        <MeBootstrap />
-        <MigrationGate />
-        <Outlet />
+        <CvLibraryProvider>
+          <MeBootstrap />
+          <MigrationGate />
+          <Outlet />
+        </CvLibraryProvider>
       </ToastProvider>
     </Auth0ProviderWithNavigate>
   );
