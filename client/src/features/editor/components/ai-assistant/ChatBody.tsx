@@ -54,11 +54,17 @@ export function ChatBody({ messages, status, error }: Props) {
       className="flex-1 overflow-y-auto px-3 py-3 text-[13px] text-[var(--color-ink)]"
     >
       {!hasMessages && (
-        <div className="text-center text-[var(--color-ink-soft)]">
-          <p className="mb-1 text-[12px]">Demandez à l'assistant de modifier votre CV.</p>
-          <p className="text-[11px]">
-            ex: « réécris ma première puce de manière plus orientée résultat »
+        <div className="flex flex-col gap-1.5">
+          <p className="text-[13px] font-semibold text-[var(--color-ink)]">
+            Salut ! Je suis ton Assistant CVie.
           </p>
+          <p className="text-[12px] text-[var(--color-ink-soft)]">
+            Voici ce que je peux faire :
+          </p>
+          <p className="text-[12px] text-[var(--color-ink)]">• Analyser et améliorer ton CV</p>
+          <p className="text-[12px] text-[var(--color-ink)]">• Adapter ton CV à une offre — colle le lien</p>
+          <p className="text-[12px] text-[var(--color-ink)]">• Rédiger une lettre de motivation</p>
+          <p className="text-[12px] text-[var(--color-ink)]">• Corriger orthographe et grammaire</p>
         </div>
       )}
       <ul className="flex flex-col gap-3">

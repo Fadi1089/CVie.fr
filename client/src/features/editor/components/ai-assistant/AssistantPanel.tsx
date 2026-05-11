@@ -1,7 +1,7 @@
 import { useAuth0 } from "@auth0/auth0-react";
-import { Button } from "@/components/ui/button";
 import { useAssistantChat } from "../../hooks/useAssistantChat";
 import { AssistantHandle } from "./AssistantHandle";
+import { AssistantToolbar } from "./AssistantToolbar";
 import { ChatBody } from "./ChatBody";
 import { ComposerBar } from "./ComposerBar";
 import { PendingChangesHeader } from "./PendingChangesHeader";
@@ -25,31 +25,20 @@ export function AssistantPanel({ cvId, expanded, onExpand, onCollapse }: Props) 
     return <AssistantHandle onExpand={onExpand} pendingCount={pending.count} />;
   }
 
+  const hasMessages = messages.length > 0;
+
   return (
     <div
       id="cv-assistant-panel"
-      className="flex h-[min(60vh,560px)] w-full flex-col overflow-hidden rounded-md border border-[var(--color-rule)] bg-white shadow-sm"
+      className="flex h-[min(60vh,560px)] w-full flex-col overflow-hidden border border-[var(--color-rule)] bg-white shadow-[0_-6px_18px_0_rgba(0,0,0,0.1)]"
     >
-      <header className="flex h-[44px] items-center justify-between border-b border-[var(--color-rule)] px-3">
-        <span className="font-mono-caps flex items-center gap-2 text-[11px] text-[var(--color-ink)]">
-          <span aria-hidden>✨</span>
-          Assistant rédacteur
-        </span>
-        <div className="flex items-center gap-1">
-          {messages.length > 0 && (
-            <Button size="xs" variant="ghost" onClick={reset} disabled={busy}>
-              Nouvelle conversation
-            </Button>
-          )}
-          <Button size="xs" variant="ghost" onClick={onCollapse}>
-            Réduire
-          </Button>
-        </div>
-      </header>
+      <AssistantToolbar
+        onCollapse={onCollapse}
+        onReset={reset}
+        resetDisabled={busy || !hasMessages}
+      />
       <PendingChangesHeader
         changes={pending.changes}
-        onKeep={pending.keep}
-        onRevert={pending.revert}
         onKeepAll={pending.keepAll}
         onRevertAll={pending.revertAll}
       />
