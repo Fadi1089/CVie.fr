@@ -1,4 +1,11 @@
-import { useCallback, useState } from "react";
+import {
+  createContext,
+  createElement,
+  useCallback,
+  useContext,
+  useState,
+  type ReactNode,
+} from "react";
 import { useFormContext } from "react-hook-form";
 import type { CvData } from "@cvie/shared";
 
@@ -20,7 +27,7 @@ export type UsePendingChangesReturn = {
   clear: () => void;
 };
 
-export function usePendingChanges(): UsePendingChangesReturn {
+function usePendingChangesState(): UsePendingChangesReturn {
   const { setValue, getValues } = useFormContext<CvData>();
   const [byPath, setByPath] = useState<Map<string, PendingChange>>(() => new Map());
 
@@ -111,5 +118,40 @@ export function usePendingChanges(): UsePendingChangesReturn {
     keepAll,
     revertAll,
     clear,
+  };
+}
+
+const PendingChangesContext = createContext<UsePendingChangesReturn | null>(null);
+
+export function PendingChangesProvider({ children }: { children: ReactNode }) {
+  const value = usePendingChangesState();
+  return createElement(PendingChangesContext.Provider, { value }, children);
+}
+
+export function usePendingChanges(): UsePendingChangesReturn {
+  const ctx = useContext(PendingChangesContext);
+  if (!ctx) {
+    throw new Error("usePendingChanges must be used inside PendingChangesProvider");
+  }
+  return ctx;
+}
+
+export type PendingChangeHandle = {
+  before: unknown;
+  after: unknown;
+  keep: () => void;
+  revert: () => void;
+};
+
+export function usePendingChange(path: string): PendingChangeHandle | null {
+  const ctx = useContext(PendingChangesContext);
+  if (!ctx) return null;
+  const change = ctx.changes.find((c) => c.path === path);
+  if (!change) return null;
+  return {
+    before: change.before,
+    after: change.after,
+    keep: () => ctx.keep(path),
+    revert: () => ctx.revert(path),
   };
 }

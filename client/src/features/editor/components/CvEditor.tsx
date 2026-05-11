@@ -23,6 +23,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { AutofillSyncContext, useAutofillSync } from "../hooks/useAutofillSync";
+import { PendingChangesProvider } from "../hooks/usePendingChanges";
 import { useCvDraft, type PersistStatus } from "../hooks/useCvDraft";
 import { useAuth0 } from "@auth0/auth0-react";
 import { SyncStatusBadge } from "@/features/cv-library/components/SyncStatusBadge";
@@ -222,6 +223,7 @@ export function CvEditor() {
 
   return (
     <FormProvider {...form}>
+      <PendingChangesProvider>
       <EditorShell
         cvId={cvId}
         templateId={templateId}
@@ -247,6 +249,7 @@ export function CvEditor() {
         sidebarCollapsed={sidebarCollapsed}
         setSidebarCollapsed={setSidebarCollapsed}
       />
+      </PendingChangesProvider>
     </FormProvider>
   );
 }

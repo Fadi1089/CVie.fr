@@ -8,6 +8,8 @@ import type {
   UseFormRegister,
 } from "react-hook-form";
 import { cn } from "@/lib/utils";
+import { usePendingChange } from "../hooks/usePendingChanges";
+import { InlineDiff } from "./ai-assistant/InlineDiff";
 
 const INPUT_CLASSES =
   "block min-h-11 w-full rounded-md border border-[var(--color-ink)]/15 bg-white px-3 py-2 text-[14px] leading-6 text-[var(--color-ink)] outline-none transition-colors placeholder:text-[var(--color-ink-soft)] focus-visible:border-[var(--color-ink)] focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/20 disabled:cursor-not-allowed disabled:bg-[var(--color-paper-deep)] disabled:opacity-70 aria-[invalid=true]:border-red-600/80 aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-red-600/25 motion-reduce:transition-none";
@@ -117,6 +119,7 @@ export function FormField<T extends FieldValues>(props: FormFieldProps<T>) {
   const errorId = `${inputId}-error`;
   const hintId = hint ? `${inputId}-hint` : undefined;
   const errorMessage = readError(errors, name);
+  const pending = usePendingChange(name as string);
   const describedBy =
     [hintId, errorMessage ? errorId : undefined].filter(Boolean).join(" ") ||
     undefined;
@@ -182,6 +185,21 @@ export function FormField<T extends FieldValues>(props: FormFieldProps<T>) {
       {errorMessage}
     </p>
   ) : null;
+
+  if (pending) {
+    return (
+      <div className={cn("flex flex-col gap-1", className)}>
+        {labelNode}
+        <InlineDiff
+          before={pending.before}
+          after={pending.after}
+          onRevert={pending.revert}
+          onKeep={pending.keep}
+        />
+        {hintNode}
+      </div>
+    );
+  }
 
   if (props.as === "textarea") {
     return (
