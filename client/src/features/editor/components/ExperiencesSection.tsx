@@ -6,7 +6,6 @@ import { MonthYearPicker } from "./MonthYearPicker";
 import { SectionCard } from "./SectionCard";
 import { SectionShell } from "./SectionShell";
 import { useFocusAfterRemove } from "../hooks/useFocusAfterRemove";
-import { PendingItemOverlay } from "./ai-assistant/PendingItemOverlay";
 
 const MAX_EXPERIENCES = 50;
 
@@ -57,15 +56,13 @@ export function ExperiencesSection({
                 : "scroll-mt-24 rounded-md"
             }
           >
-            <PendingItemOverlay section="experiences" id={field.id}>
-              <ExperienceCard
-                index={index}
-                onRemove={() => {
-                  remove(index);
-                  focusAfterRemove(index);
-                }}
-              />
-            </PendingItemOverlay>
+            <ExperienceCard
+              index={index}
+              onRemove={() => {
+                remove(index);
+                focusAfterRemove(index);
+              }}
+            />
           </div>
         ))}
       </SectionShell>

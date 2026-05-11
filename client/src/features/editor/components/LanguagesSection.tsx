@@ -6,7 +6,6 @@ import { FormField } from "./FormField";
 import { SectionCard } from "./SectionCard";
 import { SectionShell } from "./SectionShell";
 import { useFocusAfterRemove } from "../hooks/useFocusAfterRemove";
-import { PendingItemOverlay } from "./ai-assistant/PendingItemOverlay";
 
 const LANGUAGE_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2", "natif"] as const;
 const DEFAULT_LEVEL: (typeof LANGUAGE_LEVELS)[number] = "B1";
@@ -57,15 +56,13 @@ export function LanguagesSection({
                 : "scroll-mt-24 rounded-md"
             }
           >
-            <PendingItemOverlay section="languages" id={field.id}>
-              <LanguageCard
-                index={index}
-                onRemove={() => {
-                  remove(index);
-                  focusAfterRemove(index);
-                }}
-              />
-            </PendingItemOverlay>
+            <LanguageCard
+              index={index}
+              onRemove={() => {
+                remove(index);
+                focusAfterRemove(index);
+              }}
+            />
           </div>
         ))}
       </SectionShell>

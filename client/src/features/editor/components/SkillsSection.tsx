@@ -5,7 +5,6 @@ import { FormField } from "./FormField";
 import { SectionCard } from "./SectionCard";
 import { SectionShell } from "./SectionShell";
 import { useFocusAfterRemove } from "../hooks/useFocusAfterRemove";
-import { PendingItemOverlay } from "./ai-assistant/PendingItemOverlay";
 
 const SKILL_LEVELS = ["débutant", "intermédiaire", "avancé", "expert"] as const;
 const MAX_SKILLS = 50;
@@ -54,15 +53,13 @@ export function SkillsSection({
                 : "scroll-mt-24 rounded-md"
             }
           >
-            <PendingItemOverlay section="skills" id={field.id}>
-              <SkillCard
-                index={index}
-                onRemove={() => {
-                  remove(index);
-                  focusAfterRemove(index);
-                }}
-              />
-            </PendingItemOverlay>
+            <SkillCard
+              index={index}
+              onRemove={() => {
+                remove(index);
+                focusAfterRemove(index);
+              }}
+            />
           </div>
         ))}
       </SectionShell>

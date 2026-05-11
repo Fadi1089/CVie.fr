@@ -6,7 +6,6 @@ import { MonthYearPicker } from "./MonthYearPicker";
 import { SectionCard } from "./SectionCard";
 import { SectionShell } from "./SectionShell";
 import { useFocusAfterRemove } from "../hooks/useFocusAfterRemove";
-import { PendingItemOverlay } from "./ai-assistant/PendingItemOverlay";
 
 const MAX_FORMATIONS = 50;
 
@@ -56,15 +55,13 @@ export function FormationsSection({
                 : "scroll-mt-24 rounded-md"
             }
           >
-            <PendingItemOverlay section="formations" id={field.id}>
-              <FormationCard
-                index={index}
-                onRemove={() => {
-                  remove(index);
-                  focusAfterRemove(index);
-                }}
-              />
-            </PendingItemOverlay>
+            <FormationCard
+              index={index}
+              onRemove={() => {
+                remove(index);
+                focusAfterRemove(index);
+              }}
+            />
           </div>
         ))}
       </SectionShell>

@@ -30,6 +30,8 @@ export type PendingItem = {
   id: string;
   action: PendingItemAction;
   item: { id: string } & Record<string, unknown>;
+  /** Original index in the pre-patch array (used to restore on revert). */
+  originalIndex: number;
   toolCallId: string;
 };
 
@@ -147,10 +149,10 @@ function usePendingChangesState(): UsePendingChangesReturn {
     [getValues, reset],
   );
 
-  // Handle a whole-array section patch by deriving per-item add/remove
-  // entries. Form state holds: (current section ∪ added) without dropping
-  // pending-remove items, so the user sees both deletions (kept visible
-  // with a red overlay) and insertions (shown with a green overlay).
+  // Handle a whole-array section patch by applying the AI's intent
+  // optimistically (adds inserted, removes dropped) and recording per-item
+  // entries so the user can revert each one via the chat chips or the
+  // global "Tout annuler" button.
   const ingestSectionPatch = useCallback(
     (section: Section, before: IdItem[], after: IdItem[], toolCallId: string) => {
       const beforeIds = new Set(before.map((x) => x.id));
@@ -158,52 +160,36 @@ function usePendingChangesState(): UsePendingChangesReturn {
       const added = after.filter((x) => !beforeIds.has(x.id));
       const removed = before.filter((x) => !afterIds.has(x.id));
 
-      const current = readSectionArray(section);
-      const currentIds = new Set(current.map((x) => x.id));
-      const nextArr: IdItem[] = [...current];
-
-      // Re-insert removed items at their original positions if not already
-      // present (e.g., the AI already deleted them and we want them
-      // visible until the user confirms).
-      for (const item of removed) {
-        if (currentIds.has(item.id)) continue;
-        const originalIdx = before.findIndex((x) => x.id === item.id);
-        const target = originalIdx >= 0 && originalIdx < nextArr.length ? originalIdx : nextArr.length;
-        nextArr.splice(target, 0, item);
-        currentIds.add(item.id);
-      }
-      // Append added items not already present.
-      for (const item of added) {
-        if (currentIds.has(item.id)) continue;
-        nextArr.push(item);
-        currentIds.add(item.id);
-      }
-      writeSectionArray(section, nextArr);
+      writeSectionArray(section, after);
 
       setByItem((prev) => {
         const next = new Map(prev);
         for (const item of added) {
+          const originalIndex = after.findIndex((x) => x.id === item.id);
           next.set(itemKey(section, item.id), {
             section,
             id: item.id,
             action: "add",
             item,
+            originalIndex,
             toolCallId,
           });
         }
         for (const item of removed) {
+          const originalIndex = before.findIndex((x) => x.id === item.id);
           next.set(itemKey(section, item.id), {
             section,
             id: item.id,
             action: "remove",
             item,
+            originalIndex,
             toolCallId,
           });
         }
         return next;
       });
     },
-    [readSectionArray, writeSectionArray],
+    [writeSectionArray],
   );
 
   const add = useCallback(
@@ -265,70 +251,46 @@ function usePendingChangesState(): UsePendingChangesReturn {
     [applyToForm],
   );
 
-  // Keep a pending item: commit the AI's intent and drop the marker.
-  // - "add" → item is already in form; nothing else to do.
-  // - "remove" → item is still in form (we left it for visibility); drop it.
-  const keepItem = useCallback(
-    (section: Section, id: string) => {
-      setByItem((prev) => {
-        const entry = prev.get(itemKey(section, id));
-        if (!entry) return prev;
-        if (entry.action === "remove") {
-          const current = readSectionArray(section);
-          writeSectionArray(section, current.filter((x) => x.id !== id));
-        }
-        const next = new Map(prev);
-        next.delete(itemKey(section, id));
-        return next;
-      });
-    },
-    [readSectionArray, writeSectionArray],
-  );
+  // Keep: edits are already applied optimistically — just drop the marker.
+  const keepItem = useCallback((section: Section, id: string) => {
+    setByItem((prev) => {
+      if (!prev.has(itemKey(section, id))) return prev;
+      const next = new Map(prev);
+      next.delete(itemKey(section, id));
+      return next;
+    });
+  }, []);
 
-  // Revert a pending item: undo the AI's intent.
-  // - "add" → item was inserted; remove it.
-  // - "remove" → item is still in form (kept visible); leave it.
+  // Revert: undo the AI's intent.
+  // - "add" → drop the inserted item.
+  // - "remove" → re-insert at the original index.
   const revertItem = useCallback(
     (section: Section, id: string) => {
       setByItem((prev) => {
         const entry = prev.get(itemKey(section, id));
         if (!entry) return prev;
+        const current = readSectionArray(section);
         if (entry.action === "add") {
-          const current = readSectionArray(section);
           writeSectionArray(section, current.filter((x) => x.id !== id));
+        } else {
+          const target = Math.min(Math.max(entry.originalIndex, 0), current.length);
+          const next = [...current];
+          next.splice(target, 0, entry.item);
+          writeSectionArray(section, next);
         }
-        const next = new Map(prev);
-        next.delete(itemKey(section, id));
-        return next;
+        const out = new Map(prev);
+        out.delete(itemKey(section, id));
+        return out;
       });
     },
     [readSectionArray, writeSectionArray],
   );
 
   const keepAll = useCallback(() => {
+    // Edits are applied optimistically — just clear the trackers.
     setByPath(new Map());
-    setByItem((prev) => {
-      // Apply all "remove" actions, then clear.
-      const removalsBySection = new Map<Section, Set<string>>();
-      for (const entry of prev.values()) {
-        if (entry.action !== "remove") continue;
-        let set = removalsBySection.get(entry.section);
-        if (!set) {
-          set = new Set();
-          removalsBySection.set(entry.section, set);
-        }
-        set.add(entry.id);
-      }
-      for (const [section, ids] of removalsBySection) {
-        const current = readSectionArray(section);
-        writeSectionArray(
-          section,
-          current.filter((x) => !ids.has(x.id)),
-        );
-      }
-      return new Map();
-    });
-  }, [readSectionArray, writeSectionArray]);
+    setByItem(new Map());
+  }, []);
 
   const revertAll = useCallback(() => {
     setByPath((prev) => {
@@ -338,24 +300,31 @@ function usePendingChangesState(): UsePendingChangesReturn {
       return new Map();
     });
     setByItem((prev) => {
-      // Drop all pending "add" items from form; keep "remove" items (they
-      // were never actually removed, so reverting means leaving them in).
-      const addsBySection = new Map<Section, Set<string>>();
+      // Undo per section: drop pending-add ids and re-insert pending-remove
+      // items at their original index (lowest first so later ones land
+      // correctly).
+      const bySection = new Map<Section, PendingItem[]>();
       for (const entry of prev.values()) {
-        if (entry.action !== "add") continue;
-        let set = addsBySection.get(entry.section);
-        if (!set) {
-          set = new Set();
-          addsBySection.set(entry.section, set);
+        let list = bySection.get(entry.section);
+        if (!list) {
+          list = [];
+          bySection.set(entry.section, list);
         }
-        set.add(entry.id);
+        list.push(entry);
       }
-      for (const [section, ids] of addsBySection) {
-        const current = readSectionArray(section);
-        writeSectionArray(
-          section,
-          current.filter((x) => !ids.has(x.id)),
+      for (const [section, entries] of bySection) {
+        const addIds = new Set(
+          entries.filter((e) => e.action === "add").map((e) => e.id),
         );
+        const removes = entries
+          .filter((e) => e.action === "remove")
+          .sort((a, b) => a.originalIndex - b.originalIndex);
+        const next = readSectionArray(section).filter((x) => !addIds.has(x.id));
+        for (const entry of removes) {
+          const target = Math.min(Math.max(entry.originalIndex, 0), next.length);
+          next.splice(target, 0, entry.item);
+        }
+        writeSectionArray(section, next);
       }
       return new Map();
     });

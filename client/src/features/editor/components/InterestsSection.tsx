@@ -2,7 +2,6 @@ import { useFieldArray, useFormContext } from "react-hook-form";
 import type { CvData } from "@cvie/shared";
 import { newId } from "@/lib/newId";
 import { useFocusAfterRemove } from "../hooks/useFocusAfterRemove";
-import { PendingItemOverlay } from "./ai-assistant/PendingItemOverlay";
 
 const MAX_INTERESTS = 50;
 const MAX_INTEREST_CHARS = 200;
@@ -55,12 +54,10 @@ export function InterestsSection({
               data-editor-item-id={field.id}
               className={
                 highlightedItemId === field.id
-                  ? "editor-jump-highlight-item rounded-md"
-                  : "rounded-md"
+                  ? "editor-jump-highlight-item flex items-center gap-2 rounded-md"
+                  : "flex items-center gap-2 rounded-md"
               }
             >
-              <PendingItemOverlay section="interests" id={field.id}>
-              <div className="flex items-center gap-2">
               <input
                 type="text"
                 maxLength={MAX_INTEREST_CHARS}
@@ -100,8 +97,6 @@ export function InterestsSection({
               >
                 <span aria-hidden="true">×</span>
               </button>
-              </div>
-              </PendingItemOverlay>
             </li>
           ))}
         </ul>
