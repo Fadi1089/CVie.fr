@@ -16,10 +16,44 @@ model User {
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
-  cvs     Cv[]
-  folders Folder[]
+  cvs            Cv[]
+  folders        Folder[]
+  aiKeys         UserAiKey[]
+  aiPreferences  UserAiPreference[]
 
   @@map("users")
+}
+
+model UserAiPreference {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feature   String
+  provider  String
+  model     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, feature])
+  @@index([userId])
+  @@map("user_ai_preferences")
+}
+
+model UserAiKey {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider   String
+  ciphertext Bytes
+  iv         Bytes
+  authTag    Bytes    @map("auth_tag")
+  keyHint    String   @map("key_hint")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, provider])
+  @@index([userId])
+  @@map("user_ai_keys")
 }
 
 model Folder {
