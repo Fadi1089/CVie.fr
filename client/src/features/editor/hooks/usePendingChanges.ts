@@ -28,7 +28,16 @@ export type UsePendingChangesReturn = {
 };
 
 const SECTION_RE = /^(experiences|formations|skills|languages|interests)$/;
-const ITEM_RE = /^(experiences|formations|skills|languages|interests)\[(\d+)\]$/;
+const ITEM_RE = /^(experiences|formations|skills|languages|interests)\.(\d+)$/;
+
+// Server emits paths with bracket notation (`experiences[0].jobTitle`,
+// `experiences[0].bullets[1]`); React Hook Form uses dot notation
+// (`experiences.0.jobTitle`). Normalize at the boundary so FormField's
+// `usePendingChange(name)` lookups match by the same canonical key the
+// form already uses.
+function normalizePath(path: string): string {
+  return path.replace(/\[(\d+)\]/g, ".$1");
+}
 
 function usePendingChangesState(): UsePendingChangesReturn {
   const { setValue, getValues, reset } = useFormContext<CvData>();
@@ -88,11 +97,12 @@ function usePendingChangesState(): UsePendingChangesReturn {
       if (patches.length === 0) return;
       setByPath((prev) => {
         const next = new Map(prev);
-        for (const patch of patches) {
-          const existing = next.get(patch.path);
-          const before = existing ? existing.before : readFromForm(patch.path) ?? patch.before;
-          next.set(patch.path, { ...patch, before, toolCallId });
-          applyToForm(patch.path, patch.after);
+        for (const raw of patches) {
+          const path = normalizePath(raw.path);
+          const existing = next.get(path);
+          const before = existing ? existing.before : readFromForm(path) ?? raw.before;
+          next.set(path, { path, before, after: raw.after, toolCallId });
+          applyToForm(path, raw.after);
         }
         return next;
       });
