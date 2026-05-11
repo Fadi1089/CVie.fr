@@ -1,46 +1,28 @@
-import { useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { Button } from "@/components/ui/button";
 import { useAssistantChat } from "../../hooks/useAssistantChat";
+import { AssistantHandle } from "./AssistantHandle";
 import { ChatBody } from "./ChatBody";
 import { ComposerBar } from "./ComposerBar";
 import { PendingChangesHeader } from "./PendingChangesHeader";
 
 type Props = {
   cvId: string | null | undefined;
+  expanded: boolean;
+  onExpand: () => void;
+  onCollapse: () => void;
 };
 
-export function AssistantPanel({ cvId }: Props) {
+export function AssistantPanel({ cvId, expanded, onExpand, onCollapse }: Props) {
   const { isAuthenticated } = useAuth0();
-  const [expanded, setExpanded] = useState(false);
   const { messages, status, error, send, stop, reset, pending } = useAssistantChat({
     cvId,
   });
 
   const busy = status === "submitted" || status === "streaming";
-  const counter = pending.count + (messages.length === 0 ? 0 : 0);
 
   if (!expanded) {
-    return (
-      <button
-        type="button"
-        onClick={() => setExpanded(true)}
-        className="font-mono-caps flex h-[44px] w-full items-center justify-between gap-2 rounded-md border border-[var(--color-rule)] bg-white px-3 text-[11px] text-[var(--color-ink)] hover:bg-[var(--color-paper-soft,#fbf7f0)]"
-        aria-expanded={false}
-        aria-controls="cv-assistant-panel"
-      >
-        <span className="flex items-center gap-2">
-          <span aria-hidden>✨</span>
-          Assistant rédacteur
-          {pending.count > 0 && (
-            <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] text-emerald-700">
-              {pending.count} changement{pending.count > 1 ? "s" : ""}
-            </span>
-          )}
-        </span>
-        <span aria-hidden>▲</span>
-      </button>
-    );
+    return <AssistantHandle onExpand={onExpand} pendingCount={pending.count} />;
   }
 
   return (
@@ -59,7 +41,7 @@ export function AssistantPanel({ cvId }: Props) {
               Nouvelle conversation
             </Button>
           )}
-          <Button size="xs" variant="ghost" onClick={() => setExpanded(false)}>
+          <Button size="xs" variant="ghost" onClick={onCollapse}>
             Réduire
           </Button>
         </div>
@@ -83,7 +65,8 @@ export function AssistantPanel({ cvId }: Props) {
         onSend={send}
         onStop={stop}
       />
-      <span className="sr-only">{counter}</span>
     </div>
   );
 }
+
+export default AssistantPanel;

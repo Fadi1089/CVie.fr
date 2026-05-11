@@ -1,1 +1,1 @@
-export { AssistantPanel } from "./AssistantPanel";
+export { AssistantPanelMount } from "./AssistantPanelMount";
