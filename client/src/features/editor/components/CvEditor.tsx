@@ -48,6 +48,7 @@ import { LanguagePanel } from "./LanguagePanel";
 import { MobileTabBar, type EditorTab } from "./MobileTabBar";
 import { PersonalInfoForm } from "./PersonalInfoForm";
 import { SkillsSection } from "./SkillsSection";
+import { AssistantPanel } from "./ai-assistant";
 
 const TEMPLATE_SELECTION_KEY = "cvie.template.selected";
 const DEFAULT_TEMPLATE: TemplateId = "classique";
@@ -487,6 +488,9 @@ function EditorShell({
                     setSectionRef={setSectionRef}
                     setItemRef={setItemRef}
                   />
+                  <div className="sticky bottom-2 z-20 mt-6 -mx-4 md:-mx-8 px-4 md:px-8">
+                    <AssistantPanel cvId={cvId} />
+                  </div>
                 </>
               ) : editorTab === "design" ? (
                 <DesignPanel templateId={templateId} />
