@@ -62,6 +62,19 @@ function userMessage(text: string) {
   };
 }
 
+function filePart(opts: {
+  mediaType: string;
+  bytes: number;
+  url?: string;
+}) {
+  const base64 = "A".repeat(Math.ceil(opts.bytes * 4 / 3));
+  return {
+    type: "file",
+    mediaType: opts.mediaType,
+    url: opts.url ?? `data:${opts.mediaType};base64,${base64}`,
+  };
+}
+
 describe("POST /assistant/chat", () => {
   beforeEach(() => {
     runAssistantMock.mockClear();
@@ -106,6 +119,87 @@ describe("POST /assistant/chat", () => {
     expect(res.status).toBe(503);
     const body = (await res.json()) as { code: string };
     expect(body.code).toBe("SERVICE_UNAVAILABLE");
+  });
+
+  it("rejects unsupported attachment media type", async () => {
+    const app = makeApp();
+    const msg = {
+      id: "m_1",
+      role: "user" as const,
+      parts: [
+        { type: "text", text: "hi" },
+        filePart({ mediaType: "video/mp4", bytes: 1024 }),
+      ],
+    };
+    const res = await app.request("/assistant/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ cv: sampleCv, messages: [msg] }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { code: string };
+    expect(body.code).toBe("ATTACHMENT_REJECTED");
+  });
+
+  it("rejects oversize attachment", async () => {
+    const app = makeApp();
+    const msg = {
+      id: "m_1",
+      role: "user" as const,
+      parts: [
+        { type: "text", text: "hi" },
+        filePart({ mediaType: "application/pdf", bytes: 9 * 1024 * 1024 }),
+      ],
+    };
+    const res = await app.request("/assistant/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ cv: sampleCv, messages: [msg] }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { code: string };
+    expect(body.code).toBe("ATTACHMENT_REJECTED");
+  });
+
+  it("rejects more than 3 attachments in one message", async () => {
+    const app = makeApp();
+    const msg = {
+      id: "m_1",
+      role: "user" as const,
+      parts: [
+        { type: "text", text: "hi" },
+        filePart({ mediaType: "image/png", bytes: 100 }),
+        filePart({ mediaType: "image/png", bytes: 100 }),
+        filePart({ mediaType: "image/png", bytes: 100 }),
+        filePart({ mediaType: "image/png", bytes: 100 }),
+      ],
+    };
+    const res = await app.request("/assistant/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ cv: sampleCv, messages: [msg] }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { code: string };
+    expect(body.code).toBe("ATTACHMENT_REJECTED");
+  });
+
+  it("accepts a valid PDF attachment under the size limit", async () => {
+    const app = makeApp();
+    const msg = {
+      id: "m_1",
+      role: "user" as const,
+      parts: [
+        { type: "text", text: "résume ce PDF" },
+        filePart({ mediaType: "application/pdf", bytes: 1024 }),
+      ],
+    };
+    const res = await app.request("/assistant/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ cv: sampleCv, messages: [msg] }),
+    });
+    expect(res.status).toBe(200);
   });
 
   it("invokes runAssistant with resolved provider/model and returns the stream", async () => {
