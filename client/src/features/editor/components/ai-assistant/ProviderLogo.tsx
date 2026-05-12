@@ -6,32 +6,29 @@ type Props = {
   className?: string;
 };
 
-const SIMPLEICONS_BASE = "https://cdn.simpleicons.org";
-
 const PROVIDER_META: Record<
   AiProvider,
-  { slug: string; label: string }
+  { src: string; label: string }
 > = {
-  openai: { slug: "openai", label: "OpenAI" },
-  anthropic: { slug: "anthropic", label: "Anthropic" },
-  google: { slug: "googlegemini", label: "Google Gemini" },
+  openai: { src: "/logos/openai.png", label: "OpenAI" },
+  anthropic: { src: "/logos/anthropic.webp", label: "Anthropic" },
+  google: { src: "/logos/gemini.png", label: "Google Gemini" },
 };
 
 export function ProviderLogo({ provider, size = 16, className }: Props) {
   if (!provider || !PROVIDER_META[provider]) {
     return <FallbackMark size={size} className={className} />;
   }
-  const { slug, label } = PROVIDER_META[provider];
+  const { src, label } = PROVIDER_META[provider];
   return (
     <img
-      src={`${SIMPLEICONS_BASE}/${slug}`}
+      src={src}
       alt={label}
       width={size}
       height={size}
       loading="lazy"
-      referrerPolicy="no-referrer"
       className={className}
-      style={{ display: "inline-block" }}
+      style={{ display: "inline-block", objectFit: "contain" }}
     />
   );
 }
