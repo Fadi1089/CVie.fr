@@ -6,98 +6,33 @@ type Props = {
   className?: string;
 };
 
+const SIMPLEICONS_BASE = "https://cdn.simpleicons.org";
+
+const PROVIDER_META: Record<
+  AiProvider,
+  { slug: string; label: string }
+> = {
+  openai: { slug: "openai", label: "OpenAI" },
+  anthropic: { slug: "anthropic", label: "Anthropic" },
+  google: { slug: "googlegemini", label: "Google Gemini" },
+};
+
 export function ProviderLogo({ provider, size = 16, className }: Props) {
-  if (provider === "openai") return <OpenAIMark size={size} className={className} />;
-  if (provider === "anthropic") return <AnthropicMark size={size} className={className} />;
-  if (provider === "google") return <GoogleGeminiMark size={size} className={className} />;
-  return <FallbackMark size={size} className={className} />;
-}
-
-function OpenAIMark({ size, className }: { size: number; className?: string }) {
+  if (!provider || !PROVIDER_META[provider]) {
+    return <FallbackMark size={size} className={className} />;
+  }
+  const { slug, label } = PROVIDER_META[provider];
   return (
-    <svg
-      viewBox="0 0 24 24"
+    <img
+      src={`${SIMPLEICONS_BASE}/${slug}`}
+      alt={label}
       width={size}
       height={size}
-      aria-label="OpenAI"
-      role="img"
+      loading="lazy"
+      referrerPolicy="no-referrer"
       className={className}
-    >
-      <g
-        fill="none"
-        stroke="#000"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <circle cx="12" cy="12" r="7.5" />
-        <ellipse cx="12" cy="12" rx="7.5" ry="3" />
-        <ellipse
-          cx="12"
-          cy="12"
-          rx="7.5"
-          ry="3"
-          transform="rotate(60 12 12)"
-        />
-        <ellipse
-          cx="12"
-          cy="12"
-          rx="7.5"
-          ry="3"
-          transform="rotate(120 12 12)"
-        />
-      </g>
-    </svg>
-  );
-}
-
-function AnthropicMark({ size, className }: { size: number; className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      aria-label="Anthropic"
-      role="img"
-      className={className}
-    >
-      <g
-        stroke="#cc785c"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      >
-        <line x1="12" y1="3" x2="12" y2="21" />
-        <line x1="3" y1="12" x2="21" y2="12" />
-        <line x1="5.6" y1="5.6" x2="18.4" y2="18.4" />
-        <line x1="5.6" y1="18.4" x2="18.4" y2="5.6" />
-      </g>
-    </svg>
-  );
-}
-
-function GoogleGeminiMark({ size, className }: { size: number; className?: string }) {
-  const gradId = `gemini-grad-${size}`;
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      aria-label="Google Gemini"
-      role="img"
-      className={className}
-    >
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#1c7ed6" />
-          <stop offset="50%" stopColor="#9b72cb" />
-          <stop offset="100%" stopColor="#d96570" />
-        </linearGradient>
-      </defs>
-      <path
-        fill={`url(#${gradId})`}
-        d="M12 2 C12.4 7 13.6 9.6 16 11 C13.6 12.4 12.4 15 12 22 C11.6 15 10.4 12.4 8 11 C10.4 9.6 11.6 7 12 2 Z"
-      />
-    </svg>
+      style={{ display: "inline-block" }}
+    />
   );
 }
 
