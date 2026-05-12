@@ -66,7 +66,12 @@ export function FormationsSection({
         data-editor-item-id={ghost.id}
         className="scroll-mt-24"
       >
-        <PendingRemoveGhost label={title} sublabel={school} onRevert={ghost.revert} />
+        <PendingRemoveGhost
+          label={title}
+          sublabel={school}
+          onKeep={ghost.keep}
+          onRevert={ghost.revert}
+        />
       </div>,
     );
   }

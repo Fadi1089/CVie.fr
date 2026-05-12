@@ -68,7 +68,12 @@ export function ExperiencesSection({
         data-editor-item-id={ghost.id}
         className="scroll-mt-24"
       >
-        <PendingRemoveGhost label={title} sublabel={company} onRevert={ghost.revert} />
+        <PendingRemoveGhost
+          label={title}
+          sublabel={company}
+          onKeep={ghost.keep}
+          onRevert={ghost.revert}
+        />
       </div>,
     );
   }

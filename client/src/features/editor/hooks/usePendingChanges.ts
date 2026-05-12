@@ -410,6 +410,7 @@ export type PendingRemovedItem = {
   id: string;
   item: { id: string } & Record<string, unknown>;
   originalIndex: number;
+  keep: () => void;
   revert: () => void;
 };
 
@@ -424,6 +425,7 @@ export function usePendingRemovedItems(section: Section): PendingRemovedItem[] {
       id: entry.id,
       item: entry.item,
       originalIndex: entry.originalIndex,
+      keep: () => ctx.keepItem(section, entry.id),
       revert: () => ctx.revertItem(section, entry.id),
     }));
 }

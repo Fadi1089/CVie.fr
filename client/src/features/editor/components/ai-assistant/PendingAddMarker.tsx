@@ -8,12 +8,6 @@ type Props = {
   children: ReactNode;
 };
 
-/**
- * Wraps a section row. If the row corresponds to a pending "add" from the
- * AI, paints a soft green ring around it and surfaces a small "Annuler"
- * pill in the top-right corner. The row is already applied to the form —
- * the user only needs the pill if they want to back the change out.
- */
 export function PendingAddMarker({ section, id, children }: Props) {
   const pending = usePendingItem(section, id);
   if (!pending || pending.action !== "add") return <>{children}</>;
@@ -27,16 +21,28 @@ export function PendingAddMarker({ section, id, children }: Props) {
       >
         Ajouté par l'Assistant
       </span>
-      <button
-        type="button"
-        onClick={pending.revert}
-        className={cn(
-          "absolute -top-3 right-3 z-10 rounded-full border border-red-500 bg-white px-2 py-0.5",
-          "text-[11px] font-medium text-red-700 shadow-sm hover:bg-red-50",
-        )}
-      >
-        Annuler
-      </button>
+      <div className="absolute -top-3 right-3 z-10 flex gap-1.5">
+        <button
+          type="button"
+          onClick={pending.revert}
+          className={cn(
+            "rounded-md border border-red-500 bg-white px-2 py-0.5",
+            "text-[11px] font-medium text-red-700 shadow-sm hover:bg-red-50",
+          )}
+        >
+          Annuler
+        </button>
+        <button
+          type="button"
+          onClick={pending.keep}
+          className={cn(
+            "rounded-md border border-emerald-500 bg-white px-2 py-0.5",
+            "text-[11px] font-medium text-emerald-700 shadow-sm hover:bg-emerald-50",
+          )}
+        >
+          Garder
+        </button>
+      </div>
       {children}
     </div>
   );

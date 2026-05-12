@@ -65,7 +65,7 @@ export function SkillsSection({
         data-editor-item-id={ghost.id}
         className="scroll-mt-24"
       >
-        <PendingRemoveGhost label={label} onRevert={ghost.revert} />
+        <PendingRemoveGhost label={label} onKeep={ghost.keep} onRevert={ghost.revert} />
       </div>,
     );
   }

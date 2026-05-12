@@ -56,7 +56,7 @@ export function InterestsSection({
         data-editor-item-id={ghost.id}
         className="scroll-mt-24"
       >
-        <PendingRemoveGhost label={label} onRevert={ghost.revert} />
+        <PendingRemoveGhost label={label} onKeep={ghost.keep} onRevert={ghost.revert} />
       </li>,
     );
   }
@@ -169,14 +169,24 @@ function InterestRow({
         className="block min-h-11 w-full rounded-md border border-[var(--color-ink)]/15 bg-white px-3 py-2 text-[14px] leading-6 text-[var(--color-ink)] outline-none transition-colors focus-visible:border-[var(--color-ink)] focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/20 motion-reduce:transition-none"
       />
       {isAdded ? (
-        <button
-          type="button"
-          onClick={pending.revert}
-          className="inline-flex h-11 shrink-0 items-center gap-1 rounded-md border border-emerald-600/30 bg-emerald-50 px-3 text-[12px] font-medium text-emerald-800 transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 motion-reduce:transition-none"
-          aria-label={`Annuler l'ajout du centre d'intérêt ${index + 1}`}
-        >
-          Annuler
-        </button>
+        <div className="flex shrink-0 gap-1.5">
+          <button
+            type="button"
+            onClick={pending.revert}
+            className="inline-flex h-11 items-center gap-1 rounded-md border border-red-500 bg-white px-3 text-[12px] font-medium text-red-700 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 motion-reduce:transition-none"
+            aria-label={`Annuler l'ajout du centre d'intérêt ${index + 1}`}
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            onClick={pending.keep}
+            className="inline-flex h-11 items-center gap-1 rounded-md border border-emerald-500 bg-white px-3 text-[12px] font-medium text-emerald-700 transition-colors hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 motion-reduce:transition-none"
+            aria-label={`Garder le centre d'intérêt ${index + 1}`}
+          >
+            Garder
+          </button>
+        </div>
       ) : null}
       <button
         type="button"

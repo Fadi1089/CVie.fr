@@ -68,7 +68,12 @@ export function LanguagesSection({
         data-editor-item-id={ghost.id}
         className="scroll-mt-24"
       >
-        <PendingRemoveGhost label={label} sublabel={sub} onRevert={ghost.revert} />
+        <PendingRemoveGhost
+          label={label}
+          sublabel={sub}
+          onKeep={ghost.keep}
+          onRevert={ghost.revert}
+        />
       </div>,
     );
   }

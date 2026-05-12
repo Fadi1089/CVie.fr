@@ -1,15 +1,11 @@
 type Props = {
   label: string;
   sublabel?: string;
+  onKeep: () => void;
   onRevert: () => void;
 };
 
-/**
- * Placeholder row for an item the AI suggested to delete. The actual
- * field is already gone from the form (optimistic apply); this ghost is
- * the user-visible trace + the one-click undo.
- */
-export function PendingRemoveGhost({ label, sublabel, onRevert }: Props) {
+export function PendingRemoveGhost({ label, sublabel, onKeep, onRevert }: Props) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-lg border-2 border-dashed border-red-300 bg-red-50/60 px-4 py-3">
       <div className="min-w-0">
@@ -25,13 +21,22 @@ export function PendingRemoveGhost({ label, sublabel, onRevert }: Props) {
           </p>
         ) : null}
       </div>
-      <button
-        type="button"
-        onClick={onRevert}
-        className="shrink-0 rounded-md border border-red-500 bg-white px-3 py-1.5 text-[12px] font-medium text-red-700 hover:bg-red-50"
-      >
-        Annuler
-      </button>
+      <div className="flex shrink-0 gap-2">
+        <button
+          type="button"
+          onClick={onRevert}
+          className="rounded-md border border-red-500 bg-white px-3 py-1.5 text-[12px] font-medium text-red-700 hover:bg-red-50"
+        >
+          Annuler
+        </button>
+        <button
+          type="button"
+          onClick={onKeep}
+          className="rounded-md border border-emerald-500 bg-white px-3 py-1.5 text-[12px] font-medium text-emerald-700 hover:bg-emerald-50"
+        >
+          Garder
+        </button>
+      </div>
     </div>
   );
 }
