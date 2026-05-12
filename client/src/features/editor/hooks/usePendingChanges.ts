@@ -405,3 +405,25 @@ export function usePendingItem(section: Section, id: string): PendingItemHandle 
     revert: () => ctx.revertItem(section, id),
   };
 }
+
+export type PendingRemovedItem = {
+  id: string;
+  item: { id: string } & Record<string, unknown>;
+  originalIndex: number;
+  revert: () => void;
+};
+
+/** Pending removals for a section, sorted by their original index. */
+export function usePendingRemovedItems(section: Section): PendingRemovedItem[] {
+  const ctx = useContext(PendingChangesContext);
+  if (!ctx) return [];
+  return ctx.items
+    .filter((it) => it.section === section && it.action === "remove")
+    .sort((a, b) => a.originalIndex - b.originalIndex)
+    .map((entry) => ({
+      id: entry.id,
+      item: entry.item,
+      originalIndex: entry.originalIndex,
+      revert: () => ctx.revertItem(section, entry.id),
+    }));
+}

@@ -6,6 +6,9 @@ import { FormField } from "./FormField";
 import { SectionCard } from "./SectionCard";
 import { SectionShell } from "./SectionShell";
 import { useFocusAfterRemove } from "../hooks/useFocusAfterRemove";
+import { usePendingRemovedItems } from "../hooks/usePendingChanges";
+import { PendingAddMarker } from "./ai-assistant/PendingAddMarker";
+import { PendingRemoveGhost } from "./ai-assistant/PendingRemoveGhost";
 
 const LANGUAGE_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2", "natif"] as const;
 const DEFAULT_LEVEL: (typeof LANGUAGE_LEVELS)[number] = "B1";
@@ -26,6 +29,49 @@ export function LanguagesSection({
   });
   const atCap = fields.length >= MAX_LANGUAGES;
   const { containerRef, fallbackRef, focusAfterRemove } = useFocusAfterRemove();
+  const pendingRemoved = usePendingRemovedItems("languages");
+
+  const realRows = fields.map((field, index) => (
+    <div
+      key={field.rhfId}
+      ref={setItemRef ? setItemRef(field.id) : undefined}
+      data-editor-item-id={field.id}
+      className={
+        highlightedItemId === field.id
+          ? "editor-jump-highlight-item scroll-mt-24 rounded-md"
+          : "scroll-mt-24 rounded-md"
+      }
+    >
+      <PendingAddMarker section="languages" id={field.id}>
+        <LanguageCard
+          index={index}
+          onRemove={() => {
+            remove(index);
+            focusAfterRemove(index);
+          }}
+        />
+      </PendingAddMarker>
+    </div>
+  ));
+
+  const rows: React.ReactNode[] = [...realRows];
+  for (const ghost of pendingRemoved) {
+    const pos = Math.min(Math.max(ghost.originalIndex, 0), rows.length);
+    const label = String(ghost.item.name ?? "Langue");
+    const sub = ghost.item.level ? String(ghost.item.level) : undefined;
+    rows.splice(
+      pos,
+      0,
+      <div
+        key={`ghost-${ghost.id}`}
+        ref={setItemRef ? setItemRef(ghost.id) : undefined}
+        data-editor-item-id={ghost.id}
+        className="scroll-mt-24"
+      >
+        <PendingRemoveGhost label={label} sublabel={sub} onRevert={ghost.revert} />
+      </div>,
+    );
+  }
 
   return (
     <div ref={containerRef}>
@@ -45,26 +91,7 @@ export function LanguagesSection({
           })
         }
       >
-        {fields.map((field, index) => (
-          <div
-            key={field.rhfId}
-            ref={setItemRef ? setItemRef(field.id) : undefined}
-            data-editor-item-id={field.id}
-            className={
-              highlightedItemId === field.id
-                ? "editor-jump-highlight-item scroll-mt-24 rounded-md"
-                : "scroll-mt-24 rounded-md"
-            }
-          >
-            <LanguageCard
-              index={index}
-              onRemove={() => {
-                remove(index);
-                focusAfterRemove(index);
-              }}
-            />
-          </div>
-        ))}
+        {rows}
       </SectionShell>
     </div>
   );

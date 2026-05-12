@@ -1,12 +1,14 @@
+import type { CvData } from "@cvie/shared";
 import { humanizePath } from "../../hooks/useEditorJump";
 
 type Props = {
   path: string;
+  cv?: CvData;
   onClick: () => void;
 };
 
-export function ChangeChip({ path, onClick }: Props) {
-  const label = humanizePath(path);
+export function ChangeChip({ path, cv, onClick }: Props) {
+  const label = humanizePath(path, cv);
   return (
     <button
       type="button"

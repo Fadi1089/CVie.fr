@@ -5,6 +5,9 @@ import { FormField } from "./FormField";
 import { SectionCard } from "./SectionCard";
 import { SectionShell } from "./SectionShell";
 import { useFocusAfterRemove } from "../hooks/useFocusAfterRemove";
+import { usePendingRemovedItems } from "../hooks/usePendingChanges";
+import { PendingAddMarker } from "./ai-assistant/PendingAddMarker";
+import { PendingRemoveGhost } from "./ai-assistant/PendingRemoveGhost";
 
 const SKILL_LEVELS = ["débutant", "intermédiaire", "avancé", "expert"] as const;
 const MAX_SKILLS = 50;
@@ -24,6 +27,48 @@ export function SkillsSection({
   });
   const atCap = fields.length >= MAX_SKILLS;
   const { containerRef, fallbackRef, focusAfterRemove } = useFocusAfterRemove();
+  const pendingRemoved = usePendingRemovedItems("skills");
+
+  const realRows = fields.map((field, index) => (
+    <div
+      key={field.rhfId}
+      ref={setItemRef ? setItemRef(field.id) : undefined}
+      data-editor-item-id={field.id}
+      className={
+        highlightedItemId === field.id
+          ? "editor-jump-highlight-item scroll-mt-24 rounded-md"
+          : "scroll-mt-24 rounded-md"
+      }
+    >
+      <PendingAddMarker section="skills" id={field.id}>
+        <SkillCard
+          index={index}
+          onRemove={() => {
+            remove(index);
+            focusAfterRemove(index);
+          }}
+        />
+      </PendingAddMarker>
+    </div>
+  ));
+
+  const rows: React.ReactNode[] = [...realRows];
+  for (const ghost of pendingRemoved) {
+    const pos = Math.min(Math.max(ghost.originalIndex, 0), rows.length);
+    const label = String(ghost.item.name ?? "Compétence");
+    rows.splice(
+      pos,
+      0,
+      <div
+        key={`ghost-${ghost.id}`}
+        ref={setItemRef ? setItemRef(ghost.id) : undefined}
+        data-editor-item-id={ghost.id}
+        className="scroll-mt-24"
+      >
+        <PendingRemoveGhost label={label} onRevert={ghost.revert} />
+      </div>,
+    );
+  }
 
   return (
     <div ref={containerRef}>
@@ -42,26 +87,7 @@ export function SkillsSection({
           })
         }
       >
-        {fields.map((field, index) => (
-          <div
-            key={field.rhfId}
-            ref={setItemRef ? setItemRef(field.id) : undefined}
-            data-editor-item-id={field.id}
-            className={
-              highlightedItemId === field.id
-                ? "editor-jump-highlight-item scroll-mt-24 rounded-md"
-                : "scroll-mt-24 rounded-md"
-            }
-          >
-            <SkillCard
-              index={index}
-              onRemove={() => {
-                remove(index);
-                focusAfterRemove(index);
-              }}
-            />
-          </div>
-        ))}
+        {rows}
       </SectionShell>
     </div>
   );
