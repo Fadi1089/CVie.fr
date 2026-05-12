@@ -4,12 +4,11 @@ import type { UIMessagePart } from "ai";
 import {
   type AiProvider,
   findModel,
-  PROVIDER_LABELS,
   type CvData,
 } from "@cvie/shared";
 import { MessageMarkdown } from "./MessageMarkdown";
 import { ChangeChip } from "./ChangeChip";
-import { AssistantAvatar } from "./AssistantAvatar";
+import { ProviderLogo } from "./ProviderLogo";
 import { extractMessagePaths } from "./extractAssistantPaths";
 import type { AssistantUIMessage } from "../../hooks/useAssistantChat";
 import { useEditorJump } from "../../hooks/useEditorJump";
@@ -27,11 +26,9 @@ function partText(part: UIMessagePart<Record<string, never>, Record<string, neve
   return "";
 }
 
-function modelDisplay(meta: AssistantUIMessage["metadata"]): string | null {
+function modelLabelOnly(meta: AssistantUIMessage["metadata"]): string | null {
   if (!meta?.provider || !meta?.model) return null;
-  const label = findModel(meta.provider as AiProvider, meta.model)?.label ?? meta.model;
-  const providerLabel = PROVIDER_LABELS[meta.provider as AiProvider] ?? meta.provider;
-  return `${providerLabel} · ${label}`;
+  return findModel(meta.provider as AiProvider, meta.model)?.label ?? meta.model;
 }
 
 export function ChatBody({ messages, status, error }: Props) {
@@ -70,14 +67,15 @@ export function ChatBody({ messages, status, error }: Props) {
         {messages.map((m) => {
           const isUser = m.role === "user";
           const paths = !isUser ? extractMessagePaths(m) : [];
-          const modelLabel = !isUser ? modelDisplay(m.metadata) : null;
+          const provider = !isUser ? m.metadata?.provider ?? null : null;
+          const modelLabel = !isUser ? modelLabelOnly(m.metadata) : null;
           return (
             <li key={m.id} className="flex flex-col gap-1.5">
               {!isUser && (
                 <div className="flex items-center gap-1.5 pl-0.5">
-                  <AssistantAvatar />
+                  <ProviderLogo provider={provider} size={14} />
                   <span className="font-mono-caps text-[10px] tracking-[0.18em] text-[var(--color-ink-soft)]">
-                    Assistant{modelLabel ? ` · ${modelLabel}` : ""}
+                    {modelLabel ?? "Assistant"}
                   </span>
                 </div>
               )}
