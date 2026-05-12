@@ -158,7 +158,12 @@ cvAssistantRoutes.post("/chat", async (c) => {
       "[cv/assistant] start",
       JSON.stringify({ userId, source: resolved.source, provider, model }),
     );
-    return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({
+      messageMetadata: ({ part }) => {
+        if (part.type === "start") return { provider, model };
+        return undefined;
+      },
+    });
   } catch (err) {
     console.error("[cv/assistant] failed:", err);
     const message = err instanceof Error ? err.message : "Assistant indisponible";

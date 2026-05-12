@@ -1,6 +1,7 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { useEffect, useState } from "react";
 import { useAssistantChat } from "../../hooks/useAssistantChat";
+import { useEditorJump } from "../../hooks/useEditorJump";
 import { AssistantHandle } from "./AssistantHandle";
 import { AssistantToolbar } from "./AssistantToolbar";
 import { ChatBody } from "./ChatBody";
@@ -19,8 +20,12 @@ const EXPANDED_HEIGHT = "min(60vh, 560px)";
 
 export function AssistantPanel({ cvId, expanded, onExpand, onCollapse }: Props) {
   const { isAuthenticated } = useAuth0();
+  const jump = useEditorJump();
   const { messages, status, error, send, stop, reset, pending } = useAssistantChat({
     cvId,
+    onFirstEditPath: (path) => {
+      if (jump) jump(path);
+    },
   });
 
   const busy = status === "submitted" || status === "streaming";

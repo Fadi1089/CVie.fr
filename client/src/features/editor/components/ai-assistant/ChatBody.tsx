@@ -1,13 +1,21 @@
 import { useEffect, useRef } from "react";
 import { useFormContext } from "react-hook-form";
-import { isToolUIPart, type UIMessage, type UIMessagePart } from "ai";
-import type { CvData } from "@cvie/shared";
+import type { UIMessagePart } from "ai";
+import {
+  type AiProvider,
+  findModel,
+  PROVIDER_LABELS,
+  type CvData,
+} from "@cvie/shared";
 import { MessageMarkdown } from "./MessageMarkdown";
 import { ChangeChip } from "./ChangeChip";
+import { AssistantAvatar } from "./AssistantAvatar";
+import { extractMessagePaths } from "./extractAssistantPaths";
+import type { AssistantUIMessage } from "../../hooks/useAssistantChat";
 import { useEditorJump } from "../../hooks/useEditorJump";
 
 type Props = {
-  messages: UIMessage[];
+  messages: AssistantUIMessage[];
   status: "submitted" | "streaming" | "ready" | "error";
   error: string | null;
 };
@@ -19,66 +27,11 @@ function partText(part: UIMessagePart<Record<string, never>, Record<string, neve
   return "";
 }
 
-const SECTION_PATH_RE = /^(experiences|formations|skills|languages|interests)$/;
-const ITEM_PATH_RE = /^(experiences|formations|skills|languages|interests)\[(\d+)\]/;
-
-// Collapse tool-output patches into one path per affected item:
-//   - field-level (`experiences[0].jobTitle`) → `experiences[0]`
-//   - whole-array (`experiences`) → expand via before/after id diff into
-//     one `experiences[id:<id>]` per added/removed item, so the chip
-//     resolves to the specific row instead of just the section header.
-function extractMessagePaths(m: UIMessage): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const part of m.parts) {
-    if (!isToolUIPart(part as never)) continue;
-    const tp = part as {
-      state?: string;
-      output?: {
-        ok?: boolean;
-        patches?: Array<{ path: string; before?: unknown; after?: unknown }>;
-      };
-    };
-    if (tp.state !== "output-available") continue;
-    const o = tp.output;
-    if (!o?.ok || !Array.isArray(o.patches)) continue;
-    for (const p of o.patches) {
-      if (typeof p.path !== "string") continue;
-      if (SECTION_PATH_RE.test(p.path)) {
-        const section = p.path;
-        const before = Array.isArray(p.before)
-          ? (p.before as Array<{ id?: string }>)
-          : [];
-        const after = Array.isArray(p.after)
-          ? (p.after as Array<{ id?: string }>)
-          : [];
-        const beforeIds = new Set(
-          before.map((x) => x.id).filter((x): x is string => typeof x === "string"),
-        );
-        const afterIds = new Set(
-          after.map((x) => x.id).filter((x): x is string => typeof x === "string"),
-        );
-        for (const id of new Set([...beforeIds, ...afterIds])) {
-          const inBefore = beforeIds.has(id);
-          const inAfter = afterIds.has(id);
-          if (inBefore === inAfter) continue; // reorders or no-ops
-          const key = `${section}[id:${id}]`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          out.push(key);
-        }
-        continue;
-      }
-      // Item- or field-level path: collapse to item granularity so multi-
-      // field edits on the same row share one chip.
-      const itemMatch = p.path.match(ITEM_PATH_RE);
-      const key = itemMatch ? `${itemMatch[1]}[${itemMatch[2]}]` : p.path;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push(key);
-    }
-  }
-  return out;
+function modelDisplay(meta: AssistantUIMessage["metadata"]): string | null {
+  if (!meta?.provider || !meta?.model) return null;
+  const label = findModel(meta.provider as AiProvider, meta.model)?.label ?? meta.model;
+  const providerLabel = PROVIDER_LABELS[meta.provider as AiProvider] ?? meta.provider;
+  return `${providerLabel} · ${label}`;
 }
 
 export function ChatBody({ messages, status, error }: Props) {
@@ -117,8 +70,17 @@ export function ChatBody({ messages, status, error }: Props) {
         {messages.map((m) => {
           const isUser = m.role === "user";
           const paths = !isUser ? extractMessagePaths(m) : [];
+          const modelLabel = !isUser ? modelDisplay(m.metadata) : null;
           return (
             <li key={m.id} className="flex flex-col gap-1.5">
+              {!isUser && (
+                <div className="flex items-center gap-1.5 pl-0.5">
+                  <AssistantAvatar />
+                  <span className="font-mono-caps text-[10px] tracking-[0.18em] text-[var(--color-ink-soft)]">
+                    Assistant{modelLabel ? ` · ${modelLabel}` : ""}
+                  </span>
+                </div>
+              )}
               <div className={isUser ? "flex justify-end" : "flex justify-start"}>
                 <div
                   className={

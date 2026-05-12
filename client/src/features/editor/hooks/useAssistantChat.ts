@@ -7,10 +7,18 @@ import {
   type UIMessagePart,
 } from "ai";
 import { useChat } from "@ai-sdk/react";
-import type { CvData } from "@cvie/shared";
+import type { AiProvider, CvData } from "@cvie/shared";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useAssistantConversation } from "./useAssistantConversation";
 import { usePendingChanges, type PendingChange } from "./usePendingChanges";
+import { extractMessagePaths } from "../components/ai-assistant/extractAssistantPaths";
+
+export type AssistantMessageMeta = {
+  provider?: AiProvider;
+  model?: string;
+};
+
+export type AssistantUIMessage = UIMessage<AssistantMessageMeta>;
 
 type ToolPatch = { path: string; before: unknown; after: unknown };
 type ToolOkOutput = { ok: true; patches: ToolPatch[]; message?: string };
@@ -23,22 +31,25 @@ function isToolOkOutput(output: unknown): output is ToolOkOutput {
 
 export type UseAssistantChatOptions = {
   cvId: string | null | undefined;
+  onFirstEditPath?: (path: string) => void;
 };
 
-export function useAssistantChat({ cvId }: UseAssistantChatOptions) {
+export function useAssistantChat({ cvId, onFirstEditPath }: UseAssistantChatOptions) {
   const { getAccessTokenSilently, isAuthenticated } = useAuth0();
   const { getValues } = useFormContext<CvData>();
   const { initialMessages, persist, clear: clearConversation } =
     useAssistantConversation(cvId);
   const pending = usePendingChanges();
   const processedToolCallIds = useRef<Set<string>>(new Set());
+  const onFirstEditPathRef = useRef<typeof onFirstEditPath>(onFirstEditPath);
+  onFirstEditPathRef.current = onFirstEditPath;
 
   const cvRef = useRef<() => CvData>(() => getValues());
   cvRef.current = () => getValues();
 
   const transport = useMemo(
     () =>
-      new DefaultChatTransport<UIMessage>({
+      new DefaultChatTransport<AssistantUIMessage>({
         api: "/api/v1/cv/assistant/chat",
         prepareSendMessagesRequest: async ({ messages, body }) => {
           const headers: Record<string, string> = {
@@ -81,14 +92,24 @@ export function useAssistantChat({ cvId }: UseAssistantChatOptions) {
     [pending],
   );
 
-  const chat = useChat({
-    messages: initialMessages,
+  const chat = useChat<AssistantUIMessage>({
+    messages: initialMessages as AssistantUIMessage[],
     transport,
     onFinish: ({ message, messages }) => {
       for (const part of message.parts) {
         ingestToolPart(part as never);
       }
       persist(messages);
+      const cb = onFirstEditPathRef.current;
+      if (cb) {
+        const paths = extractMessagePaths(message);
+        const first = paths[0];
+        if (first) {
+          // Wait for the next paint so newly-inserted ghost rows /
+          // add-markers exist in the DOM before scrolling.
+          requestAnimationFrame(() => requestAnimationFrame(() => cb(first)));
+        }
+      }
     },
   });
 
