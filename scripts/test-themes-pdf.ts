@@ -18,8 +18,12 @@ const ORDER = { "ats-strict": 0, "ats-balanced": 1, expressive: 2 } as const;
 
 async function extractText(bytes: Uint8Array): Promise<string> {
   const parser = new PDFParse({ data: Buffer.from(bytes) });
-  const result = await parser.getText();
-  return result.text;
+  try {
+    const result = await parser.getText();
+    return result.text;
+  } finally {
+    await parser.destroy();
+  }
 }
 
 async function main(): Promise<string[]> {
@@ -39,18 +43,25 @@ async function main(): Promise<string[]> {
       }
 
       const label = `${theme.meta.id} × ${mode}`;
+      const snapPath = resolve(SNAP_DIR, `${theme.meta.id}-${mode}.pdf`);
+
+      let bytes: Uint8Array;
       try {
-        const bytes = await generateResumePdf({
+        bytes = await generateResumePdf({
           cv: sampleCvFixture,
           themeId: theme.meta.id,
           atsMode: mode,
           customization: {},
         });
+      } catch (err) {
+        failures.push(`[${label}] generateResumePdf threw: ${(err as Error).message}`);
+        continue;
+      }
 
-        const snapPath = resolve(SNAP_DIR, `${theme.meta.id}-${mode}.pdf`);
-        await writeFile(snapPath, bytes);
-        console.log(`  wrote ${snapPath}`);
+      await writeFile(snapPath, bytes);
+      console.log(`  wrote ${snapPath}`);
 
+      try {
         const text = await extractText(bytes);
 
         // Check required phrases
@@ -64,12 +75,12 @@ async function main(): Promise<string[]> {
         if (mode === "ats-strict" && text.includes("◆")) {
           failures.push(`[${label}] Ornament "◆" found in ats-strict output`);
         }
-
-        if (failures.length === 0 || !failures.some((f) => f.startsWith(`[${label}]`))) {
-          console.log(`  pass  ${label}`);
-        }
       } catch (err) {
-        failures.push(`[${label}] Threw: ${(err as Error).message}`);
+        failures.push(`[${label}] extractText/assert threw: ${(err as Error).message}`);
+      }
+
+      if (!failures.some((f) => f.startsWith(`[${label}]`))) {
+        console.log(`  pass  ${label}`);
       }
     }
   }
