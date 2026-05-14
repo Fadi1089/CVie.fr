@@ -26,4 +26,24 @@ describe("atelier-moderne render", () => {
     const html = render(sampleResume, { ...opts, atsMode: "ats-strict" });
     expect(html).toMatch(/grid-template-columns:\s*1fr\s*!important/);
   });
+
+  it("escapes HTML in user-provided strings (XSS regression)", () => {
+    const resume = {
+      ...sampleResume,
+      basics: { ...sampleResume.basics, name: "Jane <script>" },
+    };
+    const html = render(resume, opts);
+    expect(html).not.toContain("<script>");
+    expect(html).toContain("Jane &lt;script&gt;");
+  });
+
+  it("refuses to emit photo when image src has a non-image protocol", () => {
+    const resume = {
+      ...sampleResume,
+      basics: { ...sampleResume.basics, image: "javascript:alert(1)" as unknown as string },
+    };
+    const html = render(resume, opts);
+    expect(html).not.toMatch(/class="cv-photo"/);
+    expect(html).not.toContain("javascript:");
+  });
 });

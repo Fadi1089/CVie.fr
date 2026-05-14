@@ -8,6 +8,8 @@ import { buildStyles } from "./styles";
 import type { Customization } from "./customization";
 import type { ThemeRenderOptions } from "../types";
 
+const IMAGE_PROTOCOL_RE = /^(https?:\/\/|data:image\/)/i;
+
 type SectionKey = "work" | "education" | "skills" | "languages" | "interests";
 
 const LABELS: Record<SupportedLocale, Record<SectionKey, string>> = {
@@ -57,8 +59,10 @@ export function render(resumeIn: JsonResume, opts: ThemeRenderOptions): string {
   const atsCss = atsOverridesCss(opts.atsMode);
 
   const linkedin = resume.basics.profiles.find((p) => p.network.toLowerCase() === "linkedin");
-  const photo = resume.basics.image
-    ? `<img class="cv-photo" src="${escapeAttr(resume.basics.image)}" alt="" />`
+  const rawImage = resume.basics.image;
+  const showPhoto = typeof rawImage === "string" && rawImage.length > 0 && IMAGE_PROTOCOL_RE.test(rawImage);
+  const photo = showPhoto
+    ? `<img class="cv-photo" src="${escapeAttr(rawImage)}" alt="" />`
     : "";
 
   const mainSections: string[] = [];
@@ -131,7 +135,7 @@ export function render(resumeIn: JsonResume, opts: ThemeRenderOptions): string {
         ${resume.basics.phone ? `<span>${escapeHtml(resume.basics.phone)}</span>` : ""}
         ${resume.basics.location?.city ? `<span>${escapeHtml(resume.basics.location.city)}</span>` : ""}
         ${resume.basics.url ? `<span><a href="${escapeAttr(resume.basics.url)}">${escapeHtml(resume.basics.url)}</a></span>` : ""}
-        ${linkedin?.url ? `<span><a href="${escapeAttr(linkedin.url)}">${escapeHtml(linkedin.username ?? "")}</a></span>` : ""}
+        ${linkedin?.url ? `<span><a href="${escapeAttr(linkedin.url)}">${escapeHtml(linkedin.username ?? linkedin.url)}</a></span>` : ""}
         ${photo}
       </div>
     </header>

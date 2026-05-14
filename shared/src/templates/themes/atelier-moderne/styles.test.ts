@@ -15,4 +15,14 @@ describe("atelier-moderne styles", () => {
     const css = buildStyles({ accent: "rust", density: "comfy", photoShape: "rounded" });
     expect(css).toMatch(/--cv-accent:\s*#B14E2A/i);
   });
+
+  it("tightens line-height and section-gap in compact density", () => {
+    const comfy = buildStyles({ accent: "rust", density: "comfy", photoShape: "rounded" });
+    const compact = buildStyles({ accent: "rust", density: "compact", photoShape: "rounded" });
+    expect(compact).not.toBe(comfy);
+    expect(compact).toMatch(/--cv-line-height:\s*1\.32/);
+    expect(comfy).toMatch(/--cv-line-height:\s*1\.5/);
+    expect(compact).toMatch(/--cv-section-gap:\s*7mm/);
+    expect(comfy).toMatch(/--cv-section-gap:\s*11mm/);
+  });
 });
