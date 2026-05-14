@@ -30,4 +30,20 @@ describe("validateAtsHtml", () => {
     const r = validateAtsHtml(html, true);
     expect(r.flags).not.toContain("multi-column layout retained in ats-strict");
   });
+
+  it("flags 1fr 1fr (two equal columns) in strict mode", () => {
+    const html =
+      `<html><head><meta name="author" content="X"/>` +
+      `<style>.cv { grid-template-columns: 1fr 1fr; }</style></head>` +
+      `<body><h1>X</h1><h2>Y</h2><section></section></body></html>`;
+    const r = validateAtsHtml(html, true);
+    expect(r.flags).toContain("multi-column layout retained in ats-strict");
+  });
+
+  it("recognizes author meta with single quotes", () => {
+    const html =
+      `<html><head><meta name='author' content='X'/></head>` +
+      `<body><h1>X</h1><section><h2>Exp</h2></section></body></html>`;
+    expect(validateAtsHtml(html, false).flags).not.toContain("missing author meta");
+  });
 });
