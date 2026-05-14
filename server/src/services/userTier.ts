@@ -23,7 +23,7 @@ export async function resolveUserTier(
   const row = await prisma.user.findUnique({
     where: { auth0Sub: claims.sub },
     select: { tier: true },
-  });
+  }).catch(() => undefined);
   if (!row) return undefined;
 
   // Defensive: normalize anything unexpected back to 'free'.

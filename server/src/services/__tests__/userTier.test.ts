@@ -31,6 +31,17 @@ describe("resolveUserTier", () => {
     expect(await resolveUserTier({ sub: "auth0|gone", email: "x@x" })).toBeUndefined();
   });
 
+  it("resolves to undefined on DB error and does not cache the failure", async () => {
+    const findUnique = mock(() => Promise.reject(new Error("DB down")));
+    (prisma.user as unknown as { findUnique: typeof findUnique }).findUnique = findUnique;
+    expect(await resolveUserTier({ sub: "auth0|err", email: "e@e.e" })).toBeUndefined();
+
+    // Subsequent call with a working mock should return the real value (no cached failure).
+    const findUnique2 = mock(() => Promise.resolve({ tier: "premium" }));
+    (prisma.user as unknown as { findUnique: typeof findUnique2 }).findUnique = findUnique2;
+    expect(await resolveUserTier({ sub: "auth0|err", email: "e@e.e" })).toEqual({ tier: "premium" });
+  });
+
   it("caches the lookup for the TTL window", async () => {
     let calls = 0;
     const findUnique = mock(() => {
