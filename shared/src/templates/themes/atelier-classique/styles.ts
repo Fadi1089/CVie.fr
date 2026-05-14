@@ -1,8 +1,5 @@
-export type Customization = {
-  accent: "oxblood" | "encre" | "sapin" | "graphite" | "marine";
-  density: "compact" | "comfy";
-  photoShape: "square" | "rounded" | "circle";
-};
+import type { Customization } from "./customization";
+export type { Customization };
 
 const ACCENT_HEX: Record<string, string> = {
   oxblood: "#7B2D26",

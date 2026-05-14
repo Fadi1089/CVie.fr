@@ -60,6 +60,16 @@ describe("atelier-classique render", () => {
     expect(html).toMatch(/<style[^>]*data-base[^>]*>/);
   });
 
+  it("refuses to emit photo when image src has a non-image protocol", () => {
+    const resume = {
+      ...sampleResume,
+      basics: { ...sampleResume.basics, image: "javascript:alert(1)" as unknown as string },
+    };
+    const html = render(resume, opts);
+    expect(html).not.toMatch(/class=\"cv-photo\"/);
+    expect(html).not.toContain("javascript:");
+  });
+
   it("does NOT include the photo when image is empty", () => {
     const resume = {
       ...sampleResume,

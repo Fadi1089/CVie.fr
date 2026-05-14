@@ -4,10 +4,14 @@ import { normalize } from "../../jsonResume/normalize";
 import { escapeHtml, escapeAttr } from "../_shared/htmlEscape";
 import { BASE_PRINT_CSS } from "../_shared/printChrome";
 import { atsOverridesCss } from "../_shared/atsProfile";
-import { buildStyles, type Customization } from "./styles";
+import { buildStyles } from "./styles";
+import type { Customization } from "./customization";
 import type { ThemeRenderOptions } from "../types";
 
-const SECTION_LABELS: Record<SupportedLocale, Record<string, string>> = {
+const IMAGE_PROTOCOL_RE = /^(https?:\/\/|data:image\/)/i;
+
+type SectionKey = "work" | "education" | "skills" | "languages" | "interests";
+const SECTION_LABELS: Record<SupportedLocale, Record<SectionKey, string>> = {
   fr: {
     work: "Expériences",
     education: "Formation",
@@ -120,9 +124,10 @@ export function render(resumeIn: JsonResume, opts: ThemeRenderOptions): string {
   const themeCss = buildStyles(c);
   const atsCss = atsOverridesCss(opts.atsMode);
 
-  const showPhoto = Boolean(resume.basics.image);
+  const rawImage = resume.basics.image;
+  const showPhoto = typeof rawImage === "string" && rawImage.length > 0 && IMAGE_PROTOCOL_RE.test(rawImage);
   const photo = showPhoto
-    ? `<img class="cv-photo" src="${escapeAttr(resume.basics.image)}" alt="" />`
+    ? `<img class="cv-photo" src="${escapeAttr(rawImage)}" alt="" />`
     : "";
 
   const sections: string[] = [];
@@ -131,7 +136,7 @@ export function render(resumeIn: JsonResume, opts: ThemeRenderOptions): string {
     sections.push(
       section(
         n++,
-        labels.work ?? "",
+        labels.work,
         resume.work.map((w) => workEntry(w, locale)).join(""),
       ),
     );
@@ -140,19 +145,19 @@ export function render(resumeIn: JsonResume, opts: ThemeRenderOptions): string {
     sections.push(
       section(
         n++,
-        labels.education ?? "",
+        labels.education,
         resume.education.map((e) => eduEntry(e, locale)).join(""),
       ),
     );
   }
   if (resume.skills.length) {
-    sections.push(section(n++, labels.skills ?? "", skillsBlock(resume.skills)));
+    sections.push(section(n++, labels.skills, skillsBlock(resume.skills)));
   }
   if (resume.languages.length) {
-    sections.push(section(n++, labels.languages ?? "", languagesBlock(resume.languages)));
+    sections.push(section(n++, labels.languages, languagesBlock(resume.languages)));
   }
   if (resume.interests.length) {
-    sections.push(section(n++, labels.interests ?? "", interestsBlock(resume.interests)));
+    sections.push(section(n++, labels.interests, interestsBlock(resume.interests)));
   }
 
   const linkedin = resume.basics.profiles.find(
