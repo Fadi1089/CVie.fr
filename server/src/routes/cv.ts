@@ -5,6 +5,9 @@ import { cvDataSchema, getTheme } from "@cvie/shared";
 import { generateResumePdf, pdfFilename } from "../services/pdfService";
 import { rateLimit } from "../middleware/rateLimit";
 import * as requireAuthModule from "../middleware/requireAuth";
+import { canUseTheme } from "../services/themeAccess";
+import { resolveUserTier } from "../services/userTier";
+import type { Auth0Claims } from "../services/userService";
 import {
   listActiveCvs,
   listTrashCvs,
@@ -167,6 +170,17 @@ cvRoutes.post(
       return c.json(
         { error: "Le template sélectionné est invalide.", code: "INVALID_TEMPLATE" },
         400,
+      );
+    }
+
+    const userTier = await resolveUserTier(c.get("userClaims") as Auth0Claims | null);
+    if (!canUseTheme(theme.meta, userTier)) {
+      return c.json(
+        {
+          error: `Le thème « ${theme.meta.name} » est réservé aux abonnements Premium.`,
+          code: "PREMIUM_REQUIRED",
+        },
+        402,
       );
     }
 

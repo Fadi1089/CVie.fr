@@ -90,6 +90,11 @@ mock.module("../../services/pdfService", () => ({
     `${cv.personalInfo.firstName.toLowerCase()}-${cv.personalInfo.lastName.toLowerCase()}-cv.pdf`,
 }));
 
+mock.module("../../services/userTier", () => ({
+  resolveUserTier: async () => undefined,
+  __resetUserTierCacheForTests: () => {},
+}));
+
 import { cvRoutes } from "../cv";
 
 function buildApp() {
@@ -329,5 +334,60 @@ describe("cv routes", () => {
     expect(generateResumePdfMock).toHaveBeenCalledTimes(1);
     const args = (generateResumePdfMock.mock.calls[0] as unknown as [{ atsMode: string }])[0];
     expect(args.atsMode).toBe("ats-strict");
+  });
+
+  it("POST /api/v1/cv/pdf returns 402 when a free user requests a premium theme", async () => {
+    const { themeRegistry } = await import("@cvie/shared");
+    const moderne = themeRegistry.find((t) => t.meta.id === "atelier-moderne")!;
+    const originalTier = moderne.meta.tier;
+    (moderne.meta as { tier: "free" | "premium" }).tier = "premium";
+
+    try {
+      const app = buildApp();
+      const res = await app.request("/api/v1/cv/pdf", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          cvData: {
+            personalInfo: { firstName: "Jane", lastName: "Doe", portfolioDisplay: "clickable" },
+            formations: [],
+            experiences: [],
+            skills: [],
+            languages: [],
+            interests: [],
+          },
+          themeId: "atelier-moderne",
+          atsMode: "ats-balanced",
+          customization: { accent: "rust", density: "comfy", photoShape: "rounded" },
+        }),
+      });
+      expect(res.status).toBe(402);
+      const body = (await res.json()) as { code: string };
+      expect(body.code).toBe("PREMIUM_REQUIRED");
+    } finally {
+      (moderne.meta as { tier: "free" | "premium" }).tier = originalTier;
+    }
+  });
+
+  it("POST /api/v1/cv/pdf allows anon users to use free themes (no 402)", async () => {
+    const app = buildApp();
+    const res = await app.request("/api/v1/cv/pdf", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        cvData: {
+          personalInfo: { firstName: "Jane", lastName: "Doe", portfolioDisplay: "clickable" },
+          formations: [],
+          experiences: [],
+          skills: [],
+          languages: [],
+          interests: [],
+        },
+        themeId: "atelier-classique",
+        atsMode: "ats-balanced",
+        customization: { accent: "encre", density: "comfy", photoShape: "rounded" },
+      }),
+    });
+    expect(res.status).not.toBe(402);
   });
 });
