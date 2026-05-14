@@ -25,7 +25,7 @@
 		"generate:template-css": "bun run scripts/generate-template-css.ts",
 		"check:template-css": "bun run scripts/generate-template-css.ts --check",
 		"smoke:template-previews": "bun run scripts/smoke-template-previews.ts",
-		"test:themes": "bun run scripts/test-themes-pdf.ts",
+		"test:themes": "bun run scripts/test-themes-ats.ts && bun run scripts/test-themes-pdf.ts",
 		"postinstall": "turbo build --filter=@cvie/shared && bunx playwright install chromium"
 	},
 	"devDependencies": {

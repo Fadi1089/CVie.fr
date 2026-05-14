@@ -22,9 +22,10 @@ export type {
 export { cvToJsonResume } from "./jsonResume/mapper";
 export { jsonResumeSchema } from "./jsonResume/schema";
 export type { JsonResume } from "./jsonResume/schema";
+export { validateAtsHtml } from "./ats/validator";
+export type { AtsReport } from "./ats/validator";
 // Re-export the CV fixture and the JSON Resume fixture from the top-level
 // barrel so every consumer (tests + scripts) uses `@cvie/shared` (no deep
-// imports). `validateAtsHtml` / `AtsReport` will be added in Task 8.2 once
-// the validator module exists.
+// imports).
 export { sampleCv as sampleCvFixture } from "./__fixtures__/sampleCv";
 export { sampleResume } from "./__fixtures__/sampleResume";
