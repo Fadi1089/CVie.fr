@@ -25,6 +25,6 @@ describe("escapeAttr", () => {
   });
   it("strips C1 control characters too", () => {
     // U+0085 (NEL) and U+009F (APC) should be stripped along with C0 controls.
-    expect(escapeAttr("abc")).toBe("abc");
+    expect(escapeAttr("abc")).toBe("abc");
   });
 });
