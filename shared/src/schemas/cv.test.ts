@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appearanceSchema } from "./cv";
+import { appearanceSchema, cvDataSchema } from "./cv";
 
 describe("appearanceSchema sizes", () => {
   it("accepts a fully populated textSizes + mediaSize", () => {
@@ -58,5 +58,36 @@ describe("appearanceSchema spacing", () => {
       spacing: { itemGap: 1 },
     });
     expect(partialParsed.success).toBe(true);
+  });
+});
+
+const minimal = {
+  personalInfo: { firstName: "X", lastName: "Y" },
+};
+
+describe("cvDataSchema themeId + customization", () => {
+  it("defaults themeId to 'atelier-classique' when omitted", () => {
+    const parsed = cvDataSchema.parse(minimal);
+    expect(parsed.themeId).toBe("atelier-classique");
+  });
+  it("defaults customization to an empty object when omitted", () => {
+    const parsed = cvDataSchema.parse(minimal);
+    expect(parsed.customization).toEqual({});
+  });
+  it("accepts an arbitrary themeId string (validated against registry server-side)", () => {
+    const parsed = cvDataSchema.parse({ ...minimal, themeId: "atelier-moderne" });
+    expect(parsed.themeId).toBe("atelier-moderne");
+  });
+  it("accepts a record of unknown values for customization", () => {
+    const parsed = cvDataSchema.parse({
+      ...minimal,
+      customization: { accent: "oxblood", density: "comfy" },
+    });
+    expect(parsed.customization.accent).toBe("oxblood");
+  });
+  it("rejects an oversized themeId", () => {
+    expect(() =>
+      cvDataSchema.parse({ ...minimal, themeId: "x".repeat(65) }),
+    ).toThrow();
   });
 });
