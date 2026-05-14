@@ -277,6 +277,29 @@ describe("jsonResumeSchema", () => {
     });
     expect(parsed.work.map((w) => w.name)).toEqual(["A", "B"]);
   });
+
+  it("rejects javascript: URIs inside basics.image (XSS guard)", () => {
+    expect(() =>
+      jsonResumeSchema.parse({
+        basics: { name: "X", image: "javascript:alert(1)" },
+      }),
+    ).toThrow();
+  });
+
+  it("accepts http(s) URLs in basics.image", () => {
+    const parsed = jsonResumeSchema.parse({
+      basics: { name: "X", image: "https://example.com/p.jpg" },
+    });
+    expect(parsed.basics.image).toBe("https://example.com/p.jpg");
+  });
+
+  it("accepts data:image/jpeg base64 URIs in basics.image", () => {
+    const dataUrl = "data:image/jpeg;base64,/9j/AAQ";
+    const parsed = jsonResumeSchema.parse({
+      basics: { name: "X", image: dataUrl },
+    });
+    expect(parsed.basics.image).toBe(dataUrl);
+  });
 });
 ```
 
@@ -314,6 +337,16 @@ const httpUrl = z
 
 const optionalHttpUrl = z.union([z.literal(""), httpUrl]).optional();
 
+const MAX_IMAGE_DATA_URL = 100_000;
+const imageDataUrl = z
+  .string()
+  .max(MAX_IMAGE_DATA_URL)
+  .regex(
+    /^data:image\/(png|jpe?g|webp|gif);base64,/,
+    "image must be http(s) or data:image/* base64",
+  );
+const imageSrc = z.union([z.literal(""), httpUrl, imageDataUrl]).optional();
+
 const isoMonth = z
   .string()
   .regex(/^\d{4}(-\d{2})?(-\d{2})?$/, "ISO date required")
@@ -343,7 +376,7 @@ const cvieBasicsExtSchema = z.object({
 const basicsSchema = z.object({
   name: z.string().min(1).max(MAX_SHORT),
   label: z.string().max(MAX_MEDIUM).optional(),
-  image: z.string().max(100_000).optional(),
+  image: imageSrc,
   email: z.union([z.literal(""), z.email().max(MAX_SHORT)]).optional(),
   phone: z.string().max(MAX_SHORT).optional(),
   url: optionalHttpUrl,
@@ -407,13 +440,13 @@ export type JsonResume = z.infer<typeof jsonResumeSchema>;
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `cd shared && bun run test src/templates/jsonResume/schema.test.ts`
-Expected: PASS (6 tests).
+Expected: PASS (9 tests).
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add shared/src/templates/jsonResume/schema.ts shared/src/templates/jsonResume/schema.test.ts
-git commit -m "feat(shared): add JSON Resume v1 schema with x_cvie extensions"
+git commit -m "feat(shared): add JSON Resume v1 schema with x_cvie extensions and XSS-safe image field"
 ```
 
 ### Task 1.2 — Create date helpers

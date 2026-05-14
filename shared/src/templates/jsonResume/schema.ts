@@ -23,6 +23,16 @@ const httpUrl = z
 
 const optionalHttpUrl = z.union([z.literal(""), httpUrl]).optional();
 
+const MAX_IMAGE_DATA_URL = 100_000;
+const imageDataUrl = z
+  .string()
+  .max(MAX_IMAGE_DATA_URL)
+  .regex(
+    /^data:image\/(png|jpe?g|webp|gif);base64,/,
+    "image must be http(s) or data:image/* base64",
+  );
+const imageSrc = z.union([z.literal(""), httpUrl, imageDataUrl]).optional();
+
 const isoMonth = z
   .string()
   .regex(/^\d{4}(-\d{2})?(-\d{2})?$/, "ISO date required")
@@ -52,7 +62,7 @@ const cvieBasicsExtSchema = z.object({
 const basicsSchema = z.object({
   name: z.string().min(1).max(MAX_SHORT),
   label: z.string().max(MAX_MEDIUM).optional(),
-  image: z.string().max(100_000).optional(),
+  image: imageSrc,
   email: z.union([z.literal(""), z.email().max(MAX_SHORT)]).optional(),
   phone: z.string().max(MAX_SHORT).optional(),
   url: optionalHttpUrl,

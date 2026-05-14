@@ -50,4 +50,27 @@ describe("jsonResumeSchema", () => {
     });
     expect(parsed.work.map((w) => w.name)).toEqual(["A", "B"]);
   });
+
+  it("rejects javascript: URIs inside basics.image (XSS guard)", () => {
+    expect(() =>
+      jsonResumeSchema.parse({
+        basics: { name: "X", image: "javascript:alert(1)" },
+      }),
+    ).toThrow();
+  });
+
+  it("accepts http(s) URLs in basics.image", () => {
+    const parsed = jsonResumeSchema.parse({
+      basics: { name: "X", image: "https://example.com/p.jpg" },
+    });
+    expect(parsed.basics.image).toBe("https://example.com/p.jpg");
+  });
+
+  it("accepts data:image/jpeg base64 URIs in basics.image", () => {
+    const dataUrl = "data:image/jpeg;base64,/9j/AAQ";
+    const parsed = jsonResumeSchema.parse({
+      basics: { name: "X", image: dataUrl },
+    });
+    expect(parsed.basics.image).toBe(dataUrl);
+  });
 });
