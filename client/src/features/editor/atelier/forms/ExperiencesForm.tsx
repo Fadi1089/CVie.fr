@@ -3,6 +3,7 @@ import { TextInput } from "./_atoms/TextInput";
 import { TextArea } from "./_atoms/TextArea";
 import { DateInput } from "./_atoms/DateInput";
 import { Marginalia } from "./_atoms/Marginalia";
+import { CardHeader } from "./_atoms/CardHeader";
 
 export function ExperiencesForm() {
   const { control } = useFormContext();
@@ -12,23 +13,14 @@ export function ExperiencesForm() {
     <div className="grid gap-8">
       {fields.map((field, i) => (
         <article key={field.id} className="border-t border-[var(--atelier-rule)]/20 pt-6">
-          <header className="flex items-center justify-between mb-3">
-            <span
-              className="text-[14px] text-[var(--atelier-accent)] tabular-nums"
-              style={{ fontFamily: "var(--atelier-display)" }}
-            >
-              #{(i + 1).toString().padStart(2, "0")}
-            </span>
-            <div className="flex gap-2 text-[10px] tracking-[0.18em] text-[var(--atelier-muted)]">
-              {i > 0 && (
-                <button type="button" onClick={() => swap(i, i - 1)} aria-label="Déplacer ↑">↑</button>
-              )}
-              {i < fields.length - 1 && (
-                <button type="button" onClick={() => swap(i, i + 1)} aria-label="Déplacer ↓">↓</button>
-              )}
-              <button type="button" onClick={() => remove(i)} aria-label="Supprimer">×</button>
-            </div>
-          </header>
+          <CardHeader
+            index={i}
+            canMoveUp={i > 0}
+            canMoveDown={i < fields.length - 1}
+            onMoveUp={() => swap(i, i - 1)}
+            onMoveDown={() => swap(i, i + 1)}
+            onRemove={() => remove(i)}
+          />
 
           <Controller
             control={control}
