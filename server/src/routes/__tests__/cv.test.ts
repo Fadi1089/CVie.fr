@@ -1,4 +1,4 @@
-import { describe, expect, it, mock, beforeEach } from "bun:test";
+import { describe, expect, it, mock, beforeEach, afterAll } from "bun:test";
 import { Hono } from "hono";
 
 const userClaims = { sub: "auth0|u1", email: "u1@example.com" };
@@ -104,6 +104,10 @@ function buildApp() {
 }
 
 describe("cv routes", () => {
+  afterAll(() => {
+    mock.restore();
+  });
+
   beforeEach(() => {
     listActiveMock.mockClear();
     listTrashMock.mockClear();

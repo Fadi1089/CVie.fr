@@ -5,9 +5,9 @@ import { cvDataSchema, getTheme } from "@cvie/shared";
 import { generateResumePdf, pdfFilename } from "../services/pdfService";
 import { rateLimit } from "../middleware/rateLimit";
 import * as requireAuthModule from "../middleware/requireAuth";
+import "../middleware/optionalAuth";
 import { canUseTheme } from "../services/themeAccess";
 import { resolveUserTier } from "../services/userTier";
-import type { Auth0Claims } from "../services/userService";
 import {
   listActiveCvs,
   listTrashCvs,
@@ -173,7 +173,7 @@ cvRoutes.post(
       );
     }
 
-    const userTier = await resolveUserTier(c.get("userClaims") as Auth0Claims | null);
+    const userTier = await resolveUserTier(c.get("userClaims"));
     if (!canUseTheme(theme.meta, userTier)) {
       return c.json(
         {
