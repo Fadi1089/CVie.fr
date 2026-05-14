@@ -3,6 +3,7 @@ import { sampleCv, type CvData } from "@cvie/shared";
 import { PDFParse } from "pdf-parse";
 import {
   generateCvPdf,
+  generateResumePdf,
   inlineRemotePhotoForPdf,
   pdfFilename,
   shutdownPdfService,
@@ -69,8 +70,8 @@ describe("generateCvPdf", () => {
     // summary in lowercase). ATS parsers read these as section boundaries
     // just fine — uppercase is a canonical CV convention in French.
     const headings = [
-      "FORMATIONS",
-      "EXPÉRIENCES PROFESSIONNELLES",
+      "EXPÉRIENCES",
+      "FORMATION",
       "COMPÉTENCES",
       "LANGUES",
       "CENTRES D'INTÉRÊT",
@@ -160,4 +161,20 @@ describe("pdfFilename", () => {
     };
     expect(pdfFilename(empty)).toBe("cv-cv.pdf");
   });
+});
+
+describe("generateResumePdf", () => {
+  it("emits a valid A4 PDF with atelier-classique (AC1-new)", async () => {
+    const bytes = await generateResumePdf({
+      cv: sampleCv,
+      themeId: "atelier-classique",
+      atsMode: "ats-balanced",
+      customization: {},
+    });
+    expect(bytes[0]).toBe(0x25); // %
+    expect(bytes[1]).toBe(0x50); // P
+    expect(bytes[2]).toBe(0x44); // D
+    expect(bytes[3]).toBe(0x46); // F
+    expect(bytes.byteLength).toBeGreaterThan(5_000);
+  }, 30_000);
 });
