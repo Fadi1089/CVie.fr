@@ -15,6 +15,7 @@ model User {
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
+  tier         String    @default("free")
 
   cvs            Cv[]
   folders        Folder[]
