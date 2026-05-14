@@ -20,4 +20,11 @@ describe("escapeAttr", () => {
   it("escapes ASCII control characters by stripping them", () => {
     expect(escapeAttr("a\x00b")).toBe("ab");
   });
+  it("escapes single quotes to keep single-quoted attributes safe", () => {
+    expect(escapeAttr("o'reilly")).toBe("o&#39;reilly");
+  });
+  it("strips C1 control characters too", () => {
+    // U+0085 (NEL) and U+009F (APC) should be stripped along with C0 controls.
+    expect(escapeAttr("abc")).toBe("abc");
+  });
 });
