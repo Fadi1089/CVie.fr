@@ -36,11 +36,22 @@ async function getBrowser(): Promise<Browser> {
 }
 
 /**
- * Render the given CV to an ATS-compatible A4 PDF.
+ * Render the given CV to an ATS-compatible A4 PDF via `renderResumeHtml`.
  *
- * Uses Playwright's Chromium to load HTML produced by `renderResumeHtml`
- * (theme-driven, JSON Resume backed) and outputs at the CSS-declared A4
- * page size. Network fetches are blocked except Google Fonts.
+ * Viewport pinned to 794×1123 px = 210×297mm @ 96dpi. Themes declare
+ * `width: 210mm` on the paginated container; a narrower viewport makes
+ * that element overflow horizontally and Chromium clips the right edge
+ * of the print canvas (trailing characters cut off).
+ *
+ * SSRF defense: every request inside the render context is aborted
+ * except `data:`, `about:`, and the Google Fonts CDN. User-supplied
+ * http(s) URLs (LinkedIn, portfolio, photo) never leave the server —
+ * photos get inlined to data URIs by `inlineRemotePhotoForPdf` first.
+ *
+ * Waits for `document.fonts.ready` before printing — without it,
+ * Chromium can snapshot the PDF before webfonts resolve, causing
+ * pagination divergence between iframe preview and PDF (fallback
+ * Georgia/Helvetica metrics differ from Fraunces/Bricolage).
  */
 export type GeneratePdfInput = {
   cv: CvData;
@@ -89,8 +100,15 @@ export async function generateResumePdf(input: GeneratePdfInput): Promise<Uint8A
   }
 }
 
-/** @deprecated Use generateResumePdf. Kept temporarily so the old route
- *  still compiles during the route migration in Task 3.4. Remove in Phase 10. */
+/**
+ * @deprecated Use `generateResumePdf`. Kept so the old route still compiles
+ * during the migration in Task 3.4. Remove in Phase 10.
+ *
+ * `scale` and `overflowMode` are silently dropped — the new renderer has
+ * no equivalent knobs. `atsMode` is hardcoded to `"ats-balanced"`. The
+ * only live caller is the legacy `/api/v1/cv/pdf` handler, which never
+ * passes non-default values.
+ */
 export async function generateCvPdf(
   data: CvData,
   template: string = "atelier-classique",

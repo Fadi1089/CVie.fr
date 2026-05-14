@@ -69,6 +69,10 @@ describe("generateCvPdf", () => {
     // section header (unlike e.g. "Compétences" which also appears in the
     // summary in lowercase). ATS parsers read these as section boundaries
     // just fine — uppercase is a canonical CV convention in French.
+    //
+    // Mirrors atelier-classique's SECTION_LABELS.fr in render order
+    // (work, education, skills, languages, interests). If the theme's
+    // labels or order change, update both here and in the theme.
     const headings = [
       "EXPÉRIENCES",
       "FORMATION",
