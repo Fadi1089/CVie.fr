@@ -181,4 +181,22 @@ describe("generateResumePdf", () => {
     expect(bytes[3]).toBe(0x46); // F
     expect(bytes.byteLength).toBeGreaterThan(5_000);
   }, 30_000);
+
+  it("emits deterministic /Title PDF metadata from basics.name (Task 7.2)", async () => {
+    const bytes = await generateResumePdf({
+      cv: sampleCv,
+      themeId: "atelier-classique",
+      atsMode: "ats-strict",
+      customization: {},
+    });
+    const text = Buffer.from(bytes).toString("latin1");
+    // Chromium hex-encodes the title as UTF-16BE because the em-dash (—) is
+    // non-Latin1. "Yasmine Benali" in UTF-16BE hex is:
+    //   Y=0059 a=0061 s=0073 m=006D i=0069 n=006E e=0065 ' '=0020
+    //   B=0042 e=0065 n=006E a=0061 l=006C i=0069
+    // The full /Title value is wrapped in <FEFF...> (BOM + hex string).
+    expect(text).toMatch(
+      /\/Title <FEFF005900610073006D0069006E0065002000420065006E0061006C0069/i,
+    );
+  }, 30_000);
 });

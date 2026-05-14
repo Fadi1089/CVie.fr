@@ -89,6 +89,11 @@ export async function generateResumePdf(input: GeneratePdfInput): Promise<Uint8A
 
     await page.setContent(html, { waitUntil: "load", timeout: 10_000 });
     await page.evaluate("document.fonts && document.fonts.ready");
+    const docTitle = `${input.cv.personalInfo.firstName} ${input.cv.personalInfo.lastName} — CV`.trim();
+    await page.evaluate((title: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (globalThis as any).document.title = title;
+    }, docTitle);
     await page.emulateMedia({ media: "print" });
     return await page.pdf({
       format: "A4",

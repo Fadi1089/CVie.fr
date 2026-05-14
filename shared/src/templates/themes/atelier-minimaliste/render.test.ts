@@ -19,6 +19,11 @@ describe("atelier-minimaliste render", () => {
     expect(html).not.toMatch(/<img/i);
   });
 
+  it("emits a <meta name=\"author\"> from basics.name", () => {
+    const html = render(sampleResume, opts);
+    expect(html).toMatch(/<meta name="author" content="Yasmine Benali"/);
+  });
+
   it("escapes HTML in user-provided strings (XSS regression)", () => {
     const resume = {
       ...sampleResume,

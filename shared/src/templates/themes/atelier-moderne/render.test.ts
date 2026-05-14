@@ -37,6 +37,11 @@ describe("atelier-moderne render", () => {
     expect(html).toContain("Jane &lt;script&gt;");
   });
 
+  it("emits a <meta name=\"author\"> from basics.name", () => {
+    const html = render(sampleResume, opts);
+    expect(html).toMatch(/<meta name="author" content="Yasmine Benali"/);
+  });
+
   it("refuses to emit photo when image src has a non-image protocol", () => {
     const resume = {
       ...sampleResume,

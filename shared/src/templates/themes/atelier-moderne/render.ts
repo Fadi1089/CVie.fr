@@ -118,6 +118,7 @@ export function render(resumeIn: JsonResume, opts: ThemeRenderOptions): string {
 <head>
   <meta charset="utf-8" />
   <title>${escapeHtml(resume.basics.name)} — CV</title>
+  <meta name="author" content="${escapeAttr(resume.basics.name)}" />
   <style data-base>${BASE_PRINT_CSS}</style>
   <style data-theme="atelier-moderne">${themeCss}</style>
   ${atsCss ? `<style data-ats="${escapeAttr(opts.atsMode)}">${atsCss}</style>` : ""}

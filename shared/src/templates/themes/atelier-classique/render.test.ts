@@ -84,6 +84,11 @@ describe("atelier-classique render", () => {
     expect(html).toMatch(/\[data-decorative\]\s*\{[^}]*display:\s*none/);
   });
 
+  it("emits a <meta name=\"author\"> from basics.name", () => {
+    const html = render(sampleResume, opts);
+    expect(html).toMatch(/<meta name="author" content="Yasmine Benali"/);
+  });
+
   it("renders sections in canonical order: experience → education → skills → languages → interests", () => {
     const html = render(sampleResume, opts);
     const expIdx = html.indexOf("Expériences");
