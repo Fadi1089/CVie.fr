@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   cvDataSchema,
   themeRegistry,
+  getTheme,
   type CvData,
   type AtsMode,
 } from "@cvie/shared";
@@ -11,11 +12,16 @@ import { TocRail, type SectionId } from "./TocRail";
 import { PreviewPane } from "./PreviewPane";
 import { ExportBar } from "./ExportBar";
 import { SectionRouter } from "./forms/SectionRouter";
+import { CustomizationPanel } from "../customization/CustomizationPanel";
 
 type Props = {
   cv: CvData;
   onPatch: (patch: Partial<CvData>) => void;
-  onExport: (opts: { themeId: string; atsMode: AtsMode }) => void | Promise<void>;
+  onExport: (opts: {
+    themeId: string;
+    atsMode: AtsMode;
+    customization: Record<string, unknown>;
+  }) => void | Promise<void>;
 };
 
 const SECTIONS: { id: SectionId; label: string }[] = [
@@ -41,6 +47,17 @@ export function Workspace({ cv, onPatch, onExport }: Props) {
   const [themeId, setThemeId] = useState<string>("atelier-classique");
   const [atsMode, setAtsMode] = useState<AtsMode>("ats-balanced");
   const [exporting, setExporting] = useState(false);
+  const [customization, setCustomization] = useState<Record<string, unknown>>(
+    () => {
+      const t = getTheme(themeId);
+      return { ...(t?.meta.defaultCustomization ?? {}) };
+    },
+  );
+
+  useEffect(() => {
+    const t = getTheme(themeId);
+    setCustomization({ ...(t?.meta.defaultCustomization ?? {}) });
+  }, [themeId]);
 
   useEffect(() => {
     if (!methods.formState.isDirty) return;
@@ -72,7 +89,7 @@ export function Workspace({ cv, onPatch, onExport }: Props) {
             onExport={async () => {
               setExporting(true);
               try {
-                await onExport({ themeId, atsMode });
+                await onExport({ themeId, atsMode, customization });
               } finally {
                 setExporting(false);
               }
@@ -82,12 +99,26 @@ export function Workspace({ cv, onPatch, onExport }: Props) {
             <main className="overflow-y-auto px-10 py-10">
               <SectionRouter active={active} />
             </main>
-            <PreviewPane
-              cv={(watched as CvData) ?? cv}
-              themeId={themeId}
-              atsMode={atsMode}
-              customization={{}}
-            />
+            <div className="flex flex-col min-h-0">
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <PreviewPane
+                  cv={(watched as CvData) ?? cv}
+                  themeId={themeId}
+                  atsMode={atsMode}
+                  customization={customization}
+                />
+              </div>
+              {(() => {
+                const t = getTheme(themeId);
+                return t ? (
+                  <CustomizationPanel
+                    theme={t.meta}
+                    value={customization}
+                    onChange={setCustomization}
+                  />
+                ) : null;
+              })()}
+            </div>
           </div>
         </div>
       </div>
