@@ -48,3 +48,6 @@ prisma/generated
 
 # Git worktrees
 .worktrees
+
+# Generated PDF snapshots (regenerated each test run)
+tests/__snapshots__/themes/*.pdf
