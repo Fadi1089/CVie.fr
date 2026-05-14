@@ -79,6 +79,17 @@ mock.module("../../middleware/requireAuth", () => ({
     },
 }));
 
+const generateResumePdfMock = mock(async () => {
+  // Minimal valid-looking PDF magic header — route only forwards the bytes.
+  return new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34]);
+});
+
+mock.module("../../services/pdfService", () => ({
+  generateResumePdf: generateResumePdfMock,
+  pdfFilename: (cv: { personalInfo: { firstName: string; lastName: string } }) =>
+    `${cv.personalInfo.firstName.toLowerCase()}-${cv.personalInfo.lastName.toLowerCase()}-cv.pdf`,
+}));
+
 import { cvRoutes } from "../cv";
 
 function buildApp() {
@@ -98,6 +109,7 @@ describe("cv routes", () => {
     moveMock.mockClear();
     hardDeleteMock.mockClear();
     bulkImportMock.mockClear();
+    generateResumePdfMock.mockClear();
   });
 
   it("GET /api/v1/cv returns active CVs", async () => {
@@ -189,5 +201,80 @@ describe("cv routes", () => {
     expect(res.status).toBe(409);
     const body = (await res.json()) as { code: string };
     expect(body.code).toBe("LIMIT_EXCEEDED");
+  });
+
+  it("POST /api/v1/cv/pdf accepts new {themeId, atsMode, customization} body", async () => {
+    const app = buildApp();
+    const res = await app.request("/api/v1/cv/pdf", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        cvData: {
+          personalInfo: { firstName: "Jane", lastName: "Doe", portfolioDisplay: "clickable" },
+          formations: [],
+          experiences: [],
+          skills: [],
+          languages: [],
+          interests: [],
+        },
+        themeId: "atelier-classique",
+        atsMode: "ats-balanced",
+        customization: { accent: "encre", density: "comfy", photoShape: "rounded" },
+      }),
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("application/pdf");
+    expect(generateResumePdfMock).toHaveBeenCalledTimes(1);
+    const args = (generateResumePdfMock.mock.calls[0] as unknown as [{ themeId: string; atsMode: string }])[0];
+    expect(args.themeId).toBe("atelier-classique");
+    expect(args.atsMode).toBe("ats-balanced");
+  });
+
+  it("POST /api/v1/cv/pdf rejects invalid customization with INVALID_CUSTOMIZATION", async () => {
+    const app = buildApp();
+    const res = await app.request("/api/v1/cv/pdf", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        cvData: {
+          personalInfo: { firstName: "Jane", lastName: "Doe", portfolioDisplay: "clickable" },
+          formations: [],
+          experiences: [],
+          skills: [],
+          languages: [],
+          interests: [],
+        },
+        themeId: "atelier-classique",
+        atsMode: "ats-balanced",
+        customization: { accent: "neon-glitch", density: "comfy", photoShape: "rounded" },
+      }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { code: string };
+    expect(body.code).toBe("INVALID_CUSTOMIZATION");
+  });
+
+  it("POST /api/v1/cv/pdf rejects unknown themeId with INVALID_TEMPLATE", async () => {
+    const app = buildApp();
+    const res = await app.request("/api/v1/cv/pdf", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        cvData: {
+          personalInfo: { firstName: "Jane", lastName: "Doe", portfolioDisplay: "clickable" },
+          formations: [],
+          experiences: [],
+          skills: [],
+          languages: [],
+          interests: [],
+        },
+        themeId: "ghost-theme",
+        atsMode: "ats-balanced",
+        customization: {},
+      }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { code: string };
+    expect(body.code).toBe("INVALID_TEMPLATE");
   });
 });

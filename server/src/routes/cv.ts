@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
-import { cvDataSchema } from "@cvie/shared";
-import { generateCvPdf, pdfFilename } from "../services/pdfService";
+import { cvDataSchema, getTheme } from "@cvie/shared";
+import { generateResumePdf, pdfFilename } from "../services/pdfService";
 import { rateLimit } from "../middleware/rateLimit";
 import * as requireAuthModule from "../middleware/requireAuth";
 import {
@@ -17,18 +17,6 @@ import {
   bulkImportCvs,
   CvError,
 } from "../services/cvService";
-
-const templateIdSchema = z
-  .enum(["classique", "moderne", "minimaliste"])
-  .optional();
-
-// Client UI exposes scale 0.7–1.0; server allows the wider Playwright-safe
-// range 0.5–1.0 so future UI expansion doesn't require a coordinated deploy.
-// Anything outside gets rejected rather than silently clamped so malformed
-// client payloads are surfaced loudly.
-const scaleSchema = z.number().min(0.5).max(1).optional();
-
-const overflowModeSchema = z.enum(["section", "element"]).optional();
 
 /**
  * Resolve the PDF rate limit from env with NaN-safe fallback. A malformed
@@ -47,6 +35,17 @@ const PDF_RATE_LIMIT_PER_MIN = (() => {
 const MAX_BODY_BYTES = 256 * 1024;
 
 const IS_PROD = process.env.NODE_ENV === "production";
+
+// `cvData` is the structured CV; `themeId/atsMode/customization` are
+// render-time knobs. Field-by-field validation lets the route emit
+// specific French error codes (the existing UX) instead of a single
+// generic 400.
+const pdfBodySchema = z.object({
+  cvData: cvDataSchema,
+  themeId: z.string().min(1).max(64),
+  atsMode: z.enum(["ats-strict", "ats-balanced", "expressive"]).optional(),
+  customization: z.record(z.string(), z.unknown()).default({}),
+});
 
 export const cvRoutes = new Hono();
 
@@ -131,67 +130,68 @@ cvRoutes.post(
       );
     }
 
-    const parsed = cvDataSchema.safeParse(body);
+    const parsed = pdfBodySchema.safeParse(body);
     if (!parsed.success) {
+      const firstPath = parsed.error.issues[0]?.path[0];
+      const code =
+        firstPath === "cvData"
+          ? "VALIDATION_FAILED"
+          : firstPath === "themeId"
+            ? "INVALID_TEMPLATE"
+            : firstPath === "atsMode"
+              ? "INVALID_ATS_MODE"
+              : firstPath === "customization"
+                ? "INVALID_CUSTOMIZATION"
+                : "VALIDATION_FAILED";
+      const message =
+        code === "INVALID_TEMPLATE"
+          ? "Le template sélectionné est invalide."
+          : code === "INVALID_ATS_MODE"
+            ? "Le mode ATS demandé est invalide."
+            : code === "INVALID_CUSTOMIZATION"
+              ? "La personnalisation du thème est invalide."
+              : "Les données du CV sont invalides.";
       return c.json(
         {
-          error: "Les données du CV sont invalides.",
-          code: "VALIDATION_FAILED",
-          // Field paths in dev help debugging; in production we only return
-          // the top-level error message so we don't leak schema internals.
+          error: message,
+          code,
           ...(IS_PROD ? {} : { details: parsed.error.issues }),
         },
         400,
       );
     }
 
-    const templateParsed = templateIdSchema.safeParse(
-      (body as { templateId?: unknown })?.templateId,
-    );
-    if (!templateParsed.success) {
+    const { cvData, themeId, atsMode, customization } = parsed.data;
+    const theme = getTheme(themeId);
+    if (!theme) {
+      return c.json(
+        { error: "Le template sélectionné est invalide.", code: "INVALID_TEMPLATE" },
+        400,
+      );
+    }
+
+    const customizationParsed = theme.meta.customizationSchema.safeParse(customization);
+    if (!customizationParsed.success) {
       return c.json(
         {
-          error: "Le template sélectionné est invalide.",
-          code: "INVALID_TEMPLATE",
+          error: "La personnalisation du thème est invalide.",
+          code: "INVALID_CUSTOMIZATION",
+          ...(IS_PROD ? {} : { details: customizationParsed.error.issues }),
         },
         400,
       );
     }
 
-    const scaleParsed = scaleSchema.safeParse(
-      (body as { scale?: unknown })?.scale,
-    );
-    if (!scaleParsed.success) {
-      return c.json(
-        {
-          error: "L'échelle demandée est invalide.",
-          code: "INVALID_SCALE",
-        },
-        400,
-      );
-    }
-
-    const overflowParsed = overflowModeSchema.safeParse(
-      (body as { overflowMode?: unknown })?.overflowMode,
-    );
-    if (!overflowParsed.success) {
-      return c.json(
-        {
-          error: "Le mode de débordement demandé est invalide.",
-          code: "INVALID_OVERFLOW_MODE",
-        },
-        400,
-      );
-    }
+    const resolvedMode = atsMode ?? theme.meta.atsProfile.defaultMode;
 
     try {
-      const pdf = await generateCvPdf(
-        parsed.data,
-        templateParsed.data,
-        scaleParsed.data,
-        overflowParsed.data,
-      );
-      const filename = pdfFilename(parsed.data);
+      const pdf = await generateResumePdf({
+        cv: cvData,
+        themeId,
+        atsMode: resolvedMode,
+        customization: customizationParsed.data as Readonly<Record<string, unknown>>,
+      });
+      const filename = pdfFilename(cvData);
       return new Response(new Uint8Array(pdf), {
         status: 200,
         headers: {
@@ -203,10 +203,7 @@ cvRoutes.post(
     } catch (err) {
       console.error("[pdfService] generation failed:", err);
       return c.json(
-        {
-          error: "Impossible de générer le PDF pour le moment.",
-          code: "PDF_GENERATION_FAILED",
-        },
+        { error: "Impossible de générer le PDF pour le moment.", code: "PDF_GENERATION_FAILED" },
         500,
       );
     }
