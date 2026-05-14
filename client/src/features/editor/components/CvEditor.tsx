@@ -23,6 +23,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { AutofillSyncContext, useAutofillSync } from "../hooks/useAutofillSync";
+import { PendingChangesProvider } from "../hooks/usePendingChanges";
+import { EditorJumpContext, resolvePathToJump } from "../hooks/useEditorJump";
 import { useCvDraft, type PersistStatus } from "../hooks/useCvDraft";
 import { useAuth0 } from "@auth0/auth0-react";
 import { SyncStatusBadge } from "@/features/cv-library/components/SyncStatusBadge";
@@ -48,7 +50,7 @@ import { LanguagePanel } from "./LanguagePanel";
 import { MobileTabBar, type EditorTab } from "./MobileTabBar";
 import { PersonalInfoForm } from "./PersonalInfoForm";
 import { SkillsSection } from "./SkillsSection";
-import { AssistantPanel } from "./ai-assistant";
+import { AssistantPanelMount } from "./ai-assistant";
 
 const TEMPLATE_SELECTION_KEY = "cvie.template.selected";
 const DEFAULT_TEMPLATE: TemplateId = "classique";
@@ -222,6 +224,7 @@ export function CvEditor() {
 
   return (
     <FormProvider {...form}>
+      <PendingChangesProvider>
       <EditorShell
         cvId={cvId}
         templateId={templateId}
@@ -247,6 +250,7 @@ export function CvEditor() {
         sidebarCollapsed={sidebarCollapsed}
         setSidebarCollapsed={setSidebarCollapsed}
       />
+      </PendingChangesProvider>
     </FormProvider>
   );
 }
@@ -302,6 +306,7 @@ function EditorShell({
   setSidebarCollapsed,
 }: EditorShellProps) {
   const autofillSync = useAutofillSync<CvData>();
+  const { getValues } = useFormContext<CvData>();
   const { ratio, setRatio, resetRatio } = useEditorSplit();
   const splitContainerRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<EditorSectionId, HTMLElement | null>>({
@@ -401,7 +406,18 @@ function EditorShell({
     });
   };
 
+  const jumpToPath = (path: string) => {
+    const cv = getValues();
+    const resolved = resolvePathToJump(path, cv);
+    if (!resolved) return;
+    handlePreviewSectionClick({
+      sectionId: resolved.sectionId,
+      itemId: resolved.itemId || undefined,
+    });
+  };
+
   return (
+    <EditorJumpContext.Provider value={jumpToPath}>
     <AutofillSyncContext.Provider value={autofillSync}>
       <div
         ref={(node) => {
@@ -452,7 +468,7 @@ function EditorShell({
             <form
               noValidate
               onSubmit={(e) => e.preventDefault()}
-              className="px-4 pt-4 pb-24 md:h-[calc(100vh-64px)] md:overflow-y-auto md:px-8 md:py-8"
+              className="px-4 pt-4 pb-24 md:h-[calc(100vh-64px)] md:overflow-y-auto md:px-8 md:pt-8 md:pb-0"
               aria-label="Formulaire CV"
             >
               <EditorTabs value={editorTab} onChange={setEditorTab} />
@@ -488,8 +504,8 @@ function EditorShell({
                     setSectionRef={setSectionRef}
                     setItemRef={setItemRef}
                   />
-                  <div className="sticky bottom-2 z-20 mt-6 -mx-4 md:-mx-8 px-4 md:px-8">
-                    <AssistantPanel cvId={cvId} />
+                  <div className="sticky bottom-0 z-20 -mx-4 mt-6 md:-mx-8">
+                    <AssistantPanelMount cvId={cvId} />
                   </div>
                 </>
               ) : editorTab === "design" ? (
@@ -546,6 +562,7 @@ function EditorShell({
         </div>
       </div>
     </AutofillSyncContext.Provider>
+    </EditorJumpContext.Provider>
   );
 }
 

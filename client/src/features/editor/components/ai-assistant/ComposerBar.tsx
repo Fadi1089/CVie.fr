@@ -1,5 +1,5 @@
 import { useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
-import { Button } from "@/components/ui/button";
+import { ModelPickerPill } from "./ModelPickerPill";
 
 type Props = {
   disabled?: boolean;
@@ -79,18 +79,16 @@ export function ComposerBar({ disabled, busy, onSend, onStop }: Props) {
   }
 
   const hasContent = value.trim().length > 0 || files.length > 0;
+  const sendEnabled = !disabled && !busy && hasContent;
 
   return (
-    <form
-      onSubmit={onFormSubmit}
-      className="flex flex-col gap-2 border-t border-[var(--color-rule)] bg-white px-3 py-2"
-    >
+    <form onSubmit={onFormSubmit} className="flex flex-col bg-white">
       {files.length > 0 && (
-        <ul className="flex flex-wrap gap-1.5">
+        <ul className="flex flex-wrap gap-1.5 px-3 pt-2">
           {files.map((f, i) => (
             <li
               key={`${f.name}-${i}`}
-              className="flex items-center gap-1 rounded-full border border-[var(--color-rule)] bg-[var(--color-paper-soft,#fbf7f0)] px-2 py-0.5 text-[11px]"
+              className="flex items-center gap-1 rounded-full border border-[var(--color-rule)] bg-[var(--color-paper-soft,#fafaf7)] px-2 py-0.5 text-[11px]"
             >
               <span aria-hidden>{f.type === "application/pdf" ? "📄" : "🖼"}</span>
               <span className="max-w-[160px] truncate">{f.name}</span>
@@ -107,46 +105,71 @@ export function ComposerBar({ disabled, busy, onSend, onStop }: Props) {
         </ul>
       )}
       {fileError && (
-        <div className="text-[11px] text-red-700">{fileError}</div>
+        <div className="px-3 pt-1 text-[11px] text-red-700">{fileError}</div>
       )}
-      <div className="flex items-end gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={disabled || files.length >= MAX_FILES}
-          aria-label="Joindre un fichier"
-        >
-          <span aria-hidden>📎</span>
-        </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={ACCEPTED}
-          multiple
-          className="hidden"
-          onChange={onFilesPicked}
-        />
+      <div className="px-3 py-2">
         <textarea
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={onKeyDown}
           rows={1}
           disabled={disabled}
-          placeholder="Demander à l'assistant…"
-          className="max-h-32 min-h-[36px] flex-1 resize-none rounded-md border border-[var(--color-rule)] bg-white px-2.5 py-1.5 text-[13px] text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/30 disabled:cursor-not-allowed disabled:opacity-60"
+          placeholder="Pose ta question…"
+          className="max-h-32 min-h-[40px] w-full resize-none rounded-lg border border-[var(--color-rule)] bg-[var(--color-paper-soft,#fafaf7)] px-3.5 py-3 text-[13px] text-[var(--color-ink)] placeholder:text-[var(--color-ink-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/30 disabled:cursor-not-allowed disabled:opacity-60"
           aria-label="Message pour l'assistant"
         />
-        {busy ? (
-          <Button type="button" variant="outline" size="sm" onClick={onStop}>
-            Stop
-          </Button>
-        ) : (
-          <Button type="submit" size="sm" disabled={disabled || !hasContent}>
-            Envoyer
-          </Button>
-        )}
+      </div>
+      <div className="flex items-center justify-between px-3 pb-2.5">
+        <ModelPickerPill />
+        <div className="flex items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ACCEPTED}
+            multiple
+            className="hidden"
+            onChange={onFilesPicked}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={disabled || files.length >= MAX_FILES}
+            className="flex h-7 w-7 items-center justify-center rounded-[14px] border border-[var(--color-rule)] bg-[var(--color-paper-soft,#fafaf7)] text-[var(--color-ink-soft)] transition-colors hover:border-[var(--color-ink-soft)] hover:text-[var(--color-ink)] disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label="Joindre un fichier"
+            title="Joindre un fichier (PDF ou image, max 8 Mo)"
+          >
+            <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path
+                d="M11.5 7.5l-4.5 4.5a2.5 2.5 0 1 1-3.5-3.5l5.5-5.5a1.5 1.5 0 0 1 2.1 2.1L6 10.5a.5.5 0 0 1-.7-.7L9.5 5.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+          {busy ? (
+            <button
+              type="button"
+              onClick={onStop}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-ink)] text-white transition-opacity hover:opacity-90"
+              aria-label="Arrêter"
+              title="Arrêter"
+            >
+              <span aria-hidden className="block h-2.5 w-2.5 bg-white" />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={!sendEnabled}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-ink)] text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-30"
+              aria-label="Envoyer"
+              title="Envoyer (Entrée)"
+            >
+              <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.75">
+                <path d="M8 13V3M3.5 7.5L8 3l4.5 4.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
     </form>
   );

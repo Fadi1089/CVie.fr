@@ -17,7 +17,11 @@ function load(storageKey: string | null): UIMessage[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return parsed as UIMessage[];
+    // Drop pre-existing malformed entries with empty/missing parts —
+    // server rejects them and they carry no useful content.
+    return (parsed as UIMessage[]).filter(
+      (m) => m && Array.isArray(m.parts) && m.parts.length > 0,
+    );
   } catch {
     return [];
   }
@@ -36,7 +40,10 @@ export function useAssistantConversation(cvId: string | null | undefined) {
       if (!storageKey) return;
       if (typeof window === "undefined") return;
       try {
-        const trimmed = messages.slice(-MAX_MESSAGES);
+        const sanitized = messages.filter(
+          (m) => Array.isArray(m.parts) && m.parts.length > 0,
+        );
+        const trimmed = sanitized.slice(-MAX_MESSAGES);
         window.localStorage.setItem(storageKey, JSON.stringify(trimmed));
       } catch {
         // Quota exceeded or storage unavailable — ignore.

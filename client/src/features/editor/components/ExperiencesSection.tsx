@@ -6,6 +6,9 @@ import { MonthYearPicker } from "./MonthYearPicker";
 import { SectionCard } from "./SectionCard";
 import { SectionShell } from "./SectionShell";
 import { useFocusAfterRemove } from "../hooks/useFocusAfterRemove";
+import { usePendingRemovedItems } from "../hooks/usePendingChanges";
+import { PendingAddMarker } from "./ai-assistant/PendingAddMarker";
+import { PendingRemoveGhost } from "./ai-assistant/PendingRemoveGhost";
 
 const MAX_EXPERIENCES = 50;
 
@@ -24,6 +27,56 @@ export function ExperiencesSection({
   });
   const atCap = fields.length >= MAX_EXPERIENCES;
   const { containerRef, fallbackRef, focusAfterRemove } = useFocusAfterRemove();
+  const pendingRemoved = usePendingRemovedItems("experiences");
+
+  const realRows = fields.map((field, index) => (
+    <div
+      key={field.rhfId}
+      ref={setItemRef ? setItemRef(field.id) : undefined}
+      data-editor-item-id={field.id}
+      className={
+        highlightedItemId === field.id
+          ? "editor-jump-highlight-item scroll-mt-24 rounded-md"
+          : "scroll-mt-24 rounded-md"
+      }
+    >
+      <PendingAddMarker section="experiences" id={field.id}>
+        <ExperienceCard
+          index={index}
+          onRemove={() => {
+            remove(index);
+            focusAfterRemove(index);
+          }}
+        />
+      </PendingAddMarker>
+    </div>
+  ));
+
+  // Interleave ghost rows for AI-removed items at their original index so
+  // the user can see what was dropped without having to dig through chat.
+  const rows: React.ReactNode[] = [...realRows];
+  for (const ghost of pendingRemoved) {
+    const pos = Math.min(Math.max(ghost.originalIndex, 0), rows.length);
+    const title = String(ghost.item.jobTitle ?? "Expérience");
+    const company = ghost.item.company ? String(ghost.item.company) : undefined;
+    rows.splice(
+      pos,
+      0,
+      <div
+        key={`ghost-${ghost.id}`}
+        ref={setItemRef ? setItemRef(ghost.id) : undefined}
+        data-editor-item-id={ghost.id}
+        className="scroll-mt-24"
+      >
+        <PendingRemoveGhost
+          label={title}
+          sublabel={company}
+          onKeep={ghost.keep}
+          onRevert={ghost.revert}
+        />
+      </div>,
+    );
+  }
 
   return (
     <div ref={containerRef}>
@@ -45,26 +98,7 @@ export function ExperiencesSection({
           })
         }
       >
-        {fields.map((field, index) => (
-          <div
-            key={field.rhfId}
-            ref={setItemRef ? setItemRef(field.id) : undefined}
-            data-editor-item-id={field.id}
-            className={
-              highlightedItemId === field.id
-                ? "editor-jump-highlight-item scroll-mt-24 rounded-md"
-                : "scroll-mt-24 rounded-md"
-            }
-          >
-            <ExperienceCard
-              index={index}
-              onRemove={() => {
-                remove(index);
-                focusAfterRemove(index);
-              }}
-            />
-          </div>
-        ))}
+        {rows}
       </SectionShell>
     </div>
   );

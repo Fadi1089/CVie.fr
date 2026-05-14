@@ -22,12 +22,13 @@ function envProvider(): AiProvider {
 }
 
 // UIMessage shape from `ai` is broad — we validate the minimum we need
-// (role + parts array with at least text). The SDK's `convertToModelMessages`
-// downstream does the rest.
+// (role + parts array). The SDK's `convertToModelMessages` downstream does
+// the rest. parts may be empty for rehydrated/interrupted assistant turns;
+// SDK skips them safely, so we don't reject the whole request.
 const uiMessageSchema = z.object({
   id: z.string().optional(),
   role: z.enum(["system", "user", "assistant"]),
-  parts: z.array(z.unknown()).min(1),
+  parts: z.array(z.unknown()),
 });
 
 const bodySchema = z.object({
@@ -158,7 +159,12 @@ cvAssistantRoutes.post("/chat", async (c) => {
       "[cv/assistant] start",
       JSON.stringify({ userId, source: resolved.source, provider, model }),
     );
-    return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({
+      messageMetadata: ({ part }) => {
+        if (part.type === "start") return { provider, model };
+        return undefined;
+      },
+    });
   } catch (err) {
     console.error("[cv/assistant] failed:", err);
     const message = err instanceof Error ? err.message : "Assistant indisponible";

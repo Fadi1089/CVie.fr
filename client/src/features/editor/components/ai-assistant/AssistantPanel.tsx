@@ -1,73 +1,46 @@
-import { useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { Button } from "@/components/ui/button";
 import { useAssistantChat } from "../../hooks/useAssistantChat";
+import { useEditorJump } from "../../hooks/useEditorJump";
+import { AssistantToolbar } from "./AssistantToolbar";
 import { ChatBody } from "./ChatBody";
 import { ComposerBar } from "./ComposerBar";
 import { PendingChangesHeader } from "./PendingChangesHeader";
 
 type Props = {
   cvId: string | null | undefined;
+  onCollapse: () => void;
 };
 
-export function AssistantPanel({ cvId }: Props) {
+const PANEL_HEIGHT = "min(60vh, 560px)";
+
+export function AssistantPanel({ cvId, onCollapse }: Props) {
   const { isAuthenticated } = useAuth0();
-  const [expanded, setExpanded] = useState(false);
+  const jump = useEditorJump();
   const { messages, status, error, send, stop, reset, pending } = useAssistantChat({
     cvId,
+    onFirstEditPath: (path) => {
+      if (jump) jump(path);
+    },
   });
 
   const busy = status === "submitted" || status === "streaming";
-  const counter = pending.count + (messages.length === 0 ? 0 : 0);
-
-  if (!expanded) {
-    return (
-      <button
-        type="button"
-        onClick={() => setExpanded(true)}
-        className="font-mono-caps flex h-[44px] w-full items-center justify-between gap-2 rounded-md border border-[var(--color-rule)] bg-white px-3 text-[11px] text-[var(--color-ink)] hover:bg-[var(--color-paper-soft,#fbf7f0)]"
-        aria-expanded={false}
-        aria-controls="cv-assistant-panel"
-      >
-        <span className="flex items-center gap-2">
-          <span aria-hidden>✨</span>
-          Assistant rédacteur
-          {pending.count > 0 && (
-            <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] text-emerald-700">
-              {pending.count} changement{pending.count > 1 ? "s" : ""}
-            </span>
-          )}
-        </span>
-        <span aria-hidden>▲</span>
-      </button>
-    );
-  }
+  const hasMessages = messages.length > 0;
 
   return (
     <div
       id="cv-assistant-panel"
-      className="flex h-[min(60vh,560px)] w-full flex-col overflow-hidden rounded-md border border-[var(--color-rule)] bg-white shadow-sm"
+      role="dialog"
+      aria-label="Assistant CVie"
+      className="flex w-full flex-col overflow-hidden rounded-t-2xl border-t border-[var(--color-rule)] bg-white shadow-[0_-14px_36px_-10px_rgba(15,15,30,0.18)]"
+      style={{ height: PANEL_HEIGHT }}
     >
-      <header className="flex h-[44px] items-center justify-between border-b border-[var(--color-rule)] px-3">
-        <span className="font-mono-caps flex items-center gap-2 text-[11px] text-[var(--color-ink)]">
-          <span aria-hidden>✨</span>
-          Assistant rédacteur
-        </span>
-        <div className="flex items-center gap-1">
-          {messages.length > 0 && (
-            <Button size="xs" variant="ghost" onClick={reset} disabled={busy}>
-              Nouvelle conversation
-            </Button>
-          )}
-          <Button size="xs" variant="ghost" onClick={() => setExpanded(false)}>
-            Réduire
-          </Button>
-        </div>
-      </header>
+      <AssistantToolbar
+        onCollapse={onCollapse}
+        onReset={reset}
+        resetDisabled={busy || !hasMessages}
+      />
       <PendingChangesHeader
-        changes={pending.changes}
-        onKeep={pending.keep}
-        onRevert={pending.revert}
+        count={pending.count}
         onKeepAll={pending.keepAll}
         onRevertAll={pending.revertAll}
       />
@@ -83,7 +56,8 @@ export function AssistantPanel({ cvId }: Props) {
         onSend={send}
         onStop={stop}
       />
-      <span className="sr-only">{counter}</span>
     </div>
   );
 }
+
+export default AssistantPanel;

@@ -72,7 +72,7 @@ describe("aiTools", () => {
       expect(result.ok).toBe(true);
       if (!result.ok) return;
       expect(result.patches).toHaveLength(1);
-      expect(result.patches[0]?.path).toBe("experiences[0]");
+      expect(result.patches[0]?.path).toBe("experiences");
       expect(state.cv.experiences[0]?.jobTitle).toBe("PM");
       expect(state.cv.experiences[0]?.id).toMatch(/^exp_[0-9a-f]{8}$/);
       expect(state.cv.experiences.length).toBe(sampleCv.experiences.length + 1);
@@ -118,13 +118,15 @@ describe("aiTools", () => {
   });
 
   describe("removeExperience", () => {
-    it("drops the entry and emits a null-after patch", async () => {
+    it("drops the entry and emits a whole-array patch", async () => {
       const { state, tools } = buildAssistantTools(sampleCv);
       const id = sampleCv.experiences[0]!.id;
       const result = await exec(tools, "removeExperience", { id });
       expect(result.ok).toBe(true);
       if (!result.ok) return;
-      expect(result.patches[0]?.after).toBeNull();
+      expect(result.patches[0]?.path).toBe("experiences");
+      const after = result.patches[0]?.after as Array<{ id: string }>;
+      expect(after.find((e) => e.id === id)).toBeUndefined();
       expect(state.cv.experiences.find((e) => e.id === id)).toBeUndefined();
     });
   });
