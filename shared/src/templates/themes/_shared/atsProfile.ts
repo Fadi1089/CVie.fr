@@ -21,7 +21,6 @@ export function atsOverridesCss(mode: AtsMode): string {
     case "ats-balanced":
       return BALANCED_CSS;
     case "expressive":
-    default:
       return "";
   }
 }
