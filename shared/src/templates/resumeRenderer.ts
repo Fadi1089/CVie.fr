@@ -1,11 +1,8 @@
-import type { z } from "zod";
-import { cvDataSchema } from "../schemas/cv";
+import type { CvData } from "../types/cv";
 import { cvToJsonResume } from "./jsonResume/mapper";
 import { requireTheme } from "./themes/index";
 import type { AtsMode } from "./themes/types";
 import type { SupportedLocale } from "./jsonResume/dates";
-
-type Cv = z.infer<typeof cvDataSchema>;
 
 export type RenderResumeOptions = {
   themeId: string;
@@ -13,7 +10,7 @@ export type RenderResumeOptions = {
   customization: Readonly<Record<string, unknown>>;
 };
 
-export function renderResumeHtml(cv: Cv, opts: RenderResumeOptions): string {
+export function renderResumeHtml(cv: CvData, opts: RenderResumeOptions): string {
   const theme = requireTheme(opts.themeId);
   // Merge the partial customization the caller passed with the theme defaults.
   const customization = {
