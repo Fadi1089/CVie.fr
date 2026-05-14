@@ -182,6 +182,28 @@ cvRoutes.post(
       );
     }
 
+    // Reject explicit ats-mode requests that are stricter than the theme supports.
+    // (If the client omits atsMode, the resolvedMode fallback below uses the
+    // theme's defaultMode, which is by construction always >= minSupported.)
+    if (atsMode) {
+      const MODE_ORDER: Record<string, number> = {
+        "ats-strict": 0,
+        "ats-balanced": 1,
+        expressive: 2,
+      };
+      const requested = MODE_ORDER[atsMode];
+      const minSupported = MODE_ORDER[theme.meta.atsProfile.minSupported];
+      if (requested !== undefined && minSupported !== undefined && requested < minSupported) {
+        return c.json(
+          {
+            error: `Le thème « ${theme.meta.name} » ne prend pas en charge le mode ATS « ${atsMode} » (minimum requis : ${theme.meta.atsProfile.minSupported}).`,
+            code: "INCOMPATIBLE_ATS_MODE",
+          },
+          409,
+        );
+      }
+    }
+
     const resolvedMode = atsMode ?? theme.meta.atsProfile.defaultMode;
 
     try {

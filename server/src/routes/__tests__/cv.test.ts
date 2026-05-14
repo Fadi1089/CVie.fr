@@ -277,4 +277,57 @@ describe("cv routes", () => {
     const body = (await res.json()) as { code: string };
     expect(body.code).toBe("INVALID_TEMPLATE");
   });
+
+  it("POST /api/v1/cv/pdf rejects atsMode stricter than the theme's minSupported with INCOMPATIBLE_ATS_MODE (409)", async () => {
+    const app = buildApp();
+    // atelier-moderne has minSupported='ats-balanced'; ats-strict is stricter and cannot render.
+    const res = await app.request("/api/v1/cv/pdf", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        cvData: {
+          personalInfo: { firstName: "Jane", lastName: "Doe", portfolioDisplay: "clickable" },
+          formations: [],
+          experiences: [],
+          skills: [],
+          languages: [],
+          interests: [],
+        },
+        themeId: "atelier-moderne",
+        atsMode: "ats-strict",
+        customization: { accent: "rust", density: "comfy", photoShape: "rounded" },
+      }),
+    });
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as { code: string; error: string };
+    expect(body.code).toBe("INCOMPATIBLE_ATS_MODE");
+    expect(body.error).toMatch(/atsMode|mode/i);
+  });
+
+  it("POST /api/v1/cv/pdf falls back to theme.defaultMode when atsMode is omitted", async () => {
+    generateResumePdfMock.mockClear();
+    const app = buildApp();
+    // atelier-minimaliste has defaultMode='ats-strict'.
+    const res = await app.request("/api/v1/cv/pdf", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        cvData: {
+          personalInfo: { firstName: "Jane", lastName: "Doe", portfolioDisplay: "clickable" },
+          formations: [],
+          experiences: [],
+          skills: [],
+          languages: [],
+          interests: [],
+        },
+        themeId: "atelier-minimaliste",
+        customization: { density: "comfy" },
+        // atsMode intentionally omitted
+      }),
+    });
+    expect(res.status).toBe(200);
+    expect(generateResumePdfMock).toHaveBeenCalledTimes(1);
+    const args = (generateResumePdfMock.mock.calls[0] as unknown as [{ atsMode: string }])[0];
+    expect(args.atsMode).toBe("ats-strict");
+  });
 });
