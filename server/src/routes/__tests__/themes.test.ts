@@ -16,6 +16,10 @@ function buildApp(claims: Auth0Claims | null) {
   return app;
 }
 
+type ThemesResponse = {
+  themes: Array<{ id: string; name: string; tier: "free" | "premium"; locked: boolean }>;
+};
+
 describe("GET /api/v1/themes", () => {
   afterAll(() => mock.restore());
 
@@ -26,7 +30,7 @@ describe("GET /api/v1/themes", () => {
     }));
     const res = await buildApp(null).request("/");
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as ThemesResponse;
     expect(body.themes.length).toBe(themeRegistry.length);
     for (const t of body.themes) {
       expect(typeof t.id).toBe("string");
@@ -46,9 +50,9 @@ describe("GET /api/v1/themes", () => {
     }));
     try {
       const res = await buildApp({ sub: "auth0|x", email: "x@x" }).request("/");
-      const body = await res.json();
-      const m = body.themes.find((t: { id: string }) => t.id === "atelier-moderne");
-      expect(m.locked).toBe(true);
+      const body = (await res.json()) as ThemesResponse;
+      const m = body.themes.find((t) => t.id === "atelier-moderne");
+      expect(m?.locked).toBe(true);
     } finally {
       (moderne.meta as { tier: "free" | "premium" }).tier = originalTier;
     }
@@ -64,9 +68,9 @@ describe("GET /api/v1/themes", () => {
     }));
     try {
       const res = await buildApp({ sub: "auth0|p", email: "p@p" }).request("/");
-      const body = await res.json();
-      const m = body.themes.find((t: { id: string }) => t.id === "atelier-moderne");
-      expect(m.locked).toBe(false);
+      const body = (await res.json()) as ThemesResponse;
+      const m = body.themes.find((t) => t.id === "atelier-moderne");
+      expect(m?.locked).toBe(false);
     } finally {
       (moderne.meta as { tier: "free" | "premium" }).tier = originalTier;
     }
