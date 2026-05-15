@@ -11,7 +11,7 @@ beforeEach(() => {
 describe("useExportPdf", () => {
   it("POSTs to /api/v1/cv/pdf with {cvData, themeId, atsMode, customization}", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(new Blob([new Uint8Array([0x25, 0x50, 0x44, 0x46])], { type: "application/pdf" }), {
+      new Response(new Uint8Array([0x25, 0x50, 0x44, 0x46]), {
         status: 200,
         headers: { "Content-Type": "application/pdf", "Content-Disposition": 'attachment; filename="cv.pdf"' },
       }),
