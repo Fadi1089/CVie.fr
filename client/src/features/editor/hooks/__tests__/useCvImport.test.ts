@@ -44,6 +44,8 @@ const minimalCvData: CvData = {
   skills: [],
   languages: [],
   interests: [],
+  themeId: "atelier-classique",
+  customization: {},
 };
 
 // ── tests ─────────────────────────────────────────────────────────────────────

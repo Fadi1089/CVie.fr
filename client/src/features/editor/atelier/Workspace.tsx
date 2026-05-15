@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FormProvider, useForm, useWatch } from "react-hook-form";
+import { FormProvider, useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   cvDataSchema,
@@ -36,7 +36,7 @@ const SECTIONS: { id: SectionId; label: string }[] = [
 export function Workspace({ cv, onPatch, onExport }: Props) {
   const methods = useForm<CvData>({
     defaultValues: cv,
-    resolver: zodResolver(cvDataSchema),
+    resolver: zodResolver(cvDataSchema) as unknown as Resolver<CvData>,
     mode: "onBlur",
   });
 

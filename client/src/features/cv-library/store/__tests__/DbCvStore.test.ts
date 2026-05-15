@@ -30,6 +30,8 @@ const SAMPLE: CvData = {
   skills: [],
   languages: [],
   interests: [],
+  themeId: "atelier-classique",
+  customization: {},
 };
 
 function jsonResponse(body: unknown, init?: ResponseInit) {
