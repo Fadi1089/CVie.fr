@@ -288,29 +288,42 @@ describe("cv routes", () => {
   });
 
   it("POST /api/v1/cv/pdf rejects atsMode stricter than the theme's minSupported with INCOMPATIBLE_ATS_MODE (409)", async () => {
-    const app = buildApp();
-    // atelier-moderne has minSupported='ats-balanced'; ats-strict is stricter and cannot render.
-    const res = await app.request("/api/v1/cv/pdf", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        cvData: {
-          personalInfo: { firstName: "Jane", lastName: "Doe", portfolioDisplay: "clickable" },
-          formations: [],
-          experiences: [],
-          skills: [],
-          languages: [],
-          interests: [],
-        },
-        themeId: "atelier-moderne",
-        atsMode: "ats-strict",
-        customization: { accent: "rust", density: "comfy", photoShape: "rounded" },
-      }),
-    });
-    expect(res.status).toBe(409);
-    const body = (await res.json()) as { code: string; error: string };
-    expect(body.code).toBe("INCOMPATIBLE_ATS_MODE");
-    expect(body.error).toMatch(/atsMode|mode/i);
+    // atelier-moderne is now premium — promote the caller so the premium gate
+    // passes and the request reaches the ats-mode compatibility check.
+    mock.module("../../services/userTier", () => ({
+      resolveUserTier: async () => ({ tier: "premium" as const }),
+      __resetUserTierCacheForTests: () => {},
+    }));
+    try {
+      const app = buildApp();
+      // atelier-moderne has minSupported='ats-balanced'; ats-strict is stricter and cannot render.
+      const res = await app.request("/api/v1/cv/pdf", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          cvData: {
+            personalInfo: { firstName: "Jane", lastName: "Doe", portfolioDisplay: "clickable" },
+            formations: [],
+            experiences: [],
+            skills: [],
+            languages: [],
+            interests: [],
+          },
+          themeId: "atelier-moderne",
+          atsMode: "ats-strict",
+          customization: { accent: "rust", density: "comfy", photoShape: "rounded" },
+        }),
+      });
+      expect(res.status).toBe(409);
+      const body = (await res.json()) as { code: string; error: string };
+      expect(body.code).toBe("INCOMPATIBLE_ATS_MODE");
+      expect(body.error).toMatch(/atsMode|mode/i);
+    } finally {
+      mock.module("../../services/userTier", () => ({
+        resolveUserTier: async () => undefined,
+        __resetUserTierCacheForTests: () => {},
+      }));
+    }
   });
 
   it("POST /api/v1/cv/pdf falls back to theme.defaultMode when atsMode is omitted", async () => {
