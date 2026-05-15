@@ -8,7 +8,7 @@ export const atelierModerne: Theme = {
     name: "Atelier — Moderne",
     description:
       "Éditorial presse : serif Newsreader, mise en page asymétrique deux colonnes, accent rouille.",
-    tier: "free",
+    tier: "premium",
     atsProfile: { minSupported: "ats-balanced", defaultMode: "ats-balanced" },
     supportsPhoto: true,
     defaultCustomization,
