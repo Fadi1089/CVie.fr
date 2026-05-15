@@ -32,6 +32,8 @@ const SAMPLE: CvData = {
   skills: [],
   languages: [],
   interests: [],
+  themeId: "atelier-classique",
+  customization: {},
 };
 
 describe("LocalCvStore (anon namespace)", () => {

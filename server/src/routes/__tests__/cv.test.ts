@@ -1,4 +1,4 @@
-import { describe, expect, it, mock, beforeEach } from "bun:test";
+import { describe, expect, it, mock, beforeEach, afterAll } from "bun:test";
 import { Hono } from "hono";
 
 const userClaims = { sub: "auth0|u1", email: "u1@example.com" };
@@ -79,6 +79,22 @@ mock.module("../../middleware/requireAuth", () => ({
     },
 }));
 
+const generateResumePdfMock = mock(async () => {
+  // Minimal valid-looking PDF magic header — route only forwards the bytes.
+  return new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34]);
+});
+
+mock.module("../../services/pdfService", () => ({
+  generateResumePdf: generateResumePdfMock,
+  pdfFilename: (cv: { personalInfo: { firstName: string; lastName: string } }) =>
+    `${cv.personalInfo.firstName.toLowerCase()}-${cv.personalInfo.lastName.toLowerCase()}-cv.pdf`,
+}));
+
+mock.module("../../services/userTier", () => ({
+  resolveUserTier: async () => undefined,
+  __resetUserTierCacheForTests: () => {},
+}));
+
 import { cvRoutes } from "../cv";
 
 function buildApp() {
@@ -88,6 +104,10 @@ function buildApp() {
 }
 
 describe("cv routes", () => {
+  afterAll(() => {
+    mock.restore();
+  });
+
   beforeEach(() => {
     listActiveMock.mockClear();
     listTrashMock.mockClear();
@@ -98,6 +118,7 @@ describe("cv routes", () => {
     moveMock.mockClear();
     hardDeleteMock.mockClear();
     bulkImportMock.mockClear();
+    generateResumePdfMock.mockClear();
   });
 
   it("GET /api/v1/cv returns active CVs", async () => {
@@ -189,5 +210,201 @@ describe("cv routes", () => {
     expect(res.status).toBe(409);
     const body = (await res.json()) as { code: string };
     expect(body.code).toBe("LIMIT_EXCEEDED");
+  });
+
+  it("POST /api/v1/cv/pdf accepts new {themeId, atsMode, customization} body", async () => {
+    const app = buildApp();
+    const res = await app.request("/api/v1/cv/pdf", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        cvData: {
+          personalInfo: { firstName: "Jane", lastName: "Doe", portfolioDisplay: "clickable" },
+          formations: [],
+          experiences: [],
+          skills: [],
+          languages: [],
+          interests: [],
+        },
+        themeId: "atelier-classique",
+        atsMode: "ats-balanced",
+        customization: { accent: "encre", density: "comfy", photoShape: "rounded" },
+      }),
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("application/pdf");
+    expect(generateResumePdfMock).toHaveBeenCalledTimes(1);
+    const args = (generateResumePdfMock.mock.calls[0] as unknown as [{ themeId: string; atsMode: string }])[0];
+    expect(args.themeId).toBe("atelier-classique");
+    expect(args.atsMode).toBe("ats-balanced");
+  });
+
+  it("POST /api/v1/cv/pdf rejects invalid customization with INVALID_CUSTOMIZATION", async () => {
+    const app = buildApp();
+    const res = await app.request("/api/v1/cv/pdf", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        cvData: {
+          personalInfo: { firstName: "Jane", lastName: "Doe", portfolioDisplay: "clickable" },
+          formations: [],
+          experiences: [],
+          skills: [],
+          languages: [],
+          interests: [],
+        },
+        themeId: "atelier-classique",
+        atsMode: "ats-balanced",
+        customization: { accent: "neon-glitch", density: "comfy", photoShape: "rounded" },
+      }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { code: string };
+    expect(body.code).toBe("INVALID_CUSTOMIZATION");
+  });
+
+  it("POST /api/v1/cv/pdf rejects unknown themeId with INVALID_TEMPLATE", async () => {
+    const app = buildApp();
+    const res = await app.request("/api/v1/cv/pdf", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        cvData: {
+          personalInfo: { firstName: "Jane", lastName: "Doe", portfolioDisplay: "clickable" },
+          formations: [],
+          experiences: [],
+          skills: [],
+          languages: [],
+          interests: [],
+        },
+        themeId: "ghost-theme",
+        atsMode: "ats-balanced",
+        customization: {},
+      }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { code: string };
+    expect(body.code).toBe("INVALID_TEMPLATE");
+  });
+
+  it("POST /api/v1/cv/pdf rejects atsMode stricter than the theme's minSupported with INCOMPATIBLE_ATS_MODE (409)", async () => {
+    // atelier-moderne is now premium — promote the caller so the premium gate
+    // passes and the request reaches the ats-mode compatibility check.
+    mock.module("../../services/userTier", () => ({
+      resolveUserTier: async () => ({ tier: "premium" as const }),
+      __resetUserTierCacheForTests: () => {},
+    }));
+    try {
+      const app = buildApp();
+      // atelier-moderne has minSupported='ats-balanced'; ats-strict is stricter and cannot render.
+      const res = await app.request("/api/v1/cv/pdf", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          cvData: {
+            personalInfo: { firstName: "Jane", lastName: "Doe", portfolioDisplay: "clickable" },
+            formations: [],
+            experiences: [],
+            skills: [],
+            languages: [],
+            interests: [],
+          },
+          themeId: "atelier-moderne",
+          atsMode: "ats-strict",
+          customization: { accent: "rust", density: "comfy", photoShape: "rounded" },
+        }),
+      });
+      expect(res.status).toBe(409);
+      const body = (await res.json()) as { code: string; error: string };
+      expect(body.code).toBe("INCOMPATIBLE_ATS_MODE");
+      expect(body.error).toMatch(/atsMode|mode/i);
+    } finally {
+      mock.module("../../services/userTier", () => ({
+        resolveUserTier: async () => undefined,
+        __resetUserTierCacheForTests: () => {},
+      }));
+    }
+  });
+
+  it("POST /api/v1/cv/pdf falls back to theme.defaultMode when atsMode is omitted", async () => {
+    generateResumePdfMock.mockClear();
+    const app = buildApp();
+    // atelier-minimaliste has defaultMode='ats-strict'.
+    const res = await app.request("/api/v1/cv/pdf", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        cvData: {
+          personalInfo: { firstName: "Jane", lastName: "Doe", portfolioDisplay: "clickable" },
+          formations: [],
+          experiences: [],
+          skills: [],
+          languages: [],
+          interests: [],
+        },
+        themeId: "atelier-minimaliste",
+        customization: { density: "comfy" },
+        // atsMode intentionally omitted
+      }),
+    });
+    expect(res.status).toBe(200);
+    expect(generateResumePdfMock).toHaveBeenCalledTimes(1);
+    const args = (generateResumePdfMock.mock.calls[0] as unknown as [{ atsMode: string }])[0];
+    expect(args.atsMode).toBe("ats-strict");
+  });
+
+  it("POST /api/v1/cv/pdf returns 402 when a free user requests a premium theme", async () => {
+    const { themeRegistry } = await import("@cvie/shared");
+    const moderne = themeRegistry.find((t) => t.meta.id === "atelier-moderne")!;
+    const originalTier = moderne.meta.tier;
+    (moderne.meta as { tier: "free" | "premium" }).tier = "premium";
+
+    try {
+      const app = buildApp();
+      const res = await app.request("/api/v1/cv/pdf", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          cvData: {
+            personalInfo: { firstName: "Jane", lastName: "Doe", portfolioDisplay: "clickable" },
+            formations: [],
+            experiences: [],
+            skills: [],
+            languages: [],
+            interests: [],
+          },
+          themeId: "atelier-moderne",
+          atsMode: "ats-balanced",
+          customization: { accent: "rust", density: "comfy", photoShape: "rounded" },
+        }),
+      });
+      expect(res.status).toBe(402);
+      const body = (await res.json()) as { code: string };
+      expect(body.code).toBe("PREMIUM_REQUIRED");
+    } finally {
+      (moderne.meta as { tier: "free" | "premium" }).tier = originalTier;
+    }
+  });
+
+  it("POST /api/v1/cv/pdf allows anon users to use free themes (no 402)", async () => {
+    const app = buildApp();
+    const res = await app.request("/api/v1/cv/pdf", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        cvData: {
+          personalInfo: { firstName: "Jane", lastName: "Doe", portfolioDisplay: "clickable" },
+          formations: [],
+          experiences: [],
+          skills: [],
+          languages: [],
+          interests: [],
+        },
+        themeId: "atelier-classique",
+        atsMode: "ats-balanced",
+        customization: { accent: "encre", density: "comfy", photoShape: "rounded" },
+      }),
+    });
+    expect(res.status).not.toBe(402);
   });
 });

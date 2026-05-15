@@ -218,4 +218,13 @@ export const cvDataSchema = z.object({
   languages: z.array(languageSchema).max(MAX_ARRAY).default([]),
   interests: z.array(interestSchema).max(MAX_ARRAY).default([]),
   appearance: appearanceSchema.optional(),
+  // New in the JSON Resume era. `themeId` picks the curated theme; runtime
+  // validity is enforced server-side against the registry, not here, so the
+  // schema can stay decoupled from the theme catalogue.
+  themeId: z.string().min(1).max(MAX_ID).default("atelier-classique"),
+  // Theme-defined customization knobs. Each theme owns its own Zod schema
+  // (see `theme.meta.customizationSchema`); we keep this loose here because
+  // the same `cvDataSchema` is reused across themes and the active theme is
+  // only known after this point.
+  customization: z.record(z.string(), z.unknown()).default({}),
 });

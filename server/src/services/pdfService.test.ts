@@ -3,6 +3,7 @@ import { sampleCv, type CvData } from "@cvie/shared";
 import { PDFParse } from "pdf-parse";
 import {
   generateCvPdf,
+  generateResumePdf,
   inlineRemotePhotoForPdf,
   pdfFilename,
   shutdownPdfService,
@@ -68,9 +69,13 @@ describe("generateCvPdf", () => {
     // section header (unlike e.g. "Compétences" which also appears in the
     // summary in lowercase). ATS parsers read these as section boundaries
     // just fine — uppercase is a canonical CV convention in French.
+    //
+    // Mirrors atelier-classique's SECTION_LABELS.fr in render order
+    // (work, education, skills, languages, interests). If the theme's
+    // labels or order change, update both here and in the theme.
     const headings = [
-      "FORMATIONS",
-      "EXPÉRIENCES PROFESSIONNELLES",
+      "EXPÉRIENCES",
+      "FORMATION",
       "COMPÉTENCES",
       "LANGUES",
       "CENTRES D'INTÉRÊT",
@@ -160,4 +165,38 @@ describe("pdfFilename", () => {
     };
     expect(pdfFilename(empty)).toBe("cv-cv.pdf");
   });
+});
+
+describe("generateResumePdf", () => {
+  it("emits a valid A4 PDF with atelier-classique (AC1-new)", async () => {
+    const bytes = await generateResumePdf({
+      cv: sampleCv,
+      themeId: "atelier-classique",
+      atsMode: "ats-balanced",
+      customization: {},
+    });
+    expect(bytes[0]).toBe(0x25); // %
+    expect(bytes[1]).toBe(0x50); // P
+    expect(bytes[2]).toBe(0x44); // D
+    expect(bytes[3]).toBe(0x46); // F
+    expect(bytes.byteLength).toBeGreaterThan(5_000);
+  }, 30_000);
+
+  it("emits deterministic /Title PDF metadata from basics.name (Task 7.2)", async () => {
+    const bytes = await generateResumePdf({
+      cv: sampleCv,
+      themeId: "atelier-classique",
+      atsMode: "ats-strict",
+      customization: {},
+    });
+    const text = Buffer.from(bytes).toString("latin1");
+    // Chromium hex-encodes the title as UTF-16BE because the em-dash (—) is
+    // non-Latin1. "Yasmine Benali" in UTF-16BE hex is:
+    //   Y=0059 a=0061 s=0073 m=006D i=0069 n=006E e=0065 ' '=0020
+    //   B=0042 e=0065 n=006E a=0061 l=006C i=0069
+    // The full /Title value is wrapped in <FEFF...> (BOM + hex string).
+    expect(text).toMatch(
+      /\/Title <FEFF005900610073006D0069006E0065002000420065006E0061006C0069/i,
+    );
+  }, 30_000);
 });
