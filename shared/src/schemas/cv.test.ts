@@ -4,7 +4,7 @@ import { appearanceSchema, cvDataSchema } from "./cv";
 describe("appearanceSchema sizes", () => {
   it("accepts a fully populated textSizes + mediaSize", () => {
     const parsed = appearanceSchema.safeParse({
-      textSizes: { paragraph: 1.5, header: 0, title: -2 },
+      textSizes: { name: 1.5, section: 0, body: -2 },
       mediaSize: 4,
     });
     expect(parsed.success).toBe(true);
@@ -12,7 +12,7 @@ describe("appearanceSchema sizes", () => {
 
   it("rejects textSizes outside the allowed range", () => {
     const parsed = appearanceSchema.safeParse({
-      textSizes: { paragraph: 99 },
+      textSizes: { body: 99 },
     });
     expect(parsed.success).toBe(false);
   });
@@ -31,7 +31,7 @@ describe("appearanceSchema sizes", () => {
 describe("appearanceSchema spacing", () => {
   it("accepts a fully populated spacing object", () => {
     const parsed = appearanceSchema.safeParse({
-      spacing: { pageMargin: 2, sectionGap: -1, itemGap: 3, lineHeight: 0.1 },
+      spacing: { pageMargin: 2, sectionGap: -1, itemGap: 3 },
     });
     expect(parsed.success).toBe(true);
   });
@@ -43,9 +43,9 @@ describe("appearanceSchema spacing", () => {
     expect(parsed.success).toBe(false);
   });
 
-  it("rejects out-of-range lineHeight", () => {
+  it("rejects out-of-range line-height delta", () => {
     const parsed = appearanceSchema.safeParse({
-      spacing: { lineHeight: 1.5 },
+      lineHeights: { base: 1.5 },
     });
     expect(parsed.success).toBe(false);
   });
@@ -66,17 +66,17 @@ const minimal = {
 };
 
 describe("cvDataSchema themeId + customization", () => {
-  it("defaults themeId to 'atelier-classique' when omitted", () => {
+  it("defaults themeId to 'community-stackoverflow' when omitted", () => {
     const parsed = cvDataSchema.parse(minimal);
-    expect(parsed.themeId).toBe("atelier-classique");
+    expect(parsed.themeId).toBe("community-stackoverflow");
   });
   it("defaults customization to an empty object when omitted", () => {
     const parsed = cvDataSchema.parse(minimal);
     expect(parsed.customization).toEqual({});
   });
   it("accepts an arbitrary themeId string (validated against registry server-side)", () => {
-    const parsed = cvDataSchema.parse({ ...minimal, themeId: "atelier-moderne" });
-    expect(parsed.themeId).toBe("atelier-moderne");
+    const parsed = cvDataSchema.parse({ ...minimal, themeId: "some-other-theme" });
+    expect(parsed.themeId).toBe("some-other-theme");
   });
   it("accepts a record of unknown values for customization", () => {
     const parsed = cvDataSchema.parse({

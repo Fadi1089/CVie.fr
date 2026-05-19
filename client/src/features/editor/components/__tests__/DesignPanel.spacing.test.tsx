@@ -3,7 +3,10 @@ import { describe, expect, it } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { FormProvider, useForm } from "react-hook-form";
 import { DesignPanel } from "../DesignPanel";
+import { getTheme } from "@cvie/shared";
 import type { CvData } from "@cvie/shared";
+
+const stackoverflowTheme = getTheme("community-stackoverflow")!.meta;
 
 function Harness({ initial }: { initial?: Partial<CvData> }) {
   const form = useForm<CvData>({
@@ -23,13 +26,13 @@ function Harness({ initial }: { initial?: Partial<CvData> }) {
   });
   return (
     <FormProvider {...form}>
-      <DesignPanel templateId="classique" />
+      <DesignPanel theme={stackoverflowTheme} />
     </FormProvider>
   );
 }
 
 describe("DesignPanel — Espacements", () => {
-  it("renders four spacing sliders at 0", () => {
+  it("renders three spacing sliders at 0", () => {
     render(<Harness />);
     expect(
       screen.getByRole("slider", { name: "Espacement — Marge de page" }),
@@ -39,9 +42,6 @@ describe("DesignPanel — Espacements", () => {
     ).toHaveValue("0");
     expect(
       screen.getByRole("slider", { name: "Espacement — Espacement des éléments" }),
-    ).toHaveValue("0");
-    expect(
-      screen.getByRole("slider", { name: "Espacement — Interligne" }),
     ).toHaveValue("0");
   });
 
@@ -55,18 +55,18 @@ describe("DesignPanel — Espacements", () => {
     expect(screen.getByText(/\+2 mm/)).toBeInTheDocument();
   });
 
-  it("dragging the lineHeight slider updates the displayed value", () => {
+  it("dragging the base line-height slider updates the displayed value", () => {
     render(<Harness />);
-    const slider = screen.getByRole("slider", { name: "Espacement — Interligne" });
+    const slider = screen.getByRole("slider", { name: "Interligne — Corps" });
     fireEvent.change(slider, { target: { value: "0.2" } });
     expect(slider).toHaveValue("0.2");
     expect(screen.getByText(/\+0\.20/)).toBeInTheDocument();
   });
 
-  it("reset button restores defaults and disables itself", () => {
+  it("reset button restores spacing defaults and disables itself", () => {
     render(
       <Harness
-        initial={{ appearance: { spacing: { pageMargin: 3, lineHeight: 0.1 } } }}
+        initial={{ appearance: { spacing: { pageMargin: 3 } } }}
       />,
     );
     const reset = screen.getByRole("button", { name: /Réinitialiser espacements/i });
@@ -81,9 +81,6 @@ describe("DesignPanel — Espacements", () => {
     ).toHaveValue("0");
     expect(
       screen.getByRole("slider", { name: "Espacement — Espacement des éléments" }),
-    ).toHaveValue("0");
-    expect(
-      screen.getByRole("slider", { name: "Espacement — Interligne" }),
     ).toHaveValue("0");
   });
 });
