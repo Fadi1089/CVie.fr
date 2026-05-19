@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
-import type { CvData, Palette } from "@cvie/shared";
+import type { CvData, Palette, FontFamily } from "@cvie/shared";
 import type { ThemeMeta } from "@cvie/shared";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +65,17 @@ const LINE_HEIGHT_CONTROLS: ReadonlyArray<{
   { role: "snug",  label: "Compact", hint: "Sections, cartes, dates",                 min: -0.2, max: 0.4, step: 0.02 },
   { role: "base",  label: "Corps",   hint: "Paragraphes, listes",                     min: -0.2, max: 0.4, step: 0.02 },
 ];
+
+const FONT_FAMILY_OPTIONS: ReadonlyArray<{ value: FontFamily; label: string }> = [
+  { value: "helvetica-neue", label: "Helvetica Neue (par défaut)" },
+  { value: "inter",          label: "Inter" },
+  { value: "georgia",        label: "Georgia (serif)" },
+  { value: "ibm-plex-sans",  label: "IBM Plex Sans" },
+];
+
+const LETTER_SPACING_MIN = -0.02;
+const LETTER_SPACING_MAX = 0.04;
+const LETTER_SPACING_STEP = 0.005;
 
 export function DesignPanel({ theme }: { theme: ThemeMeta }) {
   const { control, setValue } = useFormContext<CvData>();
@@ -187,6 +198,48 @@ export function DesignPanel({ theme }: { theme: ThemeMeta }) {
   const lineHeightsAreCustom =
     lineHeights !== undefined &&
     (lineHeights.tight !== undefined || lineHeights.snug !== undefined || lineHeights.base !== undefined);
+
+  const typography = useWatch({ control, name: "appearance.typography" });
+
+  const updateFontFamily = useCallback(
+    (value: FontFamily | "") => {
+      if (value === "") {
+        const next = { ...(typography ?? {}) };
+        delete (next as { fontFamily?: FontFamily }).fontFamily;
+        const isEmpty = next.letterSpacing === undefined;
+        setValue("appearance.typography", isEmpty ? undefined : next, {
+          shouldDirty: true, shouldTouch: true,
+        });
+        return;
+      }
+      setValue(
+        "appearance.typography",
+        { ...(typography ?? {}), fontFamily: value },
+        { shouldDirty: true, shouldTouch: true },
+      );
+    },
+    [typography, setValue],
+  );
+
+  const updateLetterSpacing = useCallback(
+    (value: number) => {
+      const next = { ...(typography ?? {}), letterSpacing: value };
+      if (value === 0) delete (next as { letterSpacing?: number }).letterSpacing;
+      const isEmpty = next.fontFamily === undefined && next.letterSpacing === undefined;
+      setValue("appearance.typography", isEmpty ? undefined : next, {
+        shouldDirty: true, shouldTouch: true,
+      });
+    },
+    [typography, setValue],
+  );
+
+  const resetTypography = useCallback(() => {
+    setValue("appearance.typography", undefined, { shouldDirty: true, shouldTouch: true });
+  }, [setValue]);
+
+  const typographyIsCustom =
+    typography !== undefined &&
+    (typography.fontFamily !== undefined || typography.letterSpacing !== undefined);
 
   return (
     <div
@@ -378,6 +431,107 @@ export function DesignPanel({ theme }: { theme: ThemeMeta }) {
           className="inline-flex min-h-9 items-center rounded-md border border-[var(--color-rule)] bg-white/80 px-3 py-1.5 text-[12px] font-medium text-[var(--color-ink)] transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/30 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none"
         >
           Réinitialiser tailles
+        </button>
+      </div>
+
+      <header className="mt-4 flex items-baseline justify-between gap-3 border-b border-[var(--color-rule)] pb-2">
+        <div>
+          <p className="font-mono-caps text-[10px] tracking-[0.14em] text-[var(--color-ink-soft)]">
+            Typographie
+          </p>
+          <h2 className="font-display mt-1 text-[18px] font-medium text-[var(--color-ink)]">
+            Police et lettrage
+          </h2>
+        </div>
+        <span className="font-mono-caps text-[10px] text-[var(--color-ink-soft)]">
+          {typographyIsCustom ? "personnalisé" : "d'origine"}
+        </span>
+      </header>
+
+      <p className="text-[12px] leading-snug text-[var(--color-ink-soft)]">
+        Choisissez la police du document et ajustez l'espacement des lettres du
+        corps. Le nom en en-tête garde toujours un lettrage à zéro.
+      </p>
+
+      <ul className="flex flex-col divide-y divide-[var(--color-rule)] rounded-md border border-[var(--color-rule)] bg-white/75">
+        <li className="flex items-center gap-3 px-3 py-2.5">
+          <label htmlFor="typo-font-family" className="flex flex-1 flex-col gap-0.5">
+            <span className="text-[13px] font-medium text-[var(--color-ink)]">
+              Police
+            </span>
+            <span className="text-[11px] leading-tight text-[var(--color-ink-soft)]">
+              Famille de caractères pour tout le document
+            </span>
+          </label>
+          <select
+            id="typo-font-family"
+            value={typography?.fontFamily ?? ""}
+            onChange={(e) => updateFontFamily(e.target.value as FontFamily | "")}
+            className="font-mono-caps h-8 rounded border border-[var(--color-rule)] bg-white px-2 text-[11px] text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/30"
+          >
+            <option value="">— par défaut —</option>
+            {FONT_FAMILY_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </li>
+
+        <li className="flex items-center gap-3 px-3 py-2.5">
+          <label htmlFor="typo-letter-spacing" className="flex flex-1 flex-col gap-0.5">
+            <span className="text-[13px] font-medium text-[var(--color-ink)]">
+              Espacement des lettres
+            </span>
+            <span className="text-[11px] leading-tight text-[var(--color-ink-soft)]">
+              Resserrage ou ouverture du corps de texte
+            </span>
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              id="typo-letter-spacing"
+              type="range"
+              min={LETTER_SPACING_MIN}
+              max={LETTER_SPACING_MAX}
+              step={LETTER_SPACING_STEP}
+              value={typography?.letterSpacing ?? 0}
+              onChange={(e) => {
+                const next = Number.parseFloat(e.target.value);
+                if (!Number.isFinite(next)) return;
+                updateLetterSpacing(next);
+              }}
+              aria-label="Espacement des lettres"
+              aria-valuemin={LETTER_SPACING_MIN}
+              aria-valuemax={LETTER_SPACING_MAX}
+              aria-valuenow={typography?.letterSpacing ?? 0}
+              className={cn(
+                "h-1 w-32 cursor-pointer appearance-none rounded-full bg-[var(--color-rule)]",
+                "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--color-ink)] [&::-webkit-slider-thumb]:shadow",
+                "[&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-[var(--color-ink)]",
+                "focus-visible:outline-none focus-visible:[&::-webkit-slider-thumb]:ring-2 focus-visible:[&::-webkit-slider-thumb]:ring-[var(--color-ink)]/30",
+              )}
+            />
+            <span className="font-mono-caps inline-flex h-8 w-[4.5rem] shrink-0 items-center justify-center rounded border border-[var(--color-rule)] bg-white px-2 text-[11px] tabular-nums text-[var(--color-ink)]">
+              {`${(typography?.letterSpacing ?? 0) > 0 ? "+" : ""}${(typography?.letterSpacing ?? 0).toFixed(3)} em`}
+            </span>
+          </div>
+        </li>
+      </ul>
+
+      <div className="flex items-center justify-between gap-3 pt-1">
+        <p
+          className={cn(
+            "font-mono-caps text-[10px] tracking-[0.14em]",
+            typographyIsCustom ? "text-[var(--color-ink)]" : "text-[var(--color-ink-soft)]",
+          )}
+        >
+          {typographyIsCustom ? "Typographie personnalisée" : "Typographie d'origine"}
+        </p>
+        <button
+          type="button"
+          onClick={resetTypography}
+          disabled={!typographyIsCustom}
+          className="inline-flex min-h-9 items-center rounded-md border border-[var(--color-rule)] bg-white/80 px-3 py-1.5 text-[12px] font-medium text-[var(--color-ink)] transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/30 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none"
+        >
+          Réinitialiser typographie
         </button>
       </div>
 
