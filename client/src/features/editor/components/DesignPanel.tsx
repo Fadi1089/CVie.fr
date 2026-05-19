@@ -444,7 +444,7 @@ export function DesignPanel({ theme }: { theme: ThemeMeta }) {
           </h2>
         </div>
         <span className="font-mono-caps text-[10px] text-[var(--color-ink-soft)]">
-          {typographyIsCustom ? "personnalisé" : "d'origine"}
+          {typographyIsCustom ? "personnalisée" : "d'origine"}
         </span>
       </header>
 
