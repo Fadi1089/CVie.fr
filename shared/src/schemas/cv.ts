@@ -173,12 +173,17 @@ export const paletteSchema = z.object({
 export const SUPPORTED_LOCALES = ["fr", "en", "de", "es", "nl"] as const;
 export const localeSchema = z.enum(SUPPORTED_LOCALES);
 
-/** Per-role font-size delta in pt. Title range is wider — headline carries more visual weight. */
+/** Per-role font-size delta in pt. Name/label ranges are wider — headline carries more visual weight. */
 const textSizesSchema = z
   .object({
-    paragraph: z.number().min(-3).max(5).optional(),
-    header: z.number().min(-3).max(5).optional(),
-    title: z.number().min(-4).max(6).optional(),
+    name:    z.number().min(-5).max(8).optional(),
+    label:   z.number().min(-4).max(6).optional(),
+    section: z.number().min(-3).max(5).optional(),
+    title:   z.number().min(-3).max(5).optional(),
+    card:    z.number().min(-3).max(5).optional(),
+    body:    z.number().min(-2).max(4).optional(),
+    meta:    z.number().min(-2).max(4).optional(),
+    fine:    z.number().min(-2).max(4).optional(),
   })
   .optional();
 
