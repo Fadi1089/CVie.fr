@@ -83,4 +83,19 @@ describe("DesignPanel — Espacements", () => {
       screen.getByRole("slider", { name: "Espacement — Espacement des éléments" }),
     ).toHaveValue("0");
   });
+
+  it("Réinitialiser interlignes resets only line-height sliders and disables itself", () => {
+    render(
+      <Harness
+        initial={{ appearance: { lineHeights: { base: 0.2 } } }}
+      />,
+    );
+    const reset = screen.getByRole("button", { name: /Réinitialiser interlignes/i });
+    expect(reset).not.toBeDisabled();
+    fireEvent.click(reset);
+    expect(reset).toBeDisabled();
+    expect(screen.getByRole("slider", { name: "Interligne — Titres" })).toHaveValue("0");
+    expect(screen.getByRole("slider", { name: "Interligne — Compact" })).toHaveValue("0");
+    expect(screen.getByRole("slider", { name: "Interligne — Corps" })).toHaveValue("0");
+  });
 });

@@ -43,13 +43,6 @@ describe("appearanceSchema spacing", () => {
     expect(parsed.success).toBe(false);
   });
 
-  it("rejects out-of-range line-height delta", () => {
-    const parsed = appearanceSchema.safeParse({
-      lineHeights: { base: 1.5 },
-    });
-    expect(parsed.success).toBe(false);
-  });
-
   it("treats spacing as optional and accepts partial spacing object", () => {
     const emptyParsed = appearanceSchema.safeParse({});
     expect(emptyParsed.success).toBe(true);
@@ -58,6 +51,15 @@ describe("appearanceSchema spacing", () => {
       spacing: { itemGap: 1 },
     });
     expect(partialParsed.success).toBe(true);
+  });
+});
+
+describe("appearanceSchema lineHeights", () => {
+  it("rejects out-of-range line-height delta", () => {
+    const parsed = appearanceSchema.safeParse({
+      lineHeights: { base: 1.5 },
+    });
+    expect(parsed.success).toBe(false);
   });
 });
 
