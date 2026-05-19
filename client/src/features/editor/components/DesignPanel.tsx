@@ -168,7 +168,7 @@ export function DesignPanel({ theme }: { theme: ThemeMeta }) {
       </header>
 
       <p className="text-[12px] leading-snug text-[var(--color-ink-soft)]">
-        Personnalisez les cinq teintes de la palette. Les modifications
+        Personnalisez les six teintes de la palette. Les modifications
         s'appliquent en direct à l'aperçu et au PDF exporté.
       </p>
 
