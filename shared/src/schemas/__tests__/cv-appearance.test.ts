@@ -82,3 +82,33 @@ describe("spacingSchema (post-rewrite)", () => {
     expect(ok.success).toBe(true);
   });
 });
+
+describe("typographySchema (via appearanceSchema)", () => {
+  it("accepts all four font families", () => {
+    for (const ff of ["helvetica-neue", "inter", "georgia", "ibm-plex-sans"]) {
+      const ok = appearanceSchema.safeParse({ typography: { fontFamily: ff } });
+      expect(ok.success).toBe(true);
+    }
+  });
+
+  it("rejects an unknown font family", () => {
+    const ko = appearanceSchema.safeParse({
+      typography: { fontFamily: "comic-sans" },
+    });
+    expect(ko.success).toBe(false);
+  });
+
+  it("accepts letterSpacing in range", () => {
+    const ok = appearanceSchema.safeParse({
+      typography: { letterSpacing: 0.02 },
+    });
+    expect(ok.success).toBe(true);
+  });
+
+  it("rejects letterSpacing out of range", () => {
+    const ko = appearanceSchema.safeParse({
+      typography: { letterSpacing: 0.5 },
+    });
+    expect(ko.success).toBe(false);
+  });
+});

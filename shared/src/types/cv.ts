@@ -3,6 +3,7 @@ import type {
   appearanceSchema,
   cvDataSchema,
   experienceSchema,
+  fontFamilySchema,
   formationSchema,
   interestSchema,
   languageSchema,
@@ -22,3 +23,4 @@ export type CvData = z.infer<typeof cvDataSchema>;
 export type Palette = z.infer<typeof paletteSchema>;
 export type LocaleCode = z.infer<typeof localeSchema>;
 export type Appearance = z.infer<typeof appearanceSchema>;
+export type FontFamily = z.infer<typeof fontFamilySchema>;

@@ -214,6 +214,16 @@ const lineHeightsSchema = z
   })
   .optional();
 
+const FONT_FAMILIES = ["helvetica-neue", "inter", "georgia", "ibm-plex-sans"] as const;
+export const fontFamilySchema = z.enum(FONT_FAMILIES);
+
+const typographySchema = z
+  .object({
+    fontFamily: fontFamilySchema.optional(),
+    letterSpacing: z.number().min(-0.02).max(0.04).optional(),
+  })
+  .optional();
+
 export const appearanceSchema = z.object({
   palette: paletteSchema.optional(),
   locale: localeSchema.optional(),
@@ -221,6 +231,7 @@ export const appearanceSchema = z.object({
   mediaSize: mediaSizeSchema,
   spacing: spacingSchema,
   lineHeights: lineHeightsSchema,
+  typography: typographySchema,
 });
 
 export const cvDataSchema = z.object({
