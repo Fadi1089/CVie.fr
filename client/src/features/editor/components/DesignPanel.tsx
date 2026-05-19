@@ -15,20 +15,25 @@ const CHANNELS: ReadonlyArray<{ key: Channel; label: string; hint: string }> = [
   { key: "canvas", label: "Toile",       hint: "Fond de page" },
 ];
 
-type TextRole = "paragraph" | "header" | "title";
+type TextRole = "name" | "label" | "section" | "title" | "card" | "body" | "meta" | "fine";
 
 type SizeControl =
   | { kind: "text"; role: TextRole; label: string; hint: string; min: number; max: number; step: number; unit: "pt" }
   | { kind: "media"; label: string; hint: string; min: number; max: number; step: number; unit: "mm" };
 
 const SIZE_CONTROLS: ReadonlyArray<SizeControl> = [
-  { kind: "text", role: "title", label: "Titre", hint: "Nom et résumé d'en-tête", min: -4, max: 6, step: 0.25, unit: "pt" },
-  { kind: "text", role: "header", label: "Sections", hint: "Titres de sections, intitulés de poste", min: -3, max: 5, step: 0.25, unit: "pt" },
-  { kind: "text", role: "paragraph", label: "Paragraphes", hint: "Corps de texte, listes, métadonnées", min: -3, max: 5, step: 0.25, unit: "pt" },
-  { kind: "media", label: "Photo et QR", hint: "Taille du portrait et du code QR", min: -8, max: 12, step: 0.25, unit: "mm" },
+  { kind: "text", role: "name",    label: "Nom",            hint: "Le nom en haut du CV (h1)",                  min: -5, max: 8, step: 0.25, unit: "pt" },
+  { kind: "text", role: "label",   label: "Sous-titre",     hint: "Ligne sous le nom (intitulé de poste)",      min: -4, max: 6, step: 0.25, unit: "pt" },
+  { kind: "text", role: "section", label: "Sections",       hint: 'En-têtes de section (EXPÉRIENCE, FORMATION)', min: -3, max: 5, step: 0.25, unit: "pt" },
+  { kind: "text", role: "title",   label: "Postes",         hint: "Intitulés de postes et de diplômes",         min: -3, max: 5, step: 0.25, unit: "pt" },
+  { kind: "text", role: "card",    label: "Cartes",         hint: "Compétences, langues, intérêts",             min: -3, max: 5, step: 0.25, unit: "pt" },
+  { kind: "text", role: "body",    label: "Corps",          hint: "Paragraphes, listes, résumés",               min: -2, max: 4, step: 0.25, unit: "pt" },
+  { kind: "text", role: "meta",    label: "Métadonnées",    hint: "Dates, localités, mots-clés",                min: -2, max: 4, step: 0.25, unit: "pt" },
+  { kind: "text", role: "fine",    label: "Mentions fines", hint: "Coordonnées sous le nom",                    min: -2, max: 4, step: 0.25, unit: "pt" },
+  { kind: "media",                  label: "Photo et QR",    hint: "Taille du portrait et du code QR",          min: -8, max: 12, step: 0.25, unit: "mm" },
 ];
 
-type SpaceRole = "pageMargin" | "sectionGap" | "itemGap" | "lineHeight";
+type SpaceRole = "pageMargin" | "sectionGap" | "itemGap";
 
 type SpacingControl = {
   role: SpaceRole;
@@ -44,7 +49,21 @@ const SPACING_CONTROLS: ReadonlyArray<SpacingControl> = [
   { role: "pageMargin", label: "Marge de page", hint: "Espace autour du contenu", min: -6, max: 8, step: 0.25, unit: "mm" },
   { role: "sectionGap", label: "Espacement des sections", hint: "Entre les blocs principaux", min: -3, max: 8, step: 0.25, unit: "mm" },
   { role: "itemGap", label: "Espacement des éléments", hint: "Entre les entrées d'une section", min: -2, max: 6, step: 0.25, unit: "mm" },
-  { role: "lineHeight", label: "Interligne", hint: "Hauteur des lignes de texte", min: -0.2, max: 0.4, step: 0.02, unit: "" },
+];
+
+type LineHeightRole = "tight" | "snug" | "base";
+
+const LINE_HEIGHT_CONTROLS: ReadonlyArray<{
+  role: LineHeightRole;
+  label: string;
+  hint: string;
+  min: number;
+  max: number;
+  step: number;
+}> = [
+  { role: "tight", label: "Titres",  hint: "Densité verticale des titres (h1)",       min: -0.2, max: 0.4, step: 0.02 },
+  { role: "snug",  label: "Compact", hint: "Sections, cartes, dates",                 min: -0.2, max: 0.4, step: 0.02 },
+  { role: "base",  label: "Corps",   hint: "Paragraphes, listes",                     min: -0.2, max: 0.4, step: 0.02 },
 ];
 
 export function DesignPanel({ theme }: { theme: ThemeMeta }) {
@@ -79,13 +98,15 @@ export function DesignPanel({ theme }: { theme: ThemeMeta }) {
   const textSizes = useWatch({ control, name: "appearance.textSizes" });
   const mediaSize = useWatch({ control, name: "appearance.mediaSize" });
 
+  const TEXT_ROLES: readonly TextRole[] = [
+    "name", "label", "section", "title", "card", "body", "meta", "fine",
+  ];
+
   const updateTextSize = useCallback(
     (role: TextRole, value: number) => {
-      const next: { paragraph?: number; header?: number; title?: number } = { ...(textSizes ?? {}), [role]: value };
-      // Drop zeros so neutral CVs don't carry phantom textSizes that future
-      // code might mistakenly read as "user customized sizes".
+      const next: Partial<Record<TextRole, number>> = { ...(textSizes ?? {}), [role]: value };
       if (next[role] === 0) delete next[role];
-      const isEmpty = next.paragraph === undefined && next.header === undefined && next.title === undefined;
+      const isEmpty = TEXT_ROLES.every((r) => next[r] === undefined);
       setValue("appearance.textSizes", isEmpty ? undefined : next, {
         shouldDirty: true,
         shouldTouch: true,
@@ -110,7 +131,7 @@ export function DesignPanel({ theme }: { theme: ThemeMeta }) {
   }, [setValue]);
 
   const sizesAreCustom =
-    (textSizes && (textSizes.paragraph !== undefined || textSizes.header !== undefined || textSizes.title !== undefined)) ||
+    (textSizes && TEXT_ROLES.some((r) => textSizes[r] !== undefined)) ||
     typeof mediaSize === "number";
 
   const spacing = useWatch({ control, name: "appearance.spacing" });
@@ -122,8 +143,7 @@ export function DesignPanel({ theme }: { theme: ThemeMeta }) {
       const isEmpty =
         next.pageMargin === undefined &&
         next.sectionGap === undefined &&
-        next.itemGap === undefined &&
-        next.lineHeight === undefined;
+        next.itemGap === undefined;
       setValue("appearance.spacing", isEmpty ? undefined : next, {
         shouldDirty: true,
         shouldTouch: true,
@@ -143,8 +163,30 @@ export function DesignPanel({ theme }: { theme: ThemeMeta }) {
     spacing !== undefined &&
     (spacing.pageMargin !== undefined ||
       spacing.sectionGap !== undefined ||
-      spacing.itemGap !== undefined ||
-      spacing.lineHeight !== undefined);
+      spacing.itemGap !== undefined);
+
+  const lineHeights = useWatch({ control, name: "appearance.lineHeights" });
+
+  const updateLineHeight = useCallback(
+    (role: LineHeightRole, value: number) => {
+      const next: Partial<Record<LineHeightRole, number>> = { ...(lineHeights ?? {}), [role]: value };
+      if (next[role] === 0) delete next[role];
+      const isEmpty = next.tight === undefined && next.snug === undefined && next.base === undefined;
+      setValue("appearance.lineHeights", isEmpty ? undefined : next, {
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+    },
+    [lineHeights, setValue],
+  );
+
+  const resetLineHeights = useCallback(() => {
+    setValue("appearance.lineHeights", undefined, { shouldDirty: true, shouldTouch: true });
+  }, [setValue]);
+
+  const lineHeightsAreCustom =
+    lineHeights !== undefined &&
+    (lineHeights.tight !== undefined || lineHeights.snug !== undefined || lineHeights.base !== undefined);
 
   return (
     <div
@@ -425,6 +467,92 @@ export function DesignPanel({ theme }: { theme: ThemeMeta }) {
           className="inline-flex min-h-9 items-center rounded-md border border-[var(--color-rule)] bg-white/80 px-3 py-1.5 text-[12px] font-medium text-[var(--color-ink)] transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/30 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none"
         >
           Réinitialiser espacements
+        </button>
+      </div>
+
+      <header className="mt-4 flex items-baseline justify-between gap-3 border-b border-[var(--color-rule)] pb-2">
+        <div>
+          <p className="font-mono-caps text-[10px] tracking-[0.14em] text-[var(--color-ink-soft)]">
+            Interlignes
+          </p>
+          <h2 className="font-display mt-1 text-[18px] font-medium text-[var(--color-ink)]">
+            Densité des lignes
+          </h2>
+        </div>
+        <span className="font-mono-caps text-[10px] text-[var(--color-ink-soft)]">
+          Δ par défaut
+        </span>
+      </header>
+
+      <p className="text-[12px] leading-snug text-[var(--color-ink-soft)]">
+        Ajustez l'interligne par rôle. Zéro correspond aux interlignes par défaut
+        du thème (titres 1.15, compact 1.3, corps 1.5).
+      </p>
+
+      <ul className="flex flex-col divide-y divide-[var(--color-rule)] rounded-md border border-[var(--color-rule)] bg-white/75">
+        {LINE_HEIGHT_CONTROLS.map((ctrl) => {
+          const value = lineHeights?.[ctrl.role] ?? 0;
+          const id = `lh-${ctrl.role}`;
+          const formatted = `${value > 0 ? "+" : ""}${value.toFixed(2)}`;
+          return (
+            <li key={id} className="flex items-center gap-3 px-3 py-2.5">
+              <label htmlFor={id} className="flex flex-1 flex-col gap-0.5">
+                <span className="text-[13px] font-medium text-[var(--color-ink)]">
+                  {ctrl.label}
+                </span>
+                <span className="text-[11px] leading-tight text-[var(--color-ink-soft)]">
+                  {ctrl.hint}
+                </span>
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  id={id}
+                  type="range"
+                  min={ctrl.min}
+                  max={ctrl.max}
+                  step={ctrl.step}
+                  value={value}
+                  onChange={(e) => {
+                    const next = Number.parseFloat(e.target.value);
+                    if (!Number.isFinite(next)) return;
+                    updateLineHeight(ctrl.role, next);
+                  }}
+                  aria-label={`Interligne — ${ctrl.label}`}
+                  aria-valuemin={ctrl.min}
+                  aria-valuemax={ctrl.max}
+                  aria-valuenow={value}
+                  className={cn(
+                    "h-1 w-32 cursor-pointer appearance-none rounded-full bg-[var(--color-rule)]",
+                    "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--color-ink)] [&::-webkit-slider-thumb]:shadow",
+                    "[&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-[var(--color-ink)]",
+                    "focus-visible:outline-none focus-visible:[&::-webkit-slider-thumb]:ring-2 focus-visible:[&::-webkit-slider-thumb]:ring-[var(--color-ink)]/30",
+                  )}
+                />
+                <span className="font-mono-caps inline-flex h-8 w-[4.5rem] shrink-0 items-center justify-center rounded border border-[var(--color-rule)] bg-white px-2 text-[11px] tabular-nums text-[var(--color-ink)]">
+                  {formatted}
+                </span>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="flex items-center justify-between gap-3 pt-1">
+        <p
+          className={cn(
+            "font-mono-caps text-[10px] tracking-[0.14em]",
+            lineHeightsAreCustom ? "text-[var(--color-ink)]" : "text-[var(--color-ink-soft)]",
+          )}
+        >
+          {lineHeightsAreCustom ? "Interlignes personnalisés" : "Interlignes d'origine"}
+        </p>
+        <button
+          type="button"
+          onClick={resetLineHeights}
+          disabled={!lineHeightsAreCustom}
+          className="inline-flex min-h-9 items-center rounded-md border border-[var(--color-rule)] bg-white/80 px-3 py-1.5 text-[12px] font-medium text-[var(--color-ink)] transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/30 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none"
+        >
+          Réinitialiser interlignes
         </button>
       </div>
     </div>
