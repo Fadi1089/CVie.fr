@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FormProvider, useFormContext } from "react-hook-form";
+import { FormProvider, useFormContext, useWatch } from "react-hook-form";
 import { useSearchParams } from "react-router";
 import {
   cvDataSchema,
+  getTheme,
   templateRegistry,
+  themeRegistry,
   type CvData,
   type OverflowMode,
   type TemplateId,
@@ -29,13 +31,7 @@ import { useCvDraft, type PersistStatus } from "../hooks/useCvDraft";
 import { useAuth0 } from "@auth0/auth0-react";
 import { SyncStatusBadge } from "@/features/cv-library/components/SyncStatusBadge";
 import type { SyncStatus } from "@/features/cv-library/store/types";
-import {
-  CV_SCALE_DEFAULT,
-  CV_SCALE_MAX,
-  CV_SCALE_MIN,
-  CV_SCALE_STEP,
-  useCvScale,
-} from "../hooks/useCvScale";
+import { useCvScale } from "../hooks/useCvScale";
 import { useCvOverflowMode } from "../hooks/useCvOverflowMode";
 import { EditorPreviewPane } from "./EditorPreviewPane";
 import { ExperiencesSection } from "./ExperiencesSection";
@@ -159,12 +155,42 @@ export function CvEditor() {
     onPersisted: handleDraftPersisted,
     onCvIdChanged: handleCvIdChanged,
   });
-  const { scale, setScale, resetScale } = useCvScale();
+  const { scale } = useCvScale();
   const { overflowMode, setOverflowMode } = useCvOverflowMode();
   const [mobileTab, setMobileTab] = useState<EditorTab>("edit");
   const [unknownBannerDismissed, setUnknownBannerDismissed] = useState(false);
   const [resetNonce, setResetNonce] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useSidebarCollapsed();
+  const [pdfPreview, setPdfPreview] = useState<{
+    url: string;
+    filename: string;
+  } | null>(null);
+
+  const handlePdfReady = useCallback(
+    (blob: Blob, filename: string) => {
+      setPdfPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev.url);
+        return { url: URL.createObjectURL(blob), filename };
+      });
+    },
+    [],
+  );
+
+  const handleClosePdfPreview = useCallback(() => {
+    setPdfPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev.url);
+      return null;
+    });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      setPdfPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev.url);
+        return null;
+      });
+    };
+  }, []);
 
   useEffect(() => {
     setCvTitleInput(cvRecord?.title ?? "Nouveau CV");
@@ -190,6 +216,30 @@ export function CvEditor() {
       void lib.setCvTemplate(cvId, nextTemplateId);
     }
   };
+
+  // Maps a new-namespace theme id (the actual render driver) to the legacy
+  // TemplateId so URL/library/localStorage stay in sync until the legacy slot
+  // is removed in Phase 2. Community themes fall through to "classique" — the
+  // legacy slot has nowhere to express them.
+  const handleThemeChange = useCallback(
+    (nextThemeId: string) => {
+      form.setValue("themeId", nextThemeId, {
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+      const legacy: TemplateId =
+        nextThemeId === "atelier-moderne"
+          ? "moderne"
+          : nextThemeId === "atelier-minimaliste"
+            ? "minimaliste"
+            : "classique";
+      handleTemplateChange(legacy);
+    },
+    // handleTemplateChange is stable enough — it only closes over lib + setParams,
+    // both of which keep referential identity across renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [form],
+  );
 
   const handleCvTitleInputChange = useCallback((nextTitle: string) => {
     setCvTitleInput(nextTitle);
@@ -238,17 +288,18 @@ export function CvEditor() {
         mobileTab={mobileTab}
         setMobileTab={setMobileTab}
         scale={scale}
-        setScale={setScale}
-        resetScale={resetScale}
         overflowMode={overflowMode}
         setOverflowMode={setOverflowMode}
         resetDraft={handleReset}
-        onTemplateChange={handleTemplateChange}
+        onThemeChange={handleThemeChange}
         onCvTitleChange={handleCvTitleInputChange}
         onCvTitleCommit={handleCvTitleCommit}
         resetNonce={resetNonce}
         sidebarCollapsed={sidebarCollapsed}
         setSidebarCollapsed={setSidebarCollapsed}
+        pdfPreview={pdfPreview}
+        onPdfReady={handlePdfReady}
+        onClosePdfPreview={handleClosePdfPreview}
       />
       </PendingChangesProvider>
     </FormProvider>
@@ -268,17 +319,18 @@ type EditorShellProps = {
   mobileTab: EditorTab;
   setMobileTab: (t: EditorTab) => void;
   scale: number;
-  setScale: (next: number) => void;
-  resetScale: () => void;
   overflowMode: OverflowMode;
   setOverflowMode: (next: OverflowMode) => void;
   resetDraft: () => void;
-  onTemplateChange: (nextTemplateId: TemplateId) => void;
+  onThemeChange: (nextThemeId: string) => void;
   onCvTitleChange: (nextTitle: string) => void;
   onCvTitleCommit: (rawTitle?: string) => void;
   resetNonce: number;
   sidebarCollapsed: boolean;
   setSidebarCollapsed: (next: boolean) => void;
+  pdfPreview: { url: string; filename: string } | null;
+  onPdfReady: (blob: Blob, filename: string) => void;
+  onClosePdfPreview: () => void;
 };
 
 function EditorShell({
@@ -294,19 +346,27 @@ function EditorShell({
   mobileTab,
   setMobileTab,
   scale,
-  setScale,
-  resetScale,
   overflowMode,
   resetDraft,
-  onTemplateChange,
+  onThemeChange,
   onCvTitleChange,
   onCvTitleCommit,
   resetNonce,
   sidebarCollapsed,
   setSidebarCollapsed,
+  pdfPreview,
+  onPdfReady,
+  onClosePdfPreview,
 }: EditorShellProps) {
   const autofillSync = useAutofillSync<CvData>();
-  const { getValues } = useFormContext<CvData>();
+  const { control, getValues } = useFormContext<CvData>();
+  const watchedThemeId = useWatch({ control, name: "themeId" });
+  const activeThemeId =
+    typeof watchedThemeId === "string" && watchedThemeId.length > 0
+      ? watchedThemeId
+      : "community-stackoverflow";
+  const activeThemeMeta =
+    getTheme(activeThemeId)?.meta ?? getTheme("community-stackoverflow")!.meta;
   const { ratio, setRatio, resetRatio } = useEditorSplit();
   const splitContainerRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<EditorSectionId, HTMLElement | null>>({
@@ -434,14 +494,10 @@ function EditorShell({
         />
         <div key={cvId} className="flex min-w-0 flex-1 flex-col">
         <EditorHeader
-          templateId={templateId}
           templateName={templateName}
           persistStatus={persistStatus}
-          scale={scale}
-          setScale={setScale}
-          resetScale={resetScale}
-          overflowMode={overflowMode}
           resetDraft={resetDraft}
+          onPdfReady={onPdfReady}
         />
 
         {unknownQuery && !unknownBannerDismissed ? (
@@ -509,7 +565,7 @@ function EditorShell({
                   </div>
                 </>
               ) : editorTab === "design" ? (
-                <DesignPanel templateId={templateId} />
+                <DesignPanel theme={activeThemeMeta} />
               ) : (
                 <LanguagePanel />
               )}
@@ -544,11 +600,10 @@ function EditorShell({
                   resetNonce={resetNonce}
                   hydrating={hydrating}
                   onSectionClick={handlePreviewSectionClick}
+                  pdfPreview={pdfPreview}
+                  onClosePdfPreview={onClosePdfPreview}
                   headerActions={
-                    <TemplateDrawerButton
-                      currentTemplateId={templateId}
-                      onTemplateChange={onTemplateChange}
-                    />
+                    <TemplateDrawerButton onThemeChange={onThemeChange} />
                   }
                 />
               </div>
@@ -608,23 +663,15 @@ function FormSections({
 }
 
 function EditorHeader({
-  templateId,
   templateName,
   persistStatus,
-  scale,
-  setScale,
-  resetScale,
-  overflowMode,
   resetDraft,
+  onPdfReady,
 }: {
-  templateId: TemplateId;
   templateName: string;
   persistStatus: PersistStatus;
-  scale: number;
-  setScale: (next: number) => void;
-  resetScale: () => void;
-  overflowMode: OverflowMode;
   resetDraft: () => void;
+  onPdfReady: (blob: Blob, filename: string) => void;
 }) {
   const { isAuthenticated } = useAuth0();
   const badgeStatus: SyncStatus =
@@ -648,33 +695,35 @@ function EditorHeader({
         <span className="hidden sm:inline">
           <SyncStatusBadge status={badgeStatus} authed={isAuthenticated} />
         </span>
-        <ScaleSlider scale={scale} setScale={setScale} resetScale={resetScale} />
         <CvImportButton />
         <CvResetButton onReset={resetDraft} />
-        <ExportPdfButton
-          templateId={templateId}
-          scale={scale}
-          overflowMode={overflowMode}
-        />
+        <ExportPdfButton onPdfReady={onPdfReady} />
       </div>
     </header>
   );
 }
 
 function TemplateDrawerButton({
-  currentTemplateId,
-  onTemplateChange,
+  onThemeChange,
 }: {
-  currentTemplateId: TemplateId;
-  onTemplateChange: (nextTemplateId: TemplateId) => void;
+  onThemeChange: (nextThemeId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const currentTemplateName =
-    templateRegistry.find((template) => template.id === currentTemplateId)?.name ??
-    "Classique";
+  // Watch the form so the drawer's "Actif" indicator and header always reflect
+  // the currently rendered theme — not whatever stale value a parent prop
+  // would otherwise carry.
+  const { control } = useFormContext<CvData>();
+  const watchedThemeId = useWatch({ control, name: "themeId" });
+  const currentThemeId =
+    typeof watchedThemeId === "string" && watchedThemeId.length > 0
+      ? watchedThemeId
+      : "community-stackoverflow";
+  const currentThemeName =
+    themeRegistry.find((t) => t.meta.id === currentThemeId)?.meta.name ??
+    "Stack Overflow";
 
-  const handleSelect = (templateId: TemplateId) => {
-    onTemplateChange(templateId);
+  const handleSelect = (themeId: string) => {
+    onThemeChange(themeId);
     setOpen(false);
   };
 
@@ -701,7 +750,7 @@ function TemplateDrawerButton({
                 Bibliotheque templates
               </p>
               <DialogTitle className="font-display mt-2 text-[29px] font-medium text-[var(--color-ink)]">
-                {currentTemplateName}
+                {currentThemeName}
               </DialogTitle>
             </div>
             <DialogClose
@@ -719,13 +768,13 @@ function TemplateDrawerButton({
         </DialogHeader>
         <div className="overflow-y-auto p-4">
           <div className="grid gap-2.5">
-            {templateRegistry.map((template) => {
-              const isActive = template.id === currentTemplateId;
+            {themeRegistry.map((theme) => {
+              const isActive = theme.meta.id === currentThemeId;
               return (
                 <button
-                  key={template.id}
+                  key={theme.meta.id}
                   type="button"
-                  onClick={() => handleSelect(template.id)}
+                  onClick={() => handleSelect(theme.meta.id)}
                   className={cn(
                     "group rounded-2xl border p-4 text-left transition-all duration-200 motion-reduce:transition-none",
                     "bg-white/82 hover:bg-white",
@@ -736,14 +785,14 @@ function TemplateDrawerButton({
                   aria-pressed={isActive}
                 >
                   <div className="font-mono-caps flex items-center justify-between text-[10px] text-[var(--color-ink-soft)]">
-                    <span>{template.id}</span>
+                    <span>{theme.meta.id}</span>
                     {isActive ? <span>Actif</span> : <span>Appliquer</span>}
                   </div>
                   <h3 className="font-display mt-2 text-[25px] leading-none text-[var(--color-ink)]">
-                    {template.name}
+                    {theme.meta.name}
                   </h3>
                   <p className="mt-2 text-[13px] leading-snug text-[var(--color-ink-soft)]">
-                    {template.description}
+                    {theme.meta.description}
                   </p>
                 </button>
               );
@@ -752,57 +801,6 @@ function TemplateDrawerButton({
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function ScaleSlider({
-  scale,
-  setScale,
-  resetScale,
-}: {
-  scale: number;
-  setScale: (next: number) => void;
-  resetScale: () => void;
-}) {
-  const percent = Math.round(scale * 100);
-  const isDefault = Math.abs(scale - CV_SCALE_DEFAULT) < 0.001;
-  return (
-    <div
-      className="hidden items-center gap-2 rounded-md border border-[var(--color-rule)] bg-white/70 px-2.5 py-1.5 md:inline-flex"
-      role="group"
-      aria-label="Densité du CV"
-    >
-      <span
-        aria-hidden="true"
-        className="font-mono-caps text-[10px] tracking-wider text-[var(--color-ink-soft)]"
-      >
-        Densité
-      </span>
-      <input
-        type="range"
-        min={CV_SCALE_MIN}
-        max={CV_SCALE_MAX}
-        step={CV_SCALE_STEP}
-        value={scale}
-        onChange={(e) => setScale(Number.parseFloat(e.target.value))}
-        aria-label="Ajuster la densité d'affichage du CV"
-        aria-valuetext={`${percent} pour cent`}
-        className="h-1 w-28 cursor-pointer appearance-none rounded-full bg-[var(--color-rule)] accent-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/30"
-      />
-      <span className="font-mono-caps w-10 text-right text-[11px] tabular-nums text-[var(--color-ink)]">
-        {percent}%
-      </span>
-      <button
-        type="button"
-        onClick={resetScale}
-        disabled={isDefault}
-        aria-label="Réinitialiser la densité"
-        title="Réinitialiser la densité"
-        className="inline-flex h-5 w-5 items-center justify-center rounded text-[13px] leading-none text-[var(--color-ink-soft)] transition-colors hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/30 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
-      >
-        ⟲
-      </button>
-    </div>
   );
 }
 
@@ -825,13 +823,9 @@ function parseContentDispositionFilename(cd: string): string | null {
 }
 
 function ExportPdfButton({
-  templateId,
-  scale,
-  overflowMode,
+  onPdfReady,
 }: {
-  templateId: TemplateId;
-  scale: number;
-  overflowMode: OverflowMode;
+  onPdfReady: (blob: Blob, filename: string) => void;
 }) {
   const { getValues } = useFormContext<CvData>();
   const [status, setStatus] = useState<ExportStatus>("idle");
@@ -864,7 +858,12 @@ function ExportPdfButton({
       const res = await fetch("/api/v1/cv/pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...parsed.data, templateId, scale, overflowMode }),
+        body: JSON.stringify({
+          cvData: parsed.data,
+          themeId: parsed.data.themeId ?? "community-stackoverflow",
+          atsMode: "ats-balanced",
+          customization: parsed.data.customization ?? {},
+        }),
         signal: controller.signal,
       });
       if (!res.ok) {
@@ -885,15 +884,10 @@ function ExportPdfButton({
       const blob = await res.blob();
       const contentDisposition = res.headers.get("Content-Disposition") ?? "";
       const filename = parseContentDispositionFilename(contentDisposition) ?? "cv.pdf";
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      if (mountedRef.current) setStatus("idle");
+      if (mountedRef.current) {
+        onPdfReady(blob, filename);
+        setStatus("idle");
+      }
     } catch (err) {
       if ((err as { name?: string })?.name === "AbortError") return;
       console.error("[ExportPdfButton] export failed:", err);
@@ -909,7 +903,7 @@ function ExportPdfButton({
   }
 
   const isPending = status === "pending";
-  const label = isPending ? "Export en cours…" : "Exporter en PDF";
+  const label = isPending ? "Rendu PDF…" : "Aperçu PDF";
 
   return (
     <div className="flex items-center gap-2">

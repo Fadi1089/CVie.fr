@@ -1,16 +1,18 @@
 import { useCallback } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
-import { templateRegistry, type CvData, type Palette, type TemplateId } from "@cvie/shared";
+import type { CvData, Palette } from "@cvie/shared";
+import type { ThemeMeta } from "@cvie/shared";
 import { cn } from "@/lib/utils";
 
 type Channel = keyof Palette;
 
 const CHANNELS: ReadonlyArray<{ key: Channel; label: string; hint: string }> = [
-  { key: "accent", label: "Accent", hint: "Liens, barres, traits décoratifs" },
-  { key: "ink", label: "Encre", hint: "Texte principal, titres" },
-  { key: "soft", label: "Encre douce", hint: "Métadonnées, dates, légendes" },
-  { key: "rule", label: "Filets", hint: "Séparateurs, bordures" },
-  { key: "canvas", label: "Toile", hint: "Fond hors-page" },
+  { key: "accent", label: "Accent",      hint: "Barres, traits décoratifs, mots-clés" },
+  { key: "link",   label: "Liens",       hint: "URLs, profils sociaux" },
+  { key: "ink",    label: "Encre",       hint: "Titres, dates, texte d'en-tête" },
+  { key: "soft",   label: "Encre douce", hint: "Corps de texte, métadonnées" },
+  { key: "rule",   label: "Filets",      hint: "Séparateurs, bordures" },
+  { key: "canvas", label: "Toile",       hint: "Fond de page" },
 ];
 
 type TextRole = "paragraph" | "header" | "title";
@@ -20,10 +22,10 @@ type SizeControl =
   | { kind: "media"; label: string; hint: string; min: number; max: number; step: number; unit: "mm" };
 
 const SIZE_CONTROLS: ReadonlyArray<SizeControl> = [
-  { kind: "text", role: "title", label: "Titre", hint: "Nom et résumé d'en-tête", min: -4, max: 6, step: 0.5, unit: "pt" },
-  { kind: "text", role: "header", label: "Sections", hint: "Titres de sections, intitulés de poste", min: -3, max: 5, step: 0.5, unit: "pt" },
-  { kind: "text", role: "paragraph", label: "Paragraphes", hint: "Corps de texte, listes, métadonnées", min: -3, max: 5, step: 0.5, unit: "pt" },
-  { kind: "media", label: "Photo et QR", hint: "Taille du portrait et du code QR", min: -8, max: 12, step: 0.5, unit: "mm" },
+  { kind: "text", role: "title", label: "Titre", hint: "Nom et résumé d'en-tête", min: -4, max: 6, step: 0.25, unit: "pt" },
+  { kind: "text", role: "header", label: "Sections", hint: "Titres de sections, intitulés de poste", min: -3, max: 5, step: 0.25, unit: "pt" },
+  { kind: "text", role: "paragraph", label: "Paragraphes", hint: "Corps de texte, listes, métadonnées", min: -3, max: 5, step: 0.25, unit: "pt" },
+  { kind: "media", label: "Photo et QR", hint: "Taille du portrait et du code QR", min: -8, max: 12, step: 0.25, unit: "mm" },
 ];
 
 type SpaceRole = "pageMargin" | "sectionGap" | "itemGap" | "lineHeight";
@@ -39,16 +41,15 @@ type SpacingControl = {
 };
 
 const SPACING_CONTROLS: ReadonlyArray<SpacingControl> = [
-  { role: "pageMargin", label: "Marge de page", hint: "Espace autour du contenu", min: -6, max: 8, step: 1, unit: "mm" },
-  { role: "sectionGap", label: "Espacement des sections", hint: "Entre les blocs principaux", min: -3, max: 8, step: 1, unit: "mm" },
-  { role: "itemGap", label: "Espacement des éléments", hint: "Entre les entrées d'une section", min: -2, max: 6, step: 1, unit: "mm" },
-  { role: "lineHeight", label: "Interligne", hint: "Hauteur des lignes de texte", min: -0.2, max: 0.4, step: 0.05, unit: "" },
+  { role: "pageMargin", label: "Marge de page", hint: "Espace autour du contenu", min: -6, max: 8, step: 0.25, unit: "mm" },
+  { role: "sectionGap", label: "Espacement des sections", hint: "Entre les blocs principaux", min: -3, max: 8, step: 0.25, unit: "mm" },
+  { role: "itemGap", label: "Espacement des éléments", hint: "Entre les entrées d'une section", min: -2, max: 6, step: 0.25, unit: "mm" },
+  { role: "lineHeight", label: "Interligne", hint: "Hauteur des lignes de texte", min: -0.2, max: 0.4, step: 0.02, unit: "" },
 ];
 
-export function DesignPanel({ templateId }: { templateId: TemplateId }) {
+export function DesignPanel({ theme }: { theme: ThemeMeta }) {
   const { control, setValue } = useFormContext<CvData>();
-  const meta = templateRegistry.find((t) => t.id === templateId) ?? templateRegistry[0]!;
-  const defaultPalette = meta.defaultPalette;
+  const defaultPalette = theme.defaultPalette;
   const override = useWatch({ control, name: "appearance.palette" });
   const effective: Palette = { ...defaultPalette, ...(override ?? {}) };
   const isCustom = override !== undefined;
@@ -162,7 +163,7 @@ export function DesignPanel({ templateId }: { templateId: TemplateId }) {
           </h2>
         </div>
         <span className="font-mono-caps text-[10px] text-[var(--color-ink-soft)]">
-          {meta.name}
+          {theme.name}
         </span>
       </header>
 
