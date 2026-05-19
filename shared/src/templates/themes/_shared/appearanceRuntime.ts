@@ -6,7 +6,7 @@
  * Design-panel edits that arrive over postMessage.
  *
  * Why a runtime at all: every theme consumes `var(--cv-accent)` and
- * `calc(... + var(--cv-text-paragraph-delta, 0pt))`. Mutating those custom
+ * `calc(... + var(--cv-text-body-delta, 0pt))`. Mutating those custom
  * properties on `document.documentElement` re-applies the cascade instantly,
  * which feels live; doing it through a full reload flickers, drops focus, and
  * makes the slider feel laggy. Cascade ordering still favours these inline
@@ -14,13 +14,17 @@
  *
  * Message contract (all messages are best-effort; unknown / malformed inputs
  * are ignored):
- *   { type: "cv-palette",  palette: { accent?, ink?, soft?, rule?, canvas? } | null }
- *   { type: "cv-text-deltas",  deltas: { paragraph?, header?, title? } | {} }
- *   { type: "cv-media-delta",  value: number | null | undefined }
- *   { type: "cv-space-deltas", deltas: { pageMargin?, sectionGap?, itemGap? } | {} }
- *   { type: "cv-line-height-delta", value: number | null | undefined }
- *   { type: "cv-scale",  scale: number }
- *   { type: "cv-overflow-mode", mode: "section" | "element" }  // accepted but no-op in new themes (no pagination script yet)
+ *   { type: "cv-palette",            palette: { accent?, link?, ink?, soft?, rule?, canvas? } | null }
+ *   { type: "cv-text-deltas",        deltas:  { name?, label?, section?, title?, card?, body?, meta?, fine? } | {} }
+ *   { type: "cv-media-delta",        value:   number | null | undefined }
+ *   { type: "cv-space-deltas",       deltas:  { pageMargin?, sectionGap?, itemGap? } | {} }
+ *   { type: "cv-line-height-deltas", deltas:  { tight?, snug?, base? } | {} }
+ *   { type: "cv-typography",         fontFamily?: "helvetica-neue"|"inter"|"georgia"|"ibm-plex-sans", letterSpacing?: number }
+ *   { type: "cv-scale",              scale:   number }
+ *
+ * `cv-typography` clears whichever of `--cv-font-family` / `--cv-letter-spacing`
+ * is absent from the payload — senders that want to update only one of the
+ * two must still include the current value of the other.
  *
  * Numbers outside the documented ranges are clamped. `null` / `undefined`
  * values remove the custom property so the cascade falls back to the
