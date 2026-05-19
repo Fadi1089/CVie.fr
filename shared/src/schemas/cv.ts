@@ -197,14 +197,20 @@ const mediaSizeSchema = z.number().min(-8).max(12).optional();
  *   pageMargin  — mm, outer content padding
  *   sectionGap  — mm, gap between major content blocks
  *   itemGap     — mm, gap between entries inside a section
- *   lineHeight  — unitless, additive to baseline line-height
  */
 const spacingSchema = z
   .object({
     pageMargin: z.number().min(-6).max(8).optional(),
     sectionGap: z.number().min(-3).max(8).optional(),
     itemGap: z.number().min(-2).max(6).optional(),
-    lineHeight: z.number().min(-0.2).max(0.4).optional(),
+  })
+  .optional();
+
+const lineHeightsSchema = z
+  .object({
+    tight: z.number().min(-0.2).max(0.4).optional(),
+    snug:  z.number().min(-0.2).max(0.4).optional(),
+    base:  z.number().min(-0.2).max(0.4).optional(),
   })
   .optional();
 
@@ -214,6 +220,7 @@ export const appearanceSchema = z.object({
   textSizes: textSizesSchema,
   mediaSize: mediaSizeSchema,
   spacing: spacingSchema,
+  lineHeights: lineHeightsSchema,
 });
 
 export const cvDataSchema = z.object({

@@ -47,3 +47,38 @@ describe("textSizesSchema (via appearanceSchema)", () => {
     expect(ok.success).toBe(true);
   });
 });
+
+describe("lineHeightsSchema (via appearanceSchema)", () => {
+  it("accepts all three roles", () => {
+    const ok = appearanceSchema.safeParse({
+      lineHeights: { tight: 0.1, snug: -0.05, base: 0.2 },
+    });
+    expect(ok.success).toBe(true);
+  });
+
+  it("rejects out-of-range tight", () => {
+    const ko = appearanceSchema.safeParse({ lineHeights: { tight: 1 } });
+    expect(ko.success).toBe(false);
+  });
+});
+
+describe("spacingSchema (post-rewrite)", () => {
+  it("drops lineHeight as an accepted key", () => {
+    const r = appearanceSchema.safeParse({ spacing: { lineHeight: 0.1 } });
+    // Strict-strip means the parse succeeds but the key is gone; we assert
+    // the slot is empty rather than checking failure.
+    expect(r.success).toBe(true);
+    if (r.success) {
+      // appearanceSchema strips lineHeight from spacing if present.
+      expect((r.data.spacing as Record<string, unknown> | undefined)?.lineHeight)
+        .toBeUndefined();
+    }
+  });
+
+  it("still accepts the three remaining spacing fields", () => {
+    const ok = appearanceSchema.safeParse({
+      spacing: { pageMargin: 2, sectionGap: 1, itemGap: 0.5 },
+    });
+    expect(ok.success).toBe(true);
+  });
+});
