@@ -163,9 +163,10 @@ const hexColorSchema = z
 
 export const paletteSchema = z.object({
   accent: hexColorSchema,
-  ink: hexColorSchema,
-  soft: hexColorSchema,
-  rule: hexColorSchema,
+  link:   hexColorSchema,
+  ink:    hexColorSchema,
+  soft:   hexColorSchema,
+  rule:   hexColorSchema,
   canvas: hexColorSchema,
 });
 
@@ -221,7 +222,7 @@ export const cvDataSchema = z.object({
   // New in the JSON Resume era. `themeId` picks the curated theme; runtime
   // validity is enforced server-side against the registry, not here, so the
   // schema can stay decoupled from the theme catalogue.
-  themeId: z.string().min(1).max(MAX_ID).default("atelier-classique"),
+  themeId: z.string().min(1).max(MAX_ID).default("community-stackoverflow"),
   // Theme-defined customization knobs. Each theme owns its own Zod schema
   // (see `theme.meta.customizationSchema`); we keep this loose here because
   // the same `cvDataSchema` is reused across themes and the active theme is
