@@ -19,18 +19,19 @@ type TextRole = "name" | "label" | "section" | "title" | "card" | "body" | "meta
 
 type SizeControl =
   | { kind: "text"; role: TextRole; label: string; hint: string; min: number; max: number; step: number; unit: "pt" }
-  | { kind: "media"; label: string; hint: string; min: number; max: number; step: number; unit: "mm" };
+  | { kind: "media"; label: string; hint: string; min: number; max: number; step: number; unit: "mm" }
+  | { kind: "qr";    label: string; hint: string; min: number; max: number; step: number; unit: "mm" };
 
 const SIZE_CONTROLS: ReadonlyArray<SizeControl> = [
-  { kind: "text", role: "name",    label: "Nom",            hint: "Le nom en haut du CV (h1)",                  min: -5, max: 8, step: 0.25, unit: "pt" },
-  { kind: "text", role: "label",   label: "Sous-titre",     hint: "Ligne sous le nom (intitulé de poste)",      min: -4, max: 6, step: 0.25, unit: "pt" },
-  { kind: "text", role: "section", label: "Sections",       hint: 'En-têtes de section (EXPÉRIENCE, FORMATION)', min: -3, max: 5, step: 0.25, unit: "pt" },
-  { kind: "text", role: "title",   label: "Postes",         hint: "Intitulés de postes et de diplômes",         min: -3, max: 5, step: 0.25, unit: "pt" },
-  { kind: "text", role: "card",    label: "Cartes",         hint: "Compétences, langues, intérêts",             min: -3, max: 5, step: 0.25, unit: "pt" },
-  { kind: "text", role: "body",    label: "Corps",          hint: "Paragraphes, listes, résumés",               min: -2, max: 4, step: 0.25, unit: "pt" },
-  { kind: "text", role: "meta",    label: "Métadonnées",    hint: "Dates, localités, mots-clés",                min: -2, max: 4, step: 0.25, unit: "pt" },
-  { kind: "text", role: "fine",    label: "Mentions fines", hint: "Coordonnées sous le nom",                    min: -2, max: 4, step: 0.25, unit: "pt" },
-  { kind: "media",                  label: "Photo et QR",    hint: "Taille du portrait et du code QR",          min: -8, max: 12, step: 0.25, unit: "mm" },
+  { kind: "text", role: "name",    label: "Nom",         hint: "Le nom en haut du CV (h1)",                   min: -5, max: 8, step: 0.25, unit: "pt" },
+  { kind: "text", role: "label",   label: "Sous-titre",  hint: "Ligne sous le nom (intitulé de poste)",       min: -4, max: 6, step: 0.25, unit: "pt" },
+  { kind: "text", role: "section", label: "Sections",    hint: 'En-têtes de section (EXPÉRIENCE, FORMATION)', min: -3, max: 5, step: 0.25, unit: "pt" },
+  { kind: "text", role: "title",   label: "Postes",      hint: "Intitulés de postes et de diplômes",          min: -3, max: 5, step: 0.25, unit: "pt" },
+  { kind: "text", role: "card",    label: "Cartes",      hint: "Compétences, langues, intérêts",              min: -3, max: 5, step: 0.25, unit: "pt" },
+  { kind: "text", role: "body",    label: "Corps",       hint: "Paragraphes, listes, résumés",                min: -2, max: 4, step: 0.25, unit: "pt" },
+  { kind: "text", role: "meta",    label: "Métadonnées", hint: "Dates, localités, mots-clés",                 min: -2, max: 4, step: 0.25, unit: "pt" },
+  { kind: "media",                 label: "Photo",       hint: "Taille du portrait",                          min: -8, max: 12, step: 0.25, unit: "mm" },
+  { kind: "qr",                    label: "QR",          hint: "Taille du code QR du portfolio",              min: -8, max: 12, step: 0.25, unit: "mm" },
 ];
 
 type SpaceRole = "pageMargin" | "sectionGap" | "itemGap";
@@ -61,9 +62,8 @@ const LINE_HEIGHT_CONTROLS: ReadonlyArray<{
   max: number;
   step: number;
 }> = [
-  { role: "tight", label: "Titres",  hint: "Densité verticale des titres (h1)",       min: -0.2, max: 0.4, step: 0.02 },
-  { role: "snug",  label: "Compact", hint: "Sections, cartes, dates",                 min: -0.2, max: 0.4, step: 0.02 },
-  { role: "base",  label: "Corps",   hint: "Paragraphes, listes",                     min: -0.2, max: 0.4, step: 0.02 },
+  { role: "tight", label: "Titres",     hint: "Densité verticale des titres (h1)",                       min: -0.2, max: 0.4, step: 0.02 },
+  { role: "snug",  label: "Interligne", hint: "Sections, cartes, dates, paragraphes, listes, résumés",   min: -0.2, max: 0.4, step: 0.02 },
 ];
 
 const FONT_FAMILY_OPTIONS: ReadonlyArray<{ value: FontFamily; label: string }> = [
@@ -108,6 +108,7 @@ export function DesignPanel({ theme }: { theme: ThemeMeta }) {
 
   const textSizes = useWatch({ control, name: "appearance.textSizes" });
   const mediaSize = useWatch({ control, name: "appearance.mediaSize" });
+  const qrSize = useWatch({ control, name: "appearance.qrSize" });
 
   const TEXT_ROLES: readonly TextRole[] = [
     "name", "label", "section", "title", "card", "body", "meta", "fine",
@@ -136,14 +137,26 @@ export function DesignPanel({ theme }: { theme: ThemeMeta }) {
     [setValue],
   );
 
+  const updateQrSize = useCallback(
+    (value: number) => {
+      setValue("appearance.qrSize", value === 0 ? undefined : value, {
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+    },
+    [setValue],
+  );
+
   const resetSizes = useCallback(() => {
     setValue("appearance.textSizes", undefined, { shouldDirty: true, shouldTouch: true });
     setValue("appearance.mediaSize", undefined, { shouldDirty: true, shouldTouch: true });
+    setValue("appearance.qrSize", undefined, { shouldDirty: true, shouldTouch: true });
   }, [setValue]);
 
   const sizesAreCustom =
     (textSizes && TEXT_ROLES.some((r) => textSizes[r] !== undefined)) ||
-    typeof mediaSize === "number";
+    typeof mediaSize === "number" ||
+    typeof qrSize === "number";
 
   const spacing = useWatch({ control, name: "appearance.spacing" });
 
@@ -368,8 +381,15 @@ export function DesignPanel({ theme }: { theme: ThemeMeta }) {
           const value =
             ctrl.kind === "text"
               ? (textSizes?.[ctrl.role] ?? 0)
-              : (mediaSize ?? 0);
-          const id = ctrl.kind === "text" ? `size-text-${ctrl.role}` : "size-media";
+              : ctrl.kind === "qr"
+                ? (qrSize ?? 0)
+                : (mediaSize ?? 0);
+          const id =
+            ctrl.kind === "text"
+              ? `size-text-${ctrl.role}`
+              : ctrl.kind === "qr"
+                ? "size-qr"
+                : "size-media";
           const formatted = `${value > 0 ? "+" : ""}${value} ${ctrl.unit}`;
           return (
             <li key={id} className="flex items-center gap-3 px-3 py-2.5">
@@ -393,6 +413,7 @@ export function DesignPanel({ theme }: { theme: ThemeMeta }) {
                     const next = Number.parseFloat(e.target.value);
                     if (!Number.isFinite(next)) return;
                     if (ctrl.kind === "text") updateTextSize(ctrl.role, next);
+                    else if (ctrl.kind === "qr") updateQrSize(next);
                     else updateMediaSize(next);
                   }}
                   aria-label={`Taille — ${ctrl.label}`}
@@ -640,7 +661,7 @@ export function DesignPanel({ theme }: { theme: ThemeMeta }) {
 
       <p className="text-[12px] leading-snug text-[var(--color-ink-soft)]">
         Ajustez l'interligne par rôle. Zéro correspond aux interlignes par défaut
-        du thème (titres 1.15, compact 1.3, corps 1.5).
+        du thème (titres 1.15, interligne 1.3).
       </p>
 
       <ul className="flex flex-col divide-y divide-[var(--color-rule)] rounded-md border border-[var(--color-rule)] bg-white/75">

@@ -55,9 +55,9 @@ describe("DesignPanel — Espacements", () => {
     expect(screen.getByText(/\+2 mm/)).toBeInTheDocument();
   });
 
-  it("dragging the base line-height slider updates the displayed value", () => {
+  it("dragging the main line-height slider updates the displayed value", () => {
     render(<Harness />);
-    const slider = screen.getByRole("slider", { name: "Interligne — Corps" });
+    const slider = screen.getByRole("slider", { name: "Interligne — Interligne" });
     fireEvent.change(slider, { target: { value: "0.2" } });
     expect(slider).toHaveValue("0.2");
     expect(screen.getByText(/\+0\.20/)).toBeInTheDocument();
@@ -87,7 +87,7 @@ describe("DesignPanel — Espacements", () => {
   it("Réinitialiser interlignes resets only line-height sliders and disables itself", () => {
     render(
       <Harness
-        initial={{ appearance: { lineHeights: { base: 0.2 } } }}
+        initial={{ appearance: { lineHeights: { snug: 0.2 } } }}
       />,
     );
     const reset = screen.getByRole("button", { name: /Réinitialiser interlignes/i });
@@ -95,7 +95,6 @@ describe("DesignPanel — Espacements", () => {
     fireEvent.click(reset);
     expect(reset).toBeDisabled();
     expect(screen.getByRole("slider", { name: "Interligne — Titres" })).toHaveValue("0");
-    expect(screen.getByRole("slider", { name: "Interligne — Compact" })).toHaveValue("0");
-    expect(screen.getByRole("slider", { name: "Interligne — Corps" })).toHaveValue("0");
+    expect(screen.getByRole("slider", { name: "Interligne — Interligne" })).toHaveValue("0");
   });
 });

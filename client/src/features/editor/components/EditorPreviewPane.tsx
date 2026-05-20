@@ -126,6 +126,7 @@ export function EditorPreviewPane({
   const palette = useWatch({ control, name: "appearance.palette" });
   const textSizes = useWatch({ control, name: "appearance.textSizes" });
   const mediaSize = useWatch({ control, name: "appearance.mediaSize" });
+  const qrSize = useWatch({ control, name: "appearance.qrSize" });
   const spacing = useWatch({ control, name: "appearance.spacing" });
   const lineHeights = useWatch({ control, name: "appearance.lineHeights" });
   const typography = useWatch({ control, name: "appearance.typography" });
@@ -156,6 +157,7 @@ export function EditorPreviewPane({
   const paletteRef = useRef<typeof palette>(palette);
   const textSizesRef = useRef<typeof textSizes>(textSizes);
   const mediaSizeRef = useRef<typeof mediaSize>(mediaSize);
+  const qrSizeRef = useRef<typeof qrSize>(qrSize);
   const spacingRef = useRef<typeof spacing>(spacing);
   const lineHeightsRef = useRef<typeof lineHeights>(lineHeights);
   const typographyRef = useRef<typeof typography>(typography);
@@ -187,6 +189,9 @@ export function EditorPreviewPane({
   useEffect(() => {
     mediaSizeRef.current = mediaSize;
   }, [mediaSize]);
+  useEffect(() => {
+    qrSizeRef.current = qrSize;
+  }, [qrSize]);
   useEffect(() => {
     spacingRef.current = spacing;
   }, [spacing]);
@@ -316,6 +321,12 @@ export function EditorPreviewPane({
     target.postMessage({ type: "cv-media-delta", value }, "*");
   }, []);
 
+  const postQrDelta = useCallback((value: number | undefined) => {
+    const target = iframeRef.current?.contentWindow;
+    if (!target) return;
+    target.postMessage({ type: "cv-qr-delta", value }, "*");
+  }, []);
+
   const postSpaceDeltas = useCallback(
     (deltas: { pageMargin?: number; sectionGap?: number; itemGap?: number } | undefined) => {
       const target = iframeRef.current?.contentWindow;
@@ -388,6 +399,11 @@ export function EditorPreviewPane({
     if (!html) return;
     postMediaDelta(mediaSize);
   }, [mediaSize, html, postMediaDelta]);
+
+  useEffect(() => {
+    if (!html) return;
+    postQrDelta(qrSize);
+  }, [qrSize, html, postQrDelta]);
 
   useEffect(() => {
     if (!html) return;
@@ -828,6 +844,7 @@ export function EditorPreviewPane({
                     postPalette(paletteRef.current);
                     postTextDeltas(textSizesRef.current);
                     postMediaDelta(mediaSizeRef.current);
+                    postQrDelta(qrSizeRef.current);
                     postSpaceDeltas(spacingRef.current);
                     postLineHeightDeltas(lineHeightsRef.current);
                     postTypography(typographyRef.current);

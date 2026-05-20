@@ -41,8 +41,8 @@ describe("DesignPanel — Tailles", () => {
     expect(screen.getByRole("slider", { name: "Taille — Cartes" })).toHaveValue("0");
     expect(screen.getByRole("slider", { name: "Taille — Corps" })).toHaveValue("0");
     expect(screen.getByRole("slider", { name: "Taille — Métadonnées" })).toHaveValue("0");
-    expect(screen.getByRole("slider", { name: "Taille — Mentions fines" })).toHaveValue("0");
-    expect(screen.getByRole("slider", { name: "Taille — Photo et QR" })).toHaveValue("0");
+    expect(screen.getByRole("slider", { name: "Taille — Photo" })).toHaveValue("0");
+    expect(screen.getByRole("slider", { name: "Taille — QR" })).toHaveValue("0");
   });
 
   it("dragging a slider updates the displayed value", () => {
@@ -60,6 +60,7 @@ describe("DesignPanel — Tailles", () => {
     fireEvent.click(reset);
     expect(reset).toBeDisabled();
     expect(screen.getByRole("slider", { name: "Taille — Nom" })).toHaveValue("0");
-    expect(screen.getByRole("slider", { name: "Taille — Photo et QR" })).toHaveValue("0");
+    expect(screen.getByRole("slider", { name: "Taille — Photo" })).toHaveValue("0");
+    expect(screen.getByRole("slider", { name: "Taille — QR" })).toHaveValue("0");
   });
 });

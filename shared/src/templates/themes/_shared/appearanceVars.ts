@@ -20,6 +20,8 @@ const LH_RANGE = { min: -0.2, max: 0.4 } as const;
 
 const MEDIA_SIZE_MIN = -8;
 const MEDIA_SIZE_MAX = 12;
+const QR_SIZE_MIN = -8;
+const QR_SIZE_MAX = 12;
 
 const SPACE_RANGES = {
   page:    { min: -6, max: 8 },
@@ -99,6 +101,10 @@ export function buildAppearanceVarsCss(
 
   if (Number.isFinite(appearance?.mediaSize)) {
     decls.push(`--cv-media-delta: ${clampNumber(appearance!.mediaSize as number, MEDIA_SIZE_MIN, MEDIA_SIZE_MAX)}mm;`);
+  }
+
+  if (Number.isFinite(appearance?.qrSize)) {
+    decls.push(`--cv-qr-delta: ${clampNumber(appearance!.qrSize as number, QR_SIZE_MIN, QR_SIZE_MAX)}mm;`);
   }
 
   const spacing = appearance?.spacing;

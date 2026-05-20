@@ -22,12 +22,18 @@
     "@cvie/shared": "workspace:*",
     "ai": "^6.0.168",
     "hono": "^4.10.8",
+    "jsonresume-theme-stackoverflow": "^3.3.0",
     "pdf-parse": "^2.4.5",
-    "playwright": "^1.59.1"
+    "playwright": "^1.59.1",
+    "qrcode-generator": "^2.0.4"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/pdf-parse": "^1.1.5",
-    "jose": "^6.2.3"
+    "@types/pixelmatch": "^5.2.6",
+    "@types/pngjs": "^6.0.5",
+    "jose": "^6.2.3",
+    "pixelmatch": "^7.2.0",
+    "pngjs": "^7.0.0"
   }
 }

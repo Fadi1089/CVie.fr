@@ -17,6 +17,7 @@
  *   { type: "cv-palette",            palette: { accent?, link?, ink?, soft?, rule?, canvas? } | null }
  *   { type: "cv-text-deltas",        deltas:  { name?, label?, section?, title?, card?, body?, meta?, fine? } | {} }
  *   { type: "cv-media-delta",        value:   number | null | undefined }
+ *   { type: "cv-qr-delta",           value:   number | null | undefined }
  *   { type: "cv-space-deltas",       deltas:  { pageMargin?, sectionGap?, itemGap? } | {} }
  *   { type: "cv-line-height-deltas", deltas:  { tight?, snug?, base? } | {} }
  *   { type: "cv-typography",         fontFamily?: "helvetica-neue"|"inter"|"georgia"|"ibm-plex-sans", letterSpacing?: number }
@@ -133,6 +134,14 @@ function applyMediaDelta(value){
   }
   setVar(prop, clamp(value, -8, 12) + "mm");
 }
+function applyQrDelta(value){
+  var prop = "--cv-qr-delta";
+  if (typeof value !== "number" || !isFinite(value)){
+    setVar(prop, null);
+    return;
+  }
+  setVar(prop, clamp(value, -8, 12) + "mm");
+}
 function applySpaceDeltas(deltas){
   var d = deltas || {};
   for (var i = 0; i < SPACE_KEYS.length; i++){
@@ -189,6 +198,7 @@ window.addEventListener("message", function(e){
     case "cv-palette":             applyPalette(data.palette); break;
     case "cv-text-deltas":         applyTextDeltas(data.deltas); break;
     case "cv-media-delta":         applyMediaDelta(typeof data.value === "number" ? data.value : NaN); break;
+    case "cv-qr-delta":            applyQrDelta(typeof data.value === "number" ? data.value : NaN); break;
     case "cv-space-deltas":        applySpaceDeltas(data.deltas); break;
     case "cv-line-height-deltas":  applyLineHeightDeltas(data.deltas); break;
     case "cv-typography":          applyTypography(data); break;

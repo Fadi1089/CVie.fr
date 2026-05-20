@@ -187,8 +187,11 @@ const textSizesSchema = z
   })
   .optional();
 
-/** Header media (photo + QR) size delta in mm. */
+/** Photo width delta in mm (from theme baseline). */
 const mediaSizeSchema = z.number().min(-8).max(12).optional();
+
+/** QR code width delta in mm (independent of photo). */
+const qrSizeSchema = z.number().min(-8).max(12).optional();
 
 /**
  * Layout spacing deltas from Figma-synced template baselines (units noted per field).
@@ -229,6 +232,7 @@ export const appearanceSchema = z.object({
   locale: localeSchema.optional(),
   textSizes: textSizesSchema,
   mediaSize: mediaSizeSchema,
+  qrSize: qrSizeSchema,
   spacing: spacingSchema,
   lineHeights: lineHeightsSchema,
   typography: typographySchema,

@@ -22,6 +22,16 @@ describe("appearanceSchema sizes", () => {
     expect(parsed.success).toBe(false);
   });
 
+  it("accepts qrSize independent of mediaSize", () => {
+    const parsed = appearanceSchema.safeParse({ mediaSize: 2, qrSize: -3 });
+    expect(parsed.success).toBe(true);
+  });
+
+  it("rejects qrSize outside the allowed range", () => {
+    const parsed = appearanceSchema.safeParse({ qrSize: 50 });
+    expect(parsed.success).toBe(false);
+  });
+
   it("treats sizes as optional (back-compat)", () => {
     const parsed = appearanceSchema.safeParse({});
     expect(parsed.success).toBe(true);
