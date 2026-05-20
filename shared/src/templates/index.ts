@@ -6,6 +6,14 @@ export { minimalisteCss } from "./styles/minimaliste";
 export { renderResumeHtml } from "./resumeRenderer";
 export type { RenderResumeOptions } from "./resumeRenderer";
 export {
+  buildAppearanceVarsCss,
+  injectAppearanceVars,
+} from "./themes/_shared/appearanceVars";
+export {
+  APPEARANCE_RUNTIME_SCRIPT,
+  injectAppearanceRuntime,
+} from "./themes/_shared/appearanceRuntime";
+export {
   themeRegistry,
   getTheme,
   requireTheme,

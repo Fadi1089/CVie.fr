@@ -32,7 +32,7 @@ export function createEmptyCv(): CvData {
     skills: [],
     languages: [],
     interests: [],
-    themeId: "atelier-classique",
+    themeId: "community-stackoverflow",
     customization: {},
   };
 }
@@ -132,6 +132,6 @@ export const sampleCv: CvData = {
     { id: "i2", name: "Bénévolat associatif (GDG Lyon)" },
     { id: "i3", name: "Randonnée en montagne" },
   ],
-  themeId: "atelier-classique",
+  themeId: "community-stackoverflow",
   customization: {},
 };

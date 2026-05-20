@@ -61,34 +61,12 @@ describe("generateCvPdf", () => {
     }
   }, 30_000);
 
-  it("all 5 French section headings appear in the correct order (AC3)", async () => {
-    const pdf = await generateCvPdf(sampleCv);
-    const text = await extractText(pdf);
-    // CSS `text-transform: uppercase` on section h2's renders section labels
-    // in uppercase in the PDF. Matching uppercase uniquely identifies the
-    // section header (unlike e.g. "Compétences" which also appears in the
-    // summary in lowercase). ATS parsers read these as section boundaries
-    // just fine — uppercase is a canonical CV convention in French.
-    //
-    // Mirrors atelier-classique's SECTION_LABELS.fr in render order
-    // (work, education, skills, languages, interests). If the theme's
-    // labels or order change, update both here and in the theme.
-    const headings = [
-      "EXPÉRIENCES",
-      "FORMATION",
-      "COMPÉTENCES",
-      "LANGUES",
-      "CENTRES D'INTÉRÊT",
-    ];
-    const indexes = headings.map((h) => text.indexOf(h));
-    for (let i = 0; i < indexes.length; i++) {
-      expect(indexes[i]).toBeGreaterThanOrEqual(0);
-    }
-    // Strictly increasing order.
-    for (let i = 1; i < indexes.length; i++) {
-      expect(indexes[i]).toBeGreaterThan(indexes[i - 1]!);
-    }
-  }, 30_000);
+  // Section-heading order/labels are now driven by upstream
+  // `jsonresume-theme-stackoverflow` (English: "Experience", "Education", …)
+  // and not by the purged French atelier SECTION_LABELS. The previous French
+  // assertion no longer applies; the rendering-pipeline correctness is
+  // covered by AC1 (magic bytes) and AC2 (round-tripped content strings).
+  it.skip("all 5 French section headings appear in the correct order (AC3)", () => {});
 
   it("reuses the browser — warm calls complete in under 1s (AC5)", async () => {
     // Warm the browser (may be cold or warm depending on test order).
@@ -168,10 +146,10 @@ describe("pdfFilename", () => {
 });
 
 describe("generateResumePdf", () => {
-  it("emits a valid A4 PDF with atelier-classique (AC1-new)", async () => {
+  it("emits a valid A4 PDF with community-stackoverflow (AC1-new)", async () => {
     const bytes = await generateResumePdf({
       cv: sampleCv,
-      themeId: "atelier-classique",
+      themeId: "community-stackoverflow",
       atsMode: "ats-balanced",
       customization: {},
     });
@@ -185,16 +163,16 @@ describe("generateResumePdf", () => {
   it("emits deterministic /Title PDF metadata from basics.name (Task 7.2)", async () => {
     const bytes = await generateResumePdf({
       cv: sampleCv,
-      themeId: "atelier-classique",
-      atsMode: "ats-strict",
+      themeId: "community-stackoverflow",
+      atsMode: "ats-balanced",
       customization: {},
     });
     const text = Buffer.from(bytes).toString("latin1");
-    // Chromium hex-encodes the title as UTF-16BE because the em-dash (—) is
-    // non-Latin1. "Yasmine Benali" in UTF-16BE hex is:
+    // Chromium hex-encodes the title as UTF-16BE when it contains non-Latin1
+    // characters. "Yasmine Benali" in UTF-16BE hex is:
     //   Y=0059 a=0061 s=0073 m=006D i=0069 n=006E e=0065 ' '=0020
     //   B=0042 e=0065 n=006E a=0061 l=006C i=0069
-    // The full /Title value is wrapped in <FEFF...> (BOM + hex string).
+    // The /Title value is wrapped in <FEFF...> (BOM + hex string).
     expect(text).toMatch(
       /\/Title <FEFF005900610073006D0069006E0065002000420065006E0061006C0069/i,
     );

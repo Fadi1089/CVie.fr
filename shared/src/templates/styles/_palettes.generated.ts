@@ -1,10 +1,11 @@
 /**
  * @generated from Figma template colors via `bun run sync:figma-templates`.
  * Do not edit by hand. Maps each template's Figma `colors` object onto the
- * 5-channel palette consumed by the Design tab and renderer overrides.
+ * 6-channel palette consumed by the Design tab and renderer overrides.
  *
  * Channel mapping:
  *   accent → colors.accent
+ *   link   → defaults to JSON Resume stackoverflow blue (legacy templates have no link styling)
  *   ink    → colors.text
  *   soft   → colors.muted
  *   rule   → colors.rule
@@ -16,6 +17,7 @@ import type { Palette } from "../../types/cv";
 export const defaultPalettes = {
   classique: {
     accent: "#1B365D",
+    link: "#0095ff",
     ink: "#141413",
     soft: "#5E5D59",
     rule: "#D4D2CC",
@@ -23,6 +25,7 @@ export const defaultPalettes = {
   },
   moderne: {
     accent: "#A8421E",
+    link: "#0095ff",
     ink: "#111111",
     soft: "#3A3A3A",
     rule: "#A8421E",
@@ -30,6 +33,7 @@ export const defaultPalettes = {
   },
   minimaliste: {
     accent: "#111111",
+    link: "#0095ff",
     ink: "#111111",
     soft: "#333333",
     rule: "#111111",

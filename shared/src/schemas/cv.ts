@@ -163,26 +163,35 @@ const hexColorSchema = z
 
 export const paletteSchema = z.object({
   accent: hexColorSchema,
-  ink: hexColorSchema,
-  soft: hexColorSchema,
-  rule: hexColorSchema,
+  link:   hexColorSchema,
+  ink:    hexColorSchema,
+  soft:   hexColorSchema,
+  rule:   hexColorSchema,
   canvas: hexColorSchema,
 });
 
 export const SUPPORTED_LOCALES = ["fr", "en", "de", "es", "nl"] as const;
 export const localeSchema = z.enum(SUPPORTED_LOCALES);
 
-/** Per-role font-size delta in pt. Title range is wider — headline carries more visual weight. */
+/** Per-role font-size delta in pt. Name/label ranges are wider — headline carries more visual weight. */
 const textSizesSchema = z
   .object({
-    paragraph: z.number().min(-3).max(5).optional(),
-    header: z.number().min(-3).max(5).optional(),
-    title: z.number().min(-4).max(6).optional(),
+    name:    z.number().min(-5).max(8).optional(),
+    label:   z.number().min(-4).max(6).optional(),
+    section: z.number().min(-3).max(5).optional(),
+    title:   z.number().min(-3).max(5).optional(),
+    card:    z.number().min(-3).max(5).optional(),
+    body:    z.number().min(-2).max(4).optional(),
+    meta:    z.number().min(-2).max(4).optional(),
+    fine:    z.number().min(-2).max(4).optional(),
   })
   .optional();
 
-/** Header media (photo + QR) size delta in mm. */
+/** Photo width delta in mm (from theme baseline). */
 const mediaSizeSchema = z.number().min(-8).max(12).optional();
+
+/** QR code width delta in mm (independent of photo). */
+const qrSizeSchema = z.number().min(-8).max(12).optional();
 
 /**
  * Layout spacing deltas from Figma-synced template baselines (units noted per field).
@@ -191,14 +200,30 @@ const mediaSizeSchema = z.number().min(-8).max(12).optional();
  *   pageMargin  — mm, outer content padding
  *   sectionGap  — mm, gap between major content blocks
  *   itemGap     — mm, gap between entries inside a section
- *   lineHeight  — unitless, additive to baseline line-height
  */
 const spacingSchema = z
   .object({
     pageMargin: z.number().min(-6).max(8).optional(),
     sectionGap: z.number().min(-3).max(8).optional(),
     itemGap: z.number().min(-2).max(6).optional(),
-    lineHeight: z.number().min(-0.2).max(0.4).optional(),
+  })
+  .optional();
+
+const lineHeightsSchema = z
+  .object({
+    tight: z.number().min(-0.2).max(0.4).optional(),
+    snug:  z.number().min(-0.2).max(0.4).optional(),
+    base:  z.number().min(-0.2).max(0.4).optional(),
+  })
+  .optional();
+
+const FONT_FAMILIES = ["helvetica-neue", "inter", "georgia", "ibm-plex-sans"] as const;
+export const fontFamilySchema = z.enum(FONT_FAMILIES);
+
+const typographySchema = z
+  .object({
+    fontFamily: fontFamilySchema.optional(),
+    letterSpacing: z.number().min(-0.02).max(0.04).optional(),
   })
   .optional();
 
@@ -207,7 +232,10 @@ export const appearanceSchema = z.object({
   locale: localeSchema.optional(),
   textSizes: textSizesSchema,
   mediaSize: mediaSizeSchema,
+  qrSize: qrSizeSchema,
   spacing: spacingSchema,
+  lineHeights: lineHeightsSchema,
+  typography: typographySchema,
 });
 
 export const cvDataSchema = z.object({
@@ -221,7 +249,7 @@ export const cvDataSchema = z.object({
   // New in the JSON Resume era. `themeId` picks the curated theme; runtime
   // validity is enforced server-side against the registry, not here, so the
   // schema can stay decoupled from the theme catalogue.
-  themeId: z.string().min(1).max(MAX_ID).default("atelier-classique"),
+  themeId: z.string().min(1).max(MAX_ID).default("community-stackoverflow"),
   // Theme-defined customization knobs. Each theme owns its own Zod schema
   // (see `theme.meta.customizationSchema`); we keep this loose here because
   // the same `cvDataSchema` is reused across themes and the active theme is

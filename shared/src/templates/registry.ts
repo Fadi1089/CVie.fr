@@ -11,7 +11,7 @@ import type { TemplateId } from "./renderer";
  * If a future template fails ATS validation it must not ship through this
  * registry — it should stay behind a feature flag or be removed.
  *
- * `defaultPalette` is the canonical 5-color palette baked into each template's
+ * `defaultPalette` is the canonical 6-color palette baked into each template's
  * CSS. The Design tab exposes per-color overrides; the "Réinitialiser" button
  * restores these defaults. Synced from Figma fills via templateSync.
  */

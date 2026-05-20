@@ -2,11 +2,28 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { useFormContext, useFormState, useWatch } from "react-hook-form";
 import {
   cvDataSchema,
-  renderCvHtml,
   type CvData,
   type OverflowMode,
   type TemplateId,
 } from "@cvie/shared";
+
+// Static JSON Resume themes don't ship the runtime the old `renderCvHtml`
+// did (height reporter, click-to-jump, wheel/pinch forwarder). Injecting a
+// minimal height reporter keeps the surrounding iframe chrome usable; the
+// rest (scale/overflow/text/media/spacing deltas, section click) becomes
+// inert until the new themes opt in to a similar runtime.
+//
+// `cv-anchors` reports the top/bottom of every break-avoiding block
+// (`.cv-entry`, `.cv-section`) so the parent can snap the preview's page-
+// split overlay onto element boundaries rather than slicing mid-paragraph.
+const PREVIEW_RUNTIME = `<script>(function(){function report(){try{var h=document.documentElement.scrollHeight;parent.postMessage({type:"cv-height",height:h},"*");}catch(e){}}function reportAnchors(){try{var els=document.querySelectorAll(".cv-entry,.cv-section");var ranges=[];var sy=window.scrollY||0;for(var i=0;i<els.length;i++){var r=els[i].getBoundingClientRect();ranges.push([r.top+sy,r.bottom+sy]);}parent.postMessage({type:"cv-anchors",ranges:ranges},"*");}catch(e){}}function reportAll(){report();reportAnchors();}function onWheel(e){if(!e.ctrlKey){try{parent.postMessage({type:"cv-wheel",deltaY:e.deltaY,deltaMode:e.deltaMode},"*");}catch(_){};return;}e.preventDefault();try{parent.postMessage({type:"cv-pinch",deltaY:e.deltaY,deltaMode:e.deltaMode,x:e.clientX,y:e.clientY},"*");}catch(_){}}function bind(){window.addEventListener("resize",reportAll);window.addEventListener("wheel",onWheel,{passive:false});if(typeof ResizeObserver!=="undefined"){try{var ro=new ResizeObserver(function(){reportAll();});ro.observe(document.body);}catch(_){}}if(document.fonts&&document.fonts.ready){document.fonts.ready.then(reportAll);}reportAll();}if(document.readyState==="complete"){bind();}else{window.addEventListener("load",bind);}})();</script>`;
+
+function withPreviewRuntime(html: string): string {
+  if (html.includes("</body>")) {
+    return html.replace("</body>", `${PREVIEW_RUNTIME}</body>`);
+  }
+  return html + PREVIEW_RUNTIME;
+}
 import { cn } from "@/lib/utils";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import { useAutofillSyncContext } from "../hooks/useAutofillSync";
@@ -22,6 +39,11 @@ type Props = {
    *  "frozen preview" error so we don't flash required-field complaints
    *  against an empty form. */
   hydrating?: boolean;
+  /** When set, the pane swaps the live HTML preview for an inline render of
+   *  the exported PDF (blob URL + suggested filename). */
+  pdfPreview?: { url: string; filename: string } | null;
+  /** Invoked when the user closes the PDF preview to return to live HTML. */
+  onClosePdfPreview?: () => void;
 };
 
 // Trackpad pinch sends many small ctrl+wheel events. exp() keeps zoom feel
@@ -94,31 +116,51 @@ export function EditorPreviewPane({
   onSectionClick,
   headerActions,
   hydrating = false,
+  pdfPreview = null,
+  onClosePdfPreview,
 }: Props) {
   const { getValues, control } = useFormContext<CvData>();
   const { isDirty } = useFormState({ control });
   const autofillSync = useAutofillSyncContext();
   const watchedValues = useWatch({ control });
+  const palette = useWatch({ control, name: "appearance.palette" });
   const textSizes = useWatch({ control, name: "appearance.textSizes" });
   const mediaSize = useWatch({ control, name: "appearance.mediaSize" });
+  const qrSize = useWatch({ control, name: "appearance.qrSize" });
   const spacing = useWatch({ control, name: "appearance.spacing" });
+  const lineHeights = useWatch({ control, name: "appearance.lineHeights" });
+  const typography = useWatch({ control, name: "appearance.typography" });
   const prefersReducedMotion = useReducedMotion();
   const [html, setHtml] = useState<string | null>(null);
   const [phase, setPhase] = useState<PreviewPhase>("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [iframeHeight, setIframeHeight] = useState<number>(MIN_IFRAME_HEIGHT_PX);
+  // Ranges of break-avoiding blocks inside the iframe (top, bottom in iframe-
+  // document px). The runtime reports these via "cv-anchors" so the page-split
+  // overlay can snap each natural page boundary to the start of the straddling
+  // element rather than slicing through it.
+  const [anchorRanges, setAnchorRanges] = useState<ReadonlyArray<readonly [number, number]>>([]);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const htmlRef = useRef<string | null>(null);
   const phaseRef = useRef<PreviewPhase>("idle");
+  // The community Stack Overflow theme (and future Node-only themes) can't
+  // render in the browser bundle — we POST to /api/v1/cv/preview-html and let
+  // the server return the HTML. AbortController cancels in-flight fetches
+  // when a newer debounce window starts so we never paint stale output.
+  const previewAbortRef = useRef<AbortController | null>(null);
   // Latest scale + mode kept in refs so the iframe onLoad callback (which
   // may run after many state updates) always sends the current value, not
   // a stale closure capture from when the iframe was created.
   const scaleRef = useRef<number>(scale);
   const overflowModeRef = useRef<OverflowMode>(overflowMode);
+  const paletteRef = useRef<typeof palette>(palette);
   const textSizesRef = useRef<typeof textSizes>(textSizes);
   const mediaSizeRef = useRef<typeof mediaSize>(mediaSize);
+  const qrSizeRef = useRef<typeof qrSize>(qrSize);
   const spacingRef = useRef<typeof spacing>(spacing);
+  const lineHeightsRef = useRef<typeof lineHeights>(lineHeights);
+  const typographyRef = useRef<typeof typography>(typography);
   const [viewZoom, setViewZoom] = useState<number>(VIEW_ZOOM_DEFAULT);
   const viewZoomRef = useRef<number>(viewZoom);
   const [containerWidth, setContainerWidth] = useState<number>(0);
@@ -139,14 +181,26 @@ export function EditorPreviewPane({
     overflowModeRef.current = overflowMode;
   }, [overflowMode]);
   useEffect(() => {
+    paletteRef.current = palette;
+  }, [palette]);
+  useEffect(() => {
     textSizesRef.current = textSizes;
   }, [textSizes]);
   useEffect(() => {
     mediaSizeRef.current = mediaSize;
   }, [mediaSize]);
   useEffect(() => {
+    qrSizeRef.current = qrSize;
+  }, [qrSize]);
+  useEffect(() => {
     spacingRef.current = spacing;
   }, [spacing]);
+  useEffect(() => {
+    lineHeightsRef.current = lineHeights;
+  }, [lineHeights]);
+  useEffect(() => {
+    typographyRef.current = typography;
+  }, [typography]);
   useEffect(() => {
     viewZoomRef.current = viewZoom;
   }, [viewZoom]);
@@ -240,8 +294,20 @@ export function EditorPreviewPane({
     target.postMessage({ type: "cv-overflow-mode", mode }, "*");
   }, []);
 
+  const postPalette = useCallback(
+    (next: { accent?: string; link?: string; ink?: string; soft?: string; rule?: string; canvas?: string } | undefined) => {
+      const target = iframeRef.current?.contentWindow;
+      if (!target) return;
+      target.postMessage({ type: "cv-palette", palette: next ?? null }, "*");
+    },
+    [],
+  );
+
   const postTextDeltas = useCallback(
-    (deltas: { paragraph?: number; header?: number; title?: number } | undefined) => {
+    (deltas: {
+      name?: number; label?: number; section?: number; title?: number;
+      card?: number; body?: number; meta?: number; fine?: number;
+    } | undefined) => {
       const target = iframeRef.current?.contentWindow;
       if (!target) return;
       target.postMessage({ type: "cv-text-deltas", deltas: deltas ?? {} }, "*");
@@ -255,27 +321,46 @@ export function EditorPreviewPane({
     target.postMessage({ type: "cv-media-delta", value }, "*");
   }, []);
 
+  const postQrDelta = useCallback((value: number | undefined) => {
+    const target = iframeRef.current?.contentWindow;
+    if (!target) return;
+    target.postMessage({ type: "cv-qr-delta", value }, "*");
+  }, []);
+
   const postSpaceDeltas = useCallback(
-    (deltas: { pageMargin?: number; sectionGap?: number; itemGap?: number; lineHeight?: number } | undefined) => {
+    (deltas: { pageMargin?: number; sectionGap?: number; itemGap?: number } | undefined) => {
       const target = iframeRef.current?.contentWindow;
       if (!target) return;
-      const spaceOnly = deltas
-        ? {
-            pageMargin: deltas.pageMargin,
-            sectionGap: deltas.sectionGap,
-            itemGap: deltas.itemGap,
-          }
-        : {};
-      target.postMessage({ type: "cv-space-deltas", deltas: spaceOnly }, "*");
+      target.postMessage({ type: "cv-space-deltas", deltas: deltas ?? {} }, "*");
     },
     [],
   );
 
-  const postLineHeightDelta = useCallback((value: number | undefined) => {
-    const target = iframeRef.current?.contentWindow;
-    if (!target) return;
-    target.postMessage({ type: "cv-line-height-delta", value }, "*");
-  }, []);
+  const postLineHeightDeltas = useCallback(
+    (deltas: { tight?: number; snug?: number; base?: number } | undefined) => {
+      const target = iframeRef.current?.contentWindow;
+      if (!target) return;
+      target.postMessage({ type: "cv-line-height-deltas", deltas: deltas ?? {} }, "*");
+    },
+    [],
+  );
+
+  const postTypography = useCallback(
+    (typo: { fontFamily?: string; letterSpacing?: number } | undefined) => {
+      const target = iframeRef.current?.contentWindow;
+      if (!target) return;
+      target.postMessage(
+        {
+          type: "cv-typography",
+          fontFamily: typo?.fontFamily ?? null,
+          letterSpacing:
+            typeof typo?.letterSpacing === "number" ? typo.letterSpacing : null,
+        },
+        "*",
+      );
+    },
+    [],
+  );
 
   // Push scale changes into the iframe.
   useEffect(() => {
@@ -292,8 +377,23 @@ export function EditorPreviewPane({
 
   useEffect(() => {
     if (!html) return;
+    postPalette(palette);
+  }, [palette, html, postPalette]);
+
+  useEffect(() => {
+    if (!html) return;
     postTextDeltas(textSizes);
   }, [textSizes, html, postTextDeltas]);
+
+  useEffect(() => {
+    if (!html) return;
+    postLineHeightDeltas(lineHeights);
+  }, [lineHeights, html, postLineHeightDeltas]);
+
+  useEffect(() => {
+    if (!html) return;
+    postTypography(typography);
+  }, [typography, html, postTypography]);
 
   useEffect(() => {
     if (!html) return;
@@ -302,13 +402,13 @@ export function EditorPreviewPane({
 
   useEffect(() => {
     if (!html) return;
-    postSpaceDeltas(spacing);
-  }, [spacing, html, postSpaceDeltas]);
+    postQrDelta(qrSize);
+  }, [qrSize, html, postQrDelta]);
 
   useEffect(() => {
     if (!html) return;
-    postLineHeightDelta(spacing?.lineHeight);
-  }, [spacing, html, postLineHeightDelta]);
+    postSpaceDeltas(spacing);
+  }, [spacing, html, postSpaceDeltas]);
 
   useEffect(() => {
     setMessage(null);
@@ -320,6 +420,7 @@ export function EditorPreviewPane({
     setPhase("idle");
     setMessage(null);
     setIframeHeight(MIN_IFRAME_HEIGHT_PX);
+    setAnchorRanges([]);
   }, [resetNonce]);
 
   useEffect(() => {
@@ -338,6 +439,7 @@ export function EditorPreviewPane({
         deltaMode?: number;
         x?: number;
         y?: number;
+        ranges?: unknown;
       };
       if (data?.type === "cv-section-click") {
         if (typeof data.sectionId === "string" && data.sectionId.trim().length > 0) {
@@ -373,6 +475,39 @@ export function EditorPreviewPane({
           };
         }
         applyPinchDelta(data.deltaY, data.deltaMode ?? 0, anchor);
+        return;
+      }
+      if (data?.type === "cv-anchors") {
+        if (!Array.isArray(data.ranges)) return;
+        const parsed: Array<readonly [number, number]> = [];
+        for (const raw of data.ranges) {
+          if (!Array.isArray(raw) || raw.length !== 2) continue;
+          const [top, bottom] = raw as [unknown, unknown];
+          if (
+            typeof top !== "number" ||
+            typeof bottom !== "number" ||
+            !Number.isFinite(top) ||
+            !Number.isFinite(bottom) ||
+            bottom <= top
+          ) {
+            continue;
+          }
+          parsed.push([top, bottom] as const);
+        }
+        parsed.sort((a, b) => a[0] - b[0]);
+        setAnchorRanges((prev) => {
+          if (prev.length === parsed.length) {
+            let same = true;
+            for (let i = 0; i < prev.length; i++) {
+              if (prev[i][0] !== parsed[i][0] || prev[i][1] !== parsed[i][1]) {
+                same = false;
+                break;
+              }
+            }
+            if (same) return prev;
+          }
+          return parsed;
+        });
         return;
       }
       if (data?.type !== "cv-height") return;
@@ -483,50 +618,102 @@ export function EditorPreviewPane({
         return;
       }
 
-      try {
-        const rendered = renderCvHtml(
-          parsed.data,
-          templateId,
-          undefined,
-          overflowMode,
-        );
-        const willChange = htmlRef.current !== rendered;
-        if (willChange) {
-          setHtml(rendered);
-          setPhase("rendering");
-          if (marks) {
-            try {
-              performance.mark(marks.setHtml);
-              performance.measure(marks.measure, marks.input, marks.setHtml);
-              const entries = performance.getEntriesByName(marks.measure);
-              const last = entries[entries.length - 1];
-              if (last) {
-                console.debug(`[cvie:preview] onchange→srcdoc ${last.duration.toFixed(1)}ms`);
-              }
-              performance.clearMarks(marks.input);
-              performance.clearMarks(marks.setHtml);
-              performance.clearMeasures(marks.measure);
-            } catch {
-              /* ignore */
-            }
+      const themeId = parsed.data.themeId ?? "community-stackoverflow";
+      const customization = (parsed.data.customization ?? {}) as Record<
+        string,
+        unknown
+      >;
+
+      // Cancel any in-flight render before kicking off a new one. The previous
+      // HTML stays painted until the new one arrives — keeps the iframe from
+      // flashing blank on every keystroke.
+      previewAbortRef.current?.abort();
+      const controller = new AbortController();
+      previewAbortRef.current = controller;
+      setPhase("rendering");
+      setMessage(null);
+
+      fetch("/api/v1/cv/preview-html", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cvData: parsed.data,
+          themeId,
+          // Server resolves a theme-appropriate default when atsMode is
+          // omitted; preview leaves it implicit so each theme picks its own
+          // canonical mode.
+          customization,
+        }),
+        signal: controller.signal,
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            const body = (await res.json().catch(() => ({}))) as {
+              code?: unknown;
+              error?: unknown;
+            };
+            throw new Error(
+              typeof body.error === "string"
+                ? body.error
+                : `Le serveur a répondu ${res.status}.`,
+            );
           }
-        } else {
-          // Render succeeded but HTML is unchanged — recover from any prior phase
-          // (including "error") so the UI never stays stuck with a stale status.
-          if (phaseRef.current !== "ready") setPhase("ready");
-        }
-        setMessage(null);
-      } catch (err) {
-        console.error("[EditorPreviewPane] renderCvHtml threw:", err);
-        setPhase("error");
-        setMessage(
-          "Une erreur est survenue pendant le rendu. Réessayez après votre prochaine modification.",
-        );
-      }
+          return res.text();
+        })
+        .then((rawHtml) => {
+          if (controller.signal.aborted) return;
+          const rendered = withPreviewRuntime(rawHtml);
+          const willChange = htmlRef.current !== rendered;
+          if (willChange) {
+            setHtml(rendered);
+            // Leave phase as "rendering" — the iframe onLoad flips it to "ready"
+            // once the new srcDoc has actually mounted.
+            if (marks) {
+              try {
+                performance.mark(marks.setHtml);
+                performance.measure(marks.measure, marks.input, marks.setHtml);
+                const entries = performance.getEntriesByName(marks.measure);
+                const last = entries[entries.length - 1];
+                if (last) {
+                  console.debug(`[cvie:preview] onchange→srcdoc ${last.duration.toFixed(1)}ms`);
+                }
+                performance.clearMarks(marks.input);
+                performance.clearMarks(marks.setHtml);
+                performance.clearMeasures(marks.measure);
+              } catch {
+                /* ignore */
+              }
+            }
+          } else if (phaseRef.current !== "ready") {
+            setPhase("ready");
+          }
+          setMessage(null);
+        })
+        .catch((err: unknown) => {
+          if (err instanceof DOMException && err.name === "AbortError") return;
+          if (controller.signal.aborted) return;
+          console.error("[EditorPreviewPane] preview fetch failed:", err);
+          setPhase("error");
+          setMessage(
+            err instanceof Error && err.message
+              ? err.message
+              : "Une erreur est survenue pendant le rendu. Réessayez après votre prochaine modification.",
+          );
+        });
     }, AUTO_REFRESH_DEBOUNCE_MS);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [watchedValues, templateId, overflowMode, autofillSync, getValues, isDirty, hydrating]);
+
+  // Abort any in-flight preview fetch when the component unmounts.
+  useEffect(() => {
+    return () => {
+      previewAbortRef.current?.abort();
+      previewAbortRef.current = null;
+    };
+  }, []);
 
   const statusText =
     phase === "rendering"
@@ -542,13 +729,34 @@ export function EditorPreviewPane({
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="font-mono-caps text-[10px] text-[var(--color-ink-soft)]">
-            Aperçu
+            {pdfPreview ? "Aperçu PDF" : "Aperçu"}
           </p>
-          <p className="text-[11px] text-[var(--color-ink-soft)]">{statusText}</p>
+          <p className="text-[11px] text-[var(--color-ink-soft)]">
+            {pdfPreview ? pdfPreview.filename : statusText}
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          {headerActions}
-          {viewZoom !== VIEW_ZOOM_DEFAULT || fitZoom < 1 ? (
+          {pdfPreview ? (
+            <>
+              <a
+                href={pdfPreview.url}
+                download={pdfPreview.filename}
+                className="font-mono-caps inline-flex h-7 items-center gap-1.5 rounded-full border border-[var(--color-rule)] bg-white/80 px-2.5 text-[10px] tracking-wider text-[var(--color-ink)] transition hover:bg-white motion-reduce:transition-none"
+              >
+                Télécharger
+              </a>
+              <button
+                type="button"
+                onClick={onClosePdfPreview}
+                aria-label="Fermer l'aperçu PDF"
+                className="font-mono-caps inline-flex h-7 items-center gap-1.5 rounded-full border border-[var(--color-rule)] bg-white/80 px-2.5 text-[10px] tracking-wider text-[var(--color-ink)] transition hover:bg-white motion-reduce:transition-none"
+              >
+                Fermer l'aperçu
+              </button>
+            </>
+          ) : null}
+          {!pdfPreview ? headerActions : null}
+          {!pdfPreview && (viewZoom !== VIEW_ZOOM_DEFAULT || fitZoom < 1) ? (
             <button
               type="button"
               onClick={resetZoom}
@@ -561,7 +769,7 @@ export function EditorPreviewPane({
               <span aria-hidden="true">↺</span>
             </button>
           ) : null}
-          {phase === "rendering" ? (
+          {!pdfPreview && phase === "rendering" ? (
             <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-rule)] bg-white/80 px-3 py-1 text-[11px] text-[var(--color-ink-soft)] shadow-sm backdrop-blur">
               <Spinner />
               Mise à jour
@@ -575,7 +783,14 @@ export function EditorPreviewPane({
         className="relative flex-1 overflow-auto"
         style={{ touchAction: "pan-x pan-y pinch-zoom" }}
       >
-        {html ? (
+        {pdfPreview ? (
+          <iframe
+            key={pdfPreview.url}
+            src={pdfPreview.url}
+            title={`Aperçu PDF — ${pdfPreview.filename}`}
+            className="block h-full w-full border-0 bg-[var(--color-paper,white)]"
+          />
+        ) : html ? (
           <>
             <div
               style={{
@@ -626,12 +841,59 @@ export function EditorPreviewPane({
                     // a fresh HTML render.
                     postScale(scaleRef.current);
                     postOverflowMode(overflowModeRef.current);
+                    postPalette(paletteRef.current);
                     postTextDeltas(textSizesRef.current);
                     postMediaDelta(mediaSizeRef.current);
+                    postQrDelta(qrSizeRef.current);
                     postSpaceDeltas(spacingRef.current);
-                    postLineHeightDelta(spacingRef.current?.lineHeight);
+                    postLineHeightDeltas(lineHeightsRef.current);
+                    postTypography(typographyRef.current);
                   }}
                 />
+                {(() => {
+                  // Cap how far the indicator can roll back from the natural
+                  // page boundary. A single oversized element (taller than
+                  // ~40% of a page) keeps the boundary at its natural spot —
+                  // otherwise we'd open a gaping blank zone on the prior page.
+                  const MAX_ROLLBACK_PX = MIN_IFRAME_HEIGHT_PX * 0.4;
+                  // Snap policy mirrors CSS `page-break-inside: avoid` on the
+                  // themes' `.cv-entry`/`.cv-section`. If a block straddles the
+                  // natural break, the printer pushes its whole body to the
+                  // next page; visualize that here by rolling the indicator up
+                  // to the block's top.
+                  const snap = (natural: number): number => {
+                    for (const [top, bottom] of anchorRanges) {
+                      if (top < natural && bottom > natural) {
+                        const rollback = natural - top;
+                        return rollback > MAX_ROLLBACK_PX ? natural : top;
+                      }
+                    }
+                    return natural;
+                  };
+                  return Array.from({
+                    length: Math.max(
+                      0,
+                      Math.ceil(iframeHeight / MIN_IFRAME_HEIGHT_PX) - 1,
+                    ),
+                  }).map((_, i) => {
+                    const pageBreakIndex = i + 1;
+                    const natural = MIN_IFRAME_HEIGHT_PX * pageBreakIndex;
+                    const snapped = snap(natural);
+                    const top = snapped * effectiveZoom;
+                    return (
+                      <div
+                        key={pageBreakIndex}
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-x-0 border-t border-dashed border-[var(--color-rule)]"
+                        style={{ top }}
+                      >
+                        <span className="font-mono-caps absolute right-1 -top-[7px] bg-[var(--color-paper,white)] px-1 text-[9px] tracking-wider text-[var(--color-ink-soft)]">
+                          page {pageBreakIndex + 1}
+                        </span>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
 

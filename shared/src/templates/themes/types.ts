@@ -2,6 +2,7 @@
 import type { z } from "zod";
 import type { JsonResume } from "../jsonResume/schema";
 import type { SupportedLocale } from "../jsonResume/dates";
+import type { Palette } from "../../types/cv";
 
 /** Three export profiles, ordered most-restrictive to least. */
 export type AtsMode = "ats-strict" | "ats-balanced" | "expressive";
@@ -25,6 +26,7 @@ export type ThemeMeta = {
   readonly atsProfile: AtsProfile;
   /** Whether this theme renders the basics.image. ATS-strict ignores it. */
   readonly supportsPhoto: boolean;
+  readonly defaultPalette: Palette;
   /** Default customization values — also the reset target in the UI. */
   readonly defaultCustomization: Readonly<Record<string, unknown>>;
   /** Zod schema validating the theme's customization. Public so the UI can
