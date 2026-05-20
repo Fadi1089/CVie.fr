@@ -1,9 +1,15 @@
 import type { Theme } from "./types";
 import { communityStackoverflow } from "./community-stackoverflow/index";
+import { atelierClassique } from "./atelier-classique/index";
+import { atelierModerne } from "./atelier-moderne/index";
+import { atelierMinimaliste } from "./atelier-minimaliste/index";
 
-// Single-theme registry — the atelier-* folders still exist on disk but are
-// dead code from the user's perspective. Their internal tests still pass in
-// isolation; nothing in the rendering / theme-selection pipeline reaches them
-// anymore. Leave them around for one release in case we need to roll back the
-// purge without re-vendoring the old in-house themes.
-export const themeRegistry: readonly Theme[] = [communityStackoverflow];
+// community-stackoverflow is the default user-facing theme; the atelier-* set
+// stays registered so the legacy in-house theme tests and any persisted CVs
+// referencing them keep working until we ship the explicit deprecation pass.
+export const themeRegistry: readonly Theme[] = [
+  communityStackoverflow,
+  atelierClassique,
+  atelierModerne,
+  atelierMinimaliste,
+];
