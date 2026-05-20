@@ -1,10 +1,6 @@
 import { chromium, type Browser } from "playwright";
-import {
-  renderResumeHtml,
-  safeImageUrl,
-  type CvData,
-  type AtsMode,
-} from "@cvie/shared";
+import { safeImageUrl, type CvData, type AtsMode } from "@cvie/shared";
+import { renderResumeHtmlServer } from "./resumeRenderServer";
 
 /**
  * Singleton Chromium browser. One launch per server lifetime, reused across
@@ -81,7 +77,7 @@ export async function generateResumePdf(input: GeneratePdfInput): Promise<Uint8A
     });
 
     const inlinedCv = await inlineRemotePhotoForPdf(input.cv);
-    const html = renderResumeHtml(inlinedCv, {
+    const html = renderResumeHtmlServer(inlinedCv, {
       themeId: input.themeId,
       atsMode: input.atsMode,
       customization: input.customization,
@@ -116,7 +112,7 @@ export async function generateResumePdf(input: GeneratePdfInput): Promise<Uint8A
  */
 export async function generateCvPdf(
   data: CvData,
-  template: string = "atelier-classique",
+  template: string = "community-stackoverflow",
   _scale = 1,
   _overflowMode: unknown = "section",
 ): Promise<Uint8Array> {
