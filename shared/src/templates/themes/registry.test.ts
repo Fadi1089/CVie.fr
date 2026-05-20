@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { themeRegistry, getTheme, requireTheme, listThemes } from "./index";
 
 describe("themeRegistry", () => {
-  it("contains atelier-classique", () => {
-    expect(themeRegistry.find((t) => t.meta.id === "atelier-classique")).toBeDefined();
+  it("contains community-stackoverflow", () => {
+    expect(themeRegistry.find((t) => t.meta.id === "community-stackoverflow")).toBeDefined();
   });
   it("has unique ids", () => {
     const ids = themeRegistry.map((t) => t.meta.id);
@@ -13,7 +13,7 @@ describe("themeRegistry", () => {
 
 describe("getTheme", () => {
   it("returns the theme by id", () => {
-    expect(getTheme("atelier-classique")?.meta.id).toBe("atelier-classique");
+    expect(getTheme("community-stackoverflow")?.meta.id).toBe("community-stackoverflow");
   });
   it("returns undefined for unknown ids", () => {
     expect(getTheme("does-not-exist")).toBeUndefined();
