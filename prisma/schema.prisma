@@ -21,6 +21,8 @@ model User {
   folders        Folder[]
   aiKeys         UserAiKey[]
   aiPreferences  UserAiPreference[]
+  masterCv       MasterCv?
+  aiInstruction  UserAiInstruction?
 
   @@map("users")
 }
@@ -87,4 +89,24 @@ model Cv {
 
   @@index([userId, folderId, updatedAt(sort: Desc)])
   @@map("cvs")
+}
+
+model MasterCv {
+  id        String   @id @default(cuid())
+  userId    String   @unique @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  data      Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  @@map("master_cvs")
+}
+
+model UserAiInstruction {
+  id        String   @id @default(cuid())
+  userId    String   @unique @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text      String   @db.VarChar(4000)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  @@map("user_ai_instructions")
 }
