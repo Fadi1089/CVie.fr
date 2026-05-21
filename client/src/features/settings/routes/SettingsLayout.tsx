@@ -6,6 +6,7 @@ const TABS = [
   { to: "/settings/profile", index: "01", label: "Profil" },
   { to: "/settings/ai-keys", index: "02", label: "Clés API" },
   { to: "/settings/models", index: "03", label: "Modèles" },
+  { to: "/settings/ai-instructions", index: "04", label: "Instructions IA" },
 ] as const;
 
 export function SettingsLayout() {

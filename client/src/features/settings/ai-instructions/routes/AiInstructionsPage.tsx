@@ -1,17 +1,25 @@
-import { useAiInstructions } from "./useAiInstructions";
+import { useAiInstructions } from "../hooks/useAiInstructions";
 
 export function AiInstructionsPage() {
   const { text, status, update, flush } = useAiInstructions();
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-10">
-      <h1 className="font-display text-2xl tracking-tight">Instructions IA</h1>
-      <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
-        Ces consignes sont ajoutées au prompt système de l'assistant CV et du
-        générateur Master CV. Elles s'appliquent à toutes les opérations IA.
-      </p>
+    <section>
+      <header className="mb-8">
+        <p className="font-mono-caps text-[10px] tracking-[0.18em] text-[var(--color-ink-soft)]">
+          Injecté dans le prompt système
+        </p>
+        <h2 className="mt-2 font-display text-[28px] leading-[1] tracking-[-0.02em]">
+          Instructions IA
+        </h2>
+        <p className="mt-3 max-w-[52ch] text-[13px] leading-relaxed text-[var(--color-ink-soft)]">
+          Ces consignes sont ajoutées au prompt système de l'assistant CV et du
+          générateur Master CV. Elles s'appliquent à toutes les opérations IA.
+        </p>
+      </header>
+
       <textarea
-        className="mt-6 h-64 w-full rounded-lg border border-[var(--color-rule)] bg-white/60 p-4 text-[14px]"
+        className="h-64 w-full rounded-lg border border-[var(--color-rule)] bg-white/60 p-4 text-[14px]"
         value={text}
         maxLength={4000}
         onChange={(e) => update(e.target.value)}
@@ -39,6 +47,6 @@ export function AiInstructionsPage() {
           Enregistrer
         </button>
       </div>
-    </div>
+    </section>
   );
 }
