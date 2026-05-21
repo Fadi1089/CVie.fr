@@ -84,4 +84,45 @@ describe("/api/v1/master-cv", () => {
     const res = await buildApp().request("/api/v1/master-cv");
     expect(res.status).toBe(401);
   });
+
+  it("PUT validates body and persists", async () => {
+    const inputData = { personalInfo: { firstName: "A", lastName: "B" } };
+    const res = await buildApp().request("/api/v1/master-cv", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: inputData }),
+    });
+    expect(res.status).toBe(200);
+    expect(saveMasterCvMock).toHaveBeenCalledWith(
+      meUserId,
+      expect.objectContaining({
+        personalInfo: expect.objectContaining({ firstName: "A", lastName: "B" }),
+      }),
+    );
+    const body = (await res.json()) as { data: { personalInfo: { firstName: string } } };
+    expect(body.data.personalInfo.firstName).toBe("A");
+  });
+
+  it("PUT rejects body over 512 KB", async () => {
+    const huge = "x".repeat(600_000);
+    const res = await buildApp().request("/api/v1/master-cv", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        data: { personalInfo: { firstName: "A", lastName: "B" }, notes: huge },
+      }),
+    });
+    expect(res.status).toBe(413);
+    expect(saveMasterCvMock).not.toHaveBeenCalled();
+  });
+
+  it("PUT rejects invalid schema", async () => {
+    const res = await buildApp().request("/api/v1/master-cv", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: { personalInfo: { firstName: "" } } }),
+    });
+    expect(res.status).toBe(400);
+    expect(saveMasterCvMock).not.toHaveBeenCalled();
+  });
 });
