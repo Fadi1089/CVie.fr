@@ -38,6 +38,9 @@ const ModelsPage = lazy(() =>
 const AiKeysPage = lazy(() =>
   import("./features/settings/ai-keys").then((m) => ({ default: m.AiKeysPage })),
 );
+const AiInstructionsPage = lazy(() =>
+  import("./features/settings/ai-instructions").then((m) => ({ default: m.AiInstructionsPage })),
+);
 const TemplateDemoPage = lazy(() =>
   import("./routes/TemplateDemoPage").then((m) => ({ default: m.TemplateDemoPage })),
 );
@@ -274,6 +277,7 @@ export const router = createBrowserRouter([
         children: [
           { path: "profile", element: <ProfilePage /> },
           { path: "ai-keys", element: <AiKeysPage /> },
+          { path: "ai-instructions", element: <AiInstructionsPage /> },
           { path: "models", element: <ModelsPage /> },
         ],
       },
