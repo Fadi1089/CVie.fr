@@ -13,6 +13,7 @@ import {
   jsonResponseProviderOptions,
   parseAiJson,
 } from "./aiJson";
+import { buildUserInstructionsBlock } from "./aiInstructions";
 
 const LANGUAGE_LABEL: Record<LocaleCode, string> = {
   fr: "français",
@@ -22,7 +23,10 @@ const LANGUAGE_LABEL: Record<LocaleCode, string> = {
   nl: "néerlandais",
 };
 
-const SYSTEM_PROMPT = (targetLabel: string) => `Tu es un traducteur professionnel de CV.
+const SYSTEM_PROMPT = (
+  targetLabel: string,
+  userInstructions: string | null,
+) => `Tu es un traducteur professionnel de CV.
 Tu reçois un CV au format JSON et tu dois retourner le même CV traduit en ${targetLabel}.
 
 Règles strictes — appliquer toutes :
@@ -35,7 +39,7 @@ Règles strictes — appliquer toutes :
 - Conserver toutes les structures, tableaux, et clés exactement comme reçus.
 - Si appearance.locale est présent, le mettre à jour vers la langue cible.
 
-${JSON_OUTPUT_CONTRACT}`;
+${userInstructions ? `${userInstructions}\n\n` : ""}${JSON_OUTPUT_CONTRACT}`;
 
 function buildModel(provider: AiProvider, apiKey: string, model: string) {
   if (provider === "openai") {
@@ -47,19 +51,25 @@ function buildModel(provider: AiProvider, apiKey: string, model: string) {
   return createAnthropic({ apiKey })(model);
 }
 
-export async function translateCv(
-  cv: CvData,
-  target: LocaleCode,
-  provider: AiProvider,
-  apiKey: string,
-  model: string,
-): Promise<CvData> {
-  const label = LANGUAGE_LABEL[target];
+export type TranslateCvArgs = {
+  userId: string | null;
+  cv: CvData;
+  target: LocaleCode;
+  provider: AiProvider;
+  apiKey: string;
+  model: string;
+};
+
+export async function translateCv(args: TranslateCvArgs): Promise<CvData> {
+  const label = LANGUAGE_LABEL[args.target];
+  const userInstructions = args.userId
+    ? await buildUserInstructionsBlock(args.userId)
+    : null;
   const { text } = await generateText({
-    model: buildModel(provider, apiKey, model),
-    system: SYSTEM_PROMPT(label),
-    prompt: `CV source (JSON) à traduire en ${label} :\n\n${JSON.stringify(cv)}`,
-    providerOptions: jsonResponseProviderOptions(provider),
+    model: buildModel(args.provider, args.apiKey, args.model),
+    system: SYSTEM_PROMPT(label, userInstructions),
+    prompt: `CV source (JSON) à traduire en ${label} :\n\n${JSON.stringify(args.cv)}`,
+    providerOptions: jsonResponseProviderOptions(args.provider),
   });
 
   let parsed: unknown;

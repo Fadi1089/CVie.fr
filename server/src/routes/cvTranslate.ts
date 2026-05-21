@@ -78,13 +78,14 @@ cvTranslateRoutes.post("/", async (c) => {
   }
 
   try {
-    const translated = await translateCv(
-      parsed.data,
-      targetParsed.data,
+    const translated = await translateCv({
+      userId,
+      cv: parsed.data,
+      target: targetParsed.data,
       provider,
-      resolved.key,
+      apiKey: resolved.key,
       model,
-    );
+    });
     console.info(
       "[cv/translate] success",
       JSON.stringify({ source: resolved.source, provider, model }),
