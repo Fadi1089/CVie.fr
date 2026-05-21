@@ -10,6 +10,7 @@ import { cvAssistantRoutes } from "./routes/cvAssistant";
 import { folderRoutes } from "./routes/folders";
 import { aiKeyRoutes } from "./routes/aiKeys";
 import { aiPreferenceRoutes } from "./routes/aiPreferences";
+import { aiInstructionsRoutes } from "./routes/aiInstructions";
 import { themesRoutes } from "./routes/themes";
 import { shutdownPdfService, warmupPdfService } from "./services/pdfService";
 
@@ -32,6 +33,7 @@ app.route("/api/v1/avatar", avatarRoutes);
 app.route("/api/v1/folders", folderRoutes);
 app.route("/api/v1/ai-keys", aiKeyRoutes);
 app.route("/api/v1/ai-preferences", aiPreferenceRoutes);
+app.route("/api/v1/ai-instructions", aiInstructionsRoutes);
 app.route("/api/v1/themes", themesRoutes);
 
 // Serve the built SPA's static assets from the client workspace
