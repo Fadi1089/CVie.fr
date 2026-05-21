@@ -1,5 +1,6 @@
 import { describe, expect, it, mock, beforeEach } from "bun:test";
 import { Hono } from "hono";
+import type { MasterCvData } from "@cvie/shared";
 
 const meUserId = "u_master_1";
 
@@ -9,9 +10,18 @@ const loadMasterCvMock = mock(
 const saveMasterCvMock = mock(
   async (_userId: string, data: unknown) => data,
 );
+const mergeIntoMasterMock = mock(
+  (_seed: unknown, _sources: unknown) => ({ personalInfo: { firstName: "Merged", lastName: "Result", portfolioDisplay: "clickable" as const }, summaries: [], experiences: [], formations: [], skills: [], languages: [], interests: [], projects: [], certifications: [] } as MasterCvData),
+);
 mock.module("../../services/masterCvService", () => ({
   loadMasterCv: loadMasterCvMock,
   saveMasterCv: saveMasterCvMock,
+  mergeIntoMaster: mergeIntoMasterMock,
+}));
+
+const prismaCvFindManyMock = mock(async () => [] as Array<{ data: unknown; updatedAt: Date; id: string; userId: string }>);
+mock.module("../../lib/prisma", () => ({
+  prisma: { cv: { findMany: prismaCvFindManyMock } },
 }));
 
 let authMockEnabled = true;
@@ -48,6 +58,8 @@ describe("/api/v1/master-cv", () => {
   beforeEach(() => {
     loadMasterCvMock.mockClear();
     saveMasterCvMock.mockClear();
+    mergeIntoMasterMock.mockClear();
+    prismaCvFindManyMock.mockClear();
     authMockEnabled = true;
   });
 
@@ -124,5 +136,71 @@ describe("/api/v1/master-cv", () => {
     });
     expect(res.status).toBe(400);
     expect(saveMasterCvMock).not.toHaveBeenCalled();
+  });
+
+  describe("POST /seed", () => {
+    it("200 happy path: prisma returns 1 CV, mergeIntoMaster called, response has {data: ...}", async () => {
+      const cvRow = {
+        id: "cv_1",
+        userId: meUserId,
+        updatedAt: new Date(),
+        data: {
+          personalInfo: { firstName: "A", lastName: "B" },
+          experiences: [],
+          formations: [],
+          skills: [],
+          languages: [],
+          interests: [],
+          themeId: "community-stackoverflow",
+          customization: {},
+        },
+      };
+      prismaCvFindManyMock.mockResolvedValueOnce([cvRow]);
+      loadMasterCvMock.mockResolvedValueOnce(null);
+
+      const res = await buildApp().request("/api/v1/master-cv/seed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sourceCvIds: ["cv_1"] }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(prismaCvFindManyMock).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: { in: ["cv_1"] }, userId: meUserId } }),
+      );
+      expect(mergeIntoMasterMock).toHaveBeenCalledTimes(1);
+      const body = (await res.json()) as { data: { personalInfo: { firstName: string } } };
+      expect(body.data.personalInfo.firstName).toBe("Merged");
+    });
+
+    it("400 on bad JSON body", async () => {
+      const res = await buildApp().request("/api/v1/master-cv/seed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "not-json{{{",
+      });
+      expect(res.status).toBe(400);
+      expect(mergeIntoMasterMock).not.toHaveBeenCalled();
+    });
+
+    it("400 on validation failure (sourceCvIds not an array)", async () => {
+      const res = await buildApp().request("/api/v1/master-cv/seed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sourceCvIds: "not-an-array" }),
+      });
+      expect(res.status).toBe(400);
+      expect(mergeIntoMasterMock).not.toHaveBeenCalled();
+    });
+
+    it("requires auth", async () => {
+      authMockEnabled = false;
+      const res = await buildApp().request("/api/v1/master-cv/seed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sourceCvIds: [] }),
+      });
+      expect(res.status).toBe(401);
+    });
   });
 });
