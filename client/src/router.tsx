@@ -41,6 +41,9 @@ const AiKeysPage = lazy(() =>
 const AiInstructionsPage = lazy(() =>
   import("./features/settings/ai-instructions").then((m) => ({ default: m.AiInstructionsPage })),
 );
+const MasterCvEditor = lazy(() =>
+  import("./features/master-cv/components/MasterCvEditor").then((m) => ({ default: m.MasterCvEditor })),
+);
 const TemplateDemoPage = lazy(() =>
   import("./routes/TemplateDemoPage").then((m) => ({ default: m.TemplateDemoPage })),
 );
@@ -269,6 +272,7 @@ export const router = createBrowserRouter([
       { path: "/home", element: <Navigate to="/editor" replace /> },
       { path: "/templates", element: <Navigate to="/editor" replace /> },
       { path: "/editor", element: <EditorRouteGate /> },
+      { path: "/master-cv", element: <MasterCvEditor /> },
       { path: "/template-demo", element: <TemplateDemoPage /> },
       { path: "/auth/callback", element: <AuthCallback /> },
       {
