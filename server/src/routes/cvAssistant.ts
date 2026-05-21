@@ -147,6 +147,7 @@ cvAssistantRoutes.post("/chat", async (c) => {
 
   try {
     const { result } = await runAssistant({
+      userId,
       cv: parsed.data.cv,
       // `parts` is `unknown[]` here for safety; the SDK accepts the broad
       // shape and only inspects fields it knows about.

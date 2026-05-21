@@ -10,6 +10,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { AiProvider, CvData } from "@cvie/shared";
 import { buildAssistantTools, type AssistantState } from "./aiTools";
+import { buildUserInstructionsBlock } from "./aiInstructions";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type StreamResult = StreamTextResult<ToolSet, any>;
@@ -54,6 +55,7 @@ function buildModel(provider: AiProvider, apiKey: string, model: string) {
 }
 
 export type RunAssistantArgs = {
+  userId: string;
   cv: CvData;
   messages: UIMessage[];
   provider: AiProvider;
@@ -69,9 +71,10 @@ export async function runAssistant(
 ): Promise<{ result: StreamResult; state: AssistantState }> {
   const { state, tools } = buildAssistantTools(args.cv);
   const modelMessages = await convertToModelMessages(args.messages);
+  const userInstructions = await buildUserInstructionsBlock(args.userId);
   const result = streamText({
     model: buildModel(args.provider, args.apiKey, args.model),
-    system: `${SYSTEM_PROMPT_FR}\n\nÉTAT INITIAL DU CV:\n${JSON.stringify(args.cv, null, 2)}`,
+    system: `${SYSTEM_PROMPT_FR}\n\n${userInstructions}\n\nÉTAT INITIAL DU CV:\n${JSON.stringify(args.cv, null, 2)}`,
     messages: modelMessages,
     tools,
     stopWhen: ({ steps }) => steps.length >= 6,
