@@ -1,6 +1,11 @@
 import "@testing-library/jest-dom/vitest";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+
+vi.mock("@/features/auth/hooks/useAuthApi", () => ({
+  useAuthApi: () => ({ fetch: globalThis.fetch }),
+}));
+
 import { AiInstructionsPage } from "../AiInstructionsPage";
 
 const fetchMock = vi.fn();
