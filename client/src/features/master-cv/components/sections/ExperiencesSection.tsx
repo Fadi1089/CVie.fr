@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { createEmptyCv, type CvData, type MasterExperience } from "@cvie/shared";
 import { ExperiencesSection as BaseExperiencesSection } from "../../../editor/components/ExperiencesSection";
@@ -47,6 +47,7 @@ export function ExperiencesSection({
   });
   const onChangeRef = useRef(onChange);
   const valueRef = useRef(value);
+  const lastEmittedRef = useRef<MasterExperience[]>(value);
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
@@ -54,8 +55,18 @@ export function ExperiencesSection({
     valueRef.current = value;
   }, [value]);
 
-  // External → internal: re-seed experiences when value identity changes.
+  // Single canonical sink for parent updates: record what we emit so the
+  // [value] effect below can skip the redundant form.reset when the parent
+  // round-trips back the same reference.
+  const emit = useCallback((next: MasterExperience[]) => {
+    lastEmittedRef.current = next;
+    onChangeRef.current(next);
+  }, []);
+
+  // External → internal: re-seed experiences when value identity changes,
+  // but skip when the new value is the same reference we just emitted.
   useEffect(() => {
+    if (value === lastEmittedRef.current) return;
     form.reset(
       { ...form.getValues(), experiences: stripExtras(value) },
       { keepDirty: false, keepErrors: true },
@@ -69,13 +80,13 @@ export function ExperiencesSection({
       if (!name?.startsWith("experiences")) return;
       const inner = (data.experiences ?? []) as InnerExperience[];
       const next = mergeFromInner(inner, valueRef.current);
-      onChangeRef.current(next);
+      emit(next);
     });
     return () => sub.unsubscribe();
-  }, [form]);
+  }, [form, emit]);
 
   const updateEntry = (id: string, patch: Partial<MasterExperience>) => {
-    onChange(value.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+    emit(value.map((e) => (e.id === id ? { ...e, ...patch } : e)));
   };
 
   const addAchievement = (id: string) => {
@@ -131,7 +142,10 @@ export function ExperiencesSection({
                 {e.achievements.length > 0 && (
                   <ul className="mt-2 flex flex-col gap-1">
                     {e.achievements.map((a, idx) => (
-                      <li key={idx} className="flex items-center gap-2">
+                      <li
+                        key={`${e.id}-${idx}`}
+                        className="flex items-center gap-2"
+                      >
                         <input
                           value={a}
                           maxLength={2000}
