@@ -13,10 +13,12 @@ export function PdfImportDialog({
   const { fetch: authFetch } = useAuthApi();
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
 
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setFileName(file.name);
     if (file.type !== "application/pdf") {
       setStatus("error");
       setError("Le fichier doit être un PDF.");
@@ -51,14 +53,27 @@ export function PdfImportDialog({
       <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
         Sélectionnez un CV au format PDF pour pré-remplir votre Master CV.
       </p>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="application/pdf"
-        onChange={onFile}
-        disabled={status === "loading"}
-        className="mt-4 block w-full text-sm"
-      />
+      <div className="mt-4 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={status === "loading"}
+          className="font-mono-caps rounded-full border border-[var(--color-rule)] px-3 py-2 text-[10px] tracking-[0.18em] text-[var(--color-ink)] hover:border-[var(--color-ink-soft)] disabled:opacity-40"
+        >
+          CHOISIR UN FICHIER
+        </button>
+        <span className="truncate text-sm text-[var(--color-ink-soft)]">
+          {fileName ?? "Aucun fichier sélectionné"}
+        </span>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="application/pdf"
+          onChange={onFile}
+          disabled={status === "loading"}
+          className="sr-only"
+        />
+      </div>
       {status === "loading" && (
         <p className="mt-3 text-sm text-[var(--color-ink-soft)]">Analyse en cours…</p>
       )}
