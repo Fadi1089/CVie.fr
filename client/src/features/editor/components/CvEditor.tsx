@@ -25,7 +25,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { AutofillSyncContext, useAutofillSync } from "../hooks/useAutofillSync";
-import { PendingChangesProvider } from "../hooks/usePendingChanges";
+import { PendingChangesProvider, usePendingChanges } from "../hooks/usePendingChanges";
+import { pendingChangesHandoff } from "@/features/master-cv/pendingChangesHandoff";
 import { EditorJumpContext, resolvePathToJump } from "../hooks/useEditorJump";
 import { useCvDraft, type PersistStatus } from "../hooks/useCvDraft";
 import { useAuth0 } from "@auth0/auth0-react";
@@ -360,6 +361,18 @@ function EditorShell({
 }: EditorShellProps) {
   const autofillSync = useAutofillSync<CvData>();
   const { control, getValues } = useFormContext<CvData>();
+  const { add: addPendingChanges } = usePendingChanges();
+  const handoffAppliedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (hydrating) return;
+    if (!cvId) return;
+    if (handoffAppliedRef.current === cvId) return;
+    handoffAppliedRef.current = cvId;
+    const changes = pendingChangesHandoff.takeFor(cvId);
+    if (changes.length > 0) {
+      addPendingChanges(changes, "tailor");
+    }
+  }, [hydrating, cvId, addPendingChanges]);
   const watchedThemeId = useWatch({ control, name: "themeId" });
   const activeThemeId =
     typeof watchedThemeId === "string" && watchedThemeId.length > 0
