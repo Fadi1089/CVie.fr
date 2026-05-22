@@ -53,6 +53,8 @@ export function MasterCvEditor() {
             <li>{previewData.skills.length} compétences</li>
             <li>{previewData.languages.length} langues</li>
             <li>{previewData.interests.length} intérêts</li>
+            <li>{previewData.projects.length} projets</li>
+            <li>{previewData.certifications.length} certifications</li>
           </ul>
           <div className="mt-6 flex justify-end gap-2">
             <button
