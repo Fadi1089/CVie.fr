@@ -9,6 +9,10 @@ import { AuthGate, LoginButton, UserMenu } from "@/features/auth";
 import { useAuthApi } from "@/features/auth/hooks/useAuthApi";
 import { createMasterCvStore } from "@/features/master-cv/store/masterCvStore";
 import { MasterCvPicker } from "@/features/master-cv/components/MasterCvPicker";
+import { TailorStreamPanel } from "@/features/master-cv/components/TailorStreamPanel";
+import { useMasterCvTailor } from "@/features/master-cv/hooks/useMasterCvTailor";
+import { useAiPreferences } from "@/features/settings/hooks/useAiPreferences";
+import { defaultModelFor } from "@cvie/shared";
 import type { MasterCvData, CvData } from "@cvie/shared";
 import { ModelPickerPill } from "./ai-assistant/ModelPickerPill";
 import {
@@ -305,7 +309,7 @@ function AuthedSidebar({
   const createCvWithName = async (
     title: string,
     mode: StartMode,
-    _options?: { jd?: string },
+    options?: { jd?: string },
   ) => {
     const templateId = activeTemplateId ?? "classique";
     // Compute targetFolderId once so we can stash it for picker / streaming phases
@@ -325,9 +329,23 @@ function AuthedSidebar({
       return;
     }
     if (mode === "master-jd") {
-      toast.push("Adaptation par IA — bientôt disponible", { variant: "info" });
-      setCvNameModalOpen(false);
-      setModalPhase("name");
+      const jdText = options?.jd?.trim() ?? "";
+      if (jdText.length === 0) {
+        toast.push("Offre d'emploi manquante", { variant: "error" });
+        return;
+      }
+      const pref = aiPrefs.findFor("cvTailor");
+      const provider = pref?.provider ?? "anthropic";
+      const model = pref?.model ?? defaultModelFor(provider);
+      setModalPhase("streaming");
+      void tailor.start({
+        title,
+        templateId,
+        folderId: targetFolderId,
+        jdText,
+        provider,
+        model,
+      });
       return;
     }
     // empty / copy paths
@@ -386,6 +404,8 @@ function AuthedSidebar({
   const hasMaster = masterData !== null;
   const { fetch: authFetch } = useAuthApi();
   const masterStore = useMemo(() => createMasterCvStore(authFetch), [authFetch]);
+  const tailor = useMasterCvTailor();
+  const aiPrefs = useAiPreferences();
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(() =>
     readSelectedFolder(sub),
   );
@@ -414,6 +434,23 @@ function AuthedSidebar({
   useEffect(() => {
     writeSelectedFolder(sub, selectedFolderId);
   }, [sub, selectedFolderId]);
+
+  useEffect(() => {
+    if (tailor.phase !== "done" || !tailor.cvId) return;
+    const newCvId = tailor.cvId;
+    const newTemplateId = pendingTemplate ?? "community-stackoverflow";
+    try {
+      window.localStorage.setItem(TEMPLATE_SELECTION_KEY, newTemplateId);
+    } catch {
+      /* ignore */
+    }
+    setCvNameModalOpen(false);
+    setModalPhase("name");
+    void lib.refresh();
+    navigate(
+      `/editor?template=${encodeURIComponent(newTemplateId)}&cv=${encodeURIComponent(newCvId)}&new=1`,
+    );
+  }, [tailor.phase, tailor.cvId, pendingTemplate, navigate, lib]);
 
   // Auto-track the active CV's folder so opening a CV from URL or another
   // surface lights up its folder. Falls back to the default Mes CV folder
@@ -970,6 +1007,43 @@ function AuthedSidebar({
                 className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper)] px-6 py-4 text-sm text-[var(--color-ink-soft)]"
               >
                 Chargement du Master CV…
+              </div>
+            </>,
+            document.body,
+          )
+        : null}
+      {cvNameModalOpen && modalPhase === "streaming"
+        ? createPortal(
+            <>
+              <div
+                className="fixed inset-0 z-50 bg-black/30"
+                aria-hidden="true"
+              />
+              <div className="fixed left-1/2 top-1/2 z-50 w-[480px] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper)] shadow-xl">
+                <TailorStreamPanel
+                  events={tailor.events}
+                  phase={tailor.phase}
+                  error={tailor.error}
+                  onCancel={() => {
+                    tailor.cancel();
+                    setCvNameModalOpen(false);
+                    setModalPhase("name");
+                  }}
+                />
+                {tailor.phase === "error" ? (
+                  <div className="flex justify-end gap-2 border-t border-[var(--color-rule)] px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCvNameModalOpen(false);
+                        setModalPhase("name");
+                      }}
+                      className="text-sm underline"
+                    >
+                      Fermer
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </>,
             document.body,
