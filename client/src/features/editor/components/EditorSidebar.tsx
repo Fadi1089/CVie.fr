@@ -325,8 +325,10 @@ function AuthedSidebar({
       return;
     }
     if (mode === "master-jd") {
-      setModalPhase("streaming");
-      return; // Task 41 will replace this with real streaming
+      toast.push("Adaptation par IA — bientôt disponible", { variant: "info" });
+      setCvNameModalOpen(false);
+      setModalPhase("name");
+      return;
     }
     // empty / copy paths
     setCvNameModalOpen(false);
@@ -353,7 +355,13 @@ function AuthedSidebar({
       toast.push("Impossible de créer le CV", { variant: "error" });
     }
   };
-  const onCreateCv = () => { setModalPhase("name"); setCvNameModalOpen(true); };
+  const onCreateCv = () => {
+    setPendingTitle("");
+    setPendingTemplate(null);
+    setPendingFolder(null);
+    setModalPhase("name");
+    setCvNameModalOpen(true);
+  };
   const [folderCollapsed, setFolderCollapsed] = useState<Set<string>>(() =>
     readFolderCollapsed(sub),
   );
@@ -395,6 +403,7 @@ function AuthedSidebar({
     })();
     return () => {
       cancelled = true;
+      setMasterData(null);
     };
   }, [cvNameModalOpen, masterStore]);
 
@@ -894,43 +903,78 @@ function AuthedSidebar({
           onConfirm={(name, mode, options) =>
             void createCvWithName(name, mode, options)
           }
-          onCancel={() => { setCvNameModalOpen(false); setModalPhase("name"); }}
-        />
-      ) : null}
-      {cvNameModalOpen && modalPhase === "picker" && masterData ? (
-        <MasterCvPicker
-          master={masterData}
-          onCancel={() => setModalPhase("name")}
-          onCreate={async (cvData: CvData) => {
-            try {
-              const created = await lib.createCv(
-                {
-                  title: pendingTitle,
-                  templateId: pendingTemplate ?? "classique",
-                  folderId: pendingFolder ?? undefined,
-                },
-                cvData,
-              );
-              onCvCreated?.(created as unknown as CvLibraryRecord);
-              setCvNameModalOpen(false);
-              setModalPhase("name");
-              try {
-                window.localStorage.setItem(
-                  TEMPLATE_SELECTION_KEY,
-                  pendingTemplate ?? "classique",
-                );
-              } catch {
-                /* ignore */
-              }
-              navigate(
-                `/editor?template=${pendingTemplate}&cv=${encodeURIComponent(created.id)}&new=1`,
-              );
-            } catch {
-              toast.push("Impossible de créer le CV", { variant: "error" });
-            }
+          onCancel={() => {
+            setCvNameModalOpen(false);
+            setModalPhase("name");
+            setPendingTitle("");
+            setPendingTemplate(null);
+            setPendingFolder(null);
           }}
         />
       ) : null}
+      {cvNameModalOpen && modalPhase === "picker" && masterData
+        ? createPortal(
+            <>
+              <div
+                className="fixed inset-0 z-50 bg-black/30"
+                aria-hidden="true"
+                onClick={() => setModalPhase("name")}
+              />
+              <div
+                className="fixed left-1/2 top-1/2 z-50 max-h-[85vh] w-[600px] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 overflow-y-auto"
+              >
+                <MasterCvPicker
+                  master={masterData}
+                  onCancel={() => setModalPhase("name")}
+                  onCreate={async (cvData: CvData) => {
+                    try {
+                      const created = await lib.createCv(
+                        {
+                          title: pendingTitle,
+                          templateId: pendingTemplate ?? "classique",
+                          folderId: pendingFolder ?? undefined,
+                        },
+                        cvData,
+                      );
+                      onCvCreated?.(created as unknown as CvLibraryRecord);
+                      setCvNameModalOpen(false);
+                      setModalPhase("name");
+                      try {
+                        window.localStorage.setItem(
+                          TEMPLATE_SELECTION_KEY,
+                          pendingTemplate ?? "classique",
+                        );
+                      } catch {
+                        /* ignore */
+                      }
+                      navigate(
+                        `/editor?template=${encodeURIComponent(pendingTemplate ?? "classique")}&cv=${encodeURIComponent(created.id)}&new=1`,
+                      );
+                    } catch {
+                      toast.push("Impossible de créer le CV", { variant: "error" });
+                    }
+                  }}
+                />
+              </div>
+            </>,
+            document.body,
+          )
+        : null}
+      {cvNameModalOpen && modalPhase === "picker" && !masterData
+        ? createPortal(
+            <>
+              <div className="fixed inset-0 z-50 bg-black/30" aria-hidden="true" />
+              <div
+                role="status"
+                aria-live="polite"
+                className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper)] px-6 py-4 text-sm text-[var(--color-ink-soft)]"
+              >
+                Chargement du Master CV…
+              </div>
+            </>,
+            document.body,
+          )
+        : null}
     </aside>
   );
 }
