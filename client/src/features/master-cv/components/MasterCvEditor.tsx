@@ -14,6 +14,7 @@ import { InterestsSection } from "./sections/InterestsSection";
 import { ProjectsSection } from "./sections/ProjectsSection";
 import { CertificationsSection } from "./sections/CertificationsSection";
 import { NotesSection } from "./sections/NotesSection";
+import { MasterCvHeader } from "./MasterCvHeader";
 
 export function MasterCvEditor() {
   const { isAuthenticated, isLoading } = useAuth0();
@@ -46,12 +47,11 @@ function Editor({
   const { data, status, update } = useMasterCvDraft(initial);
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
-      <header className="flex items-center justify-between">
-        <h1 className="font-display text-2xl">Mon Master CV</h1>
-        <span className="text-xs text-[var(--color-ink-soft)]">
-          {status === "saving" ? "Enregistrement…" : status === "offline" ? "Hors-ligne" : "Enregistré"}
-        </span>
-      </header>
+      <MasterCvHeader
+        status={status}
+        onImportFromCvs={() => console.info("import from CV: pending Task 27 wiring")}
+        onImportPdf={() => console.info("import PDF: pending Task 28 wiring")}
+      />
       <div className="mt-6">
         <PersonalInfoSection
           value={data.personalInfo}
