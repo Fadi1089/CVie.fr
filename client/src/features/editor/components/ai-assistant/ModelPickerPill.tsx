@@ -5,14 +5,13 @@ import {
   PROVIDER_LABELS,
   defaultModelFor,
   findModel,
+  type AiFeature,
   type AiProvider,
 } from "@cvie/shared";
 import { useAiKeys } from "@/features/settings/ai-keys/hooks/useAiKeys";
 import { useAiPreferences } from "@/features/settings/hooks/useAiPreferences";
 
-const FEATURE = "cvAssistant" as const;
-
-export function ModelPickerPill() {
+export function ModelPickerPill({ feature = "cvAssistant" }: { feature?: AiFeature } = {}) {
   const prefs = useAiPreferences();
   const keys = useAiKeys();
   const [open, setOpen] = useState(false);
@@ -34,7 +33,7 @@ export function ModelPickerPill() {
     };
   }, [open]);
 
-  const current = prefs.findFor(FEATURE);
+  const current = prefs.findFor(feature);
   const provider: AiProvider = current?.provider ?? AI_PROVIDERS[0];
   const modelId = current?.model ?? defaultModelFor(provider);
   const label = findModel(provider, modelId)?.label ?? modelId;
@@ -43,7 +42,7 @@ export function ModelPickerPill() {
 
   function select(p: AiProvider, m: string) {
     setOpen(false);
-    void prefs.upsert(FEATURE, p, m);
+    void prefs.upsert(feature, p, m);
   }
 
   return (
