@@ -78,11 +78,8 @@ masterCvTailorRoutes.post("/", async (c) => {
         }
         controller.close();
       } catch (err) {
-        send({
-          type: "error",
-          code: "stream_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        console.error("[masterCvTailor] stream failed", err);
+        send({ type: "error", code: "stream_failed" });
         controller.close();
       }
     },

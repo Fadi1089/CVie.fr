@@ -73,4 +73,89 @@ describe("useMasterCvTailor", () => {
     expect(result.current.phase).toBe("error");
     expect(result.current.error).toBe("HTTP 412");
   });
+
+  it("cancel suppresses a late done event so phase stays idle", async () => {
+    let releaseRead: (() => void) | null = null;
+    const gate = new Promise<void>((resolve) => {
+      releaseRead = resolve;
+    });
+    const enc = new TextEncoder();
+    const stream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        await gate;
+        controller.enqueue(
+          enc.encode(
+            `data: ${JSON.stringify({ type: "done", cvId: "cv_late", pendingChanges: [] })}\n\n`,
+          ),
+        );
+        controller.close();
+      },
+    });
+    authFetchMock.mockResolvedValueOnce({ ok: true, status: 200, body: stream });
+    const { result } = renderHook(() => useMasterCvTailor());
+    let startPromise: Promise<void>;
+    await act(async () => {
+      startPromise = result.current.start({
+        title: "T",
+        templateId: "x",
+        jdText: "JD",
+        provider: "anthropic",
+        model: "claude-sonnet-4-6",
+      });
+      await Promise.resolve();
+    });
+    expect(result.current.phase).toBe("streaming");
+    await act(async () => {
+      result.current.cancel();
+      releaseRead?.();
+      await startPromise;
+    });
+    expect(result.current.phase).toBe("idle");
+    expect(result.current.cvId).toBeNull();
+    expect(pendingChangesHandoff.takeFor("cv_late")).toEqual([]);
+  });
+
+  it("rejects a concurrent start while a stream is in flight", async () => {
+    let releaseRead: (() => void) | null = null;
+    const gate = new Promise<void>((resolve) => {
+      releaseRead = resolve;
+    });
+    const enc = new TextEncoder();
+    const stream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        await gate;
+        controller.enqueue(
+          enc.encode(
+            `data: ${JSON.stringify({ type: "done", cvId: "cv_a", pendingChanges: [] })}\n\n`,
+          ),
+        );
+        controller.close();
+      },
+    });
+    authFetchMock.mockResolvedValueOnce({ ok: true, status: 200, body: stream });
+    const { result } = renderHook(() => useMasterCvTailor());
+    const args = {
+      title: "T",
+      templateId: "x",
+      jdText: "JD",
+      provider: "anthropic" as const,
+      model: "claude-sonnet-4-6",
+    };
+    let firstStart: Promise<void>;
+    await act(async () => {
+      firstStart = result.current.start(args);
+      await Promise.resolve();
+    });
+    expect(result.current.phase).toBe("streaming");
+    await act(async () => {
+      await result.current.start(args);
+    });
+    expect(authFetchMock).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      releaseRead?.();
+      await firstStart;
+    });
+    expect(result.current.phase).toBe("done");
+    expect(result.current.cvId).toBe("cv_a");
+  });
 });

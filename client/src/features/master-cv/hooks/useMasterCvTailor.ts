@@ -31,8 +31,13 @@ export function useMasterCvTailor() {
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<TailorPhase>("idle");
   const abortRef = useRef<AbortController | null>(null);
+  const cancelledRef = useRef(false);
+  const phaseRef = useRef<TailorPhase>("idle");
 
   const start = async (req: TailorStartArgs) => {
+    if (phaseRef.current === "streaming") return;
+    cancelledRef.current = false;
+    phaseRef.current = "streaming";
     setEvents([]);
     setCvId(null);
     setError(null);
@@ -44,7 +49,9 @@ export function useMasterCvTailor() {
       body: JSON.stringify(req),
       signal: abortRef.current.signal,
     });
+    if (cancelledRef.current) return;
     if (!res.ok || !res.body) {
+      phaseRef.current = "error";
       setPhase("error");
       setError(`HTTP ${res.status}`);
       return;
@@ -54,21 +61,25 @@ export function useMasterCvTailor() {
     let buf = "";
     while (true) {
       const { value, done } = await reader.read();
+      if (cancelledRef.current) return;
       if (done) break;
       buf += dec.decode(value, { stream: true });
       const blocks = buf.split("\n\n");
       buf = blocks.pop() ?? "";
       for (const block of blocks) {
+        if (cancelledRef.current) return;
         const m = block.match(/^data: (.+)$/m);
         if (!m) continue;
         const evt = JSON.parse(m[1]!) as SseEvent;
         if (evt.type === "tool" && evt.result.ok) {
           setEvents((es) => [...es, { name: evt.name, summary: evt.result.summary ?? "" }]);
         } else if (evt.type === "done") {
+          phaseRef.current = "done";
           setCvId(evt.cvId);
           setPhase("done");
           pendingChangesHandoff.set(evt.cvId, evt.pendingChanges);
         } else if (evt.type === "error") {
+          phaseRef.current = "error";
           setError(evt.message ?? evt.code);
           setPhase("error");
         }
@@ -77,7 +88,9 @@ export function useMasterCvTailor() {
   };
 
   const cancel = () => {
+    cancelledRef.current = true;
     abortRef.current?.abort();
+    phaseRef.current = "idle";
     setPhase("idle");
   };
 
