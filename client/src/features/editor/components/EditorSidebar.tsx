@@ -6,6 +6,8 @@ import { createEmptyCv, templateRegistry, type TemplateId } from "@cvie/shared";
 import { useAuth0 } from "@auth0/auth0-react";
 import { cn } from "@/lib/utils";
 import { AuthGate, LoginButton, UserMenu } from "@/features/auth";
+import { useAuthApi } from "@/features/auth/hooks/useAuthApi";
+import { ModelPickerPill } from "./ai-assistant/ModelPickerPill";
 import {
   createCvRecord,
   formatUpdatedAt,
@@ -77,21 +79,28 @@ function writeFolderCollapsed(sub: string, ids: Set<string>): void {
   }
 }
 
-type StartMode = "empty" | "copy";
+type StartMode = "empty" | "copy" | "master-manual" | "master-jd";
 
 function CvNameModal({
   currentCvTitle,
   canCopy,
+  hasMaster,
   onConfirm,
   onCancel,
 }: {
   currentCvTitle?: string;
   canCopy: boolean;
-  onConfirm: (name: string, mode: StartMode) => void;
+  hasMaster: boolean;
+  onConfirm: (
+    name: string,
+    mode: StartMode,
+    options?: { jd?: string },
+  ) => void;
   onCancel: () => void;
 }) {
   const [value, setValue] = useState("Nouveau CV");
   const [mode, setMode] = useState<StartMode>("empty");
+  const [jd, setJd] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -100,7 +109,7 @@ function CvNameModal({
 
   const submit = () => {
     const name = value.trim().slice(0, 200) || "Nouveau CV";
-    onConfirm(name, mode);
+    onConfirm(name, mode, mode === "master-jd" ? { jd: jd.trim() } : undefined);
   };
 
   return createPortal(
@@ -141,42 +150,61 @@ function CvNameModal({
           maxLength={200}
           autoComplete="off"
         />
-        {canCopy ? (
-          <div className="flex flex-col gap-2">
-            <p className="font-mono-caps text-[10px] tracking-[0.18em] text-[var(--color-ink-soft)]">
-              CONTENU INITIAL
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setMode("empty")}
-                aria-pressed={mode === "empty"}
-                className={cn(
-                  "rounded-lg border px-3 py-2 text-[12px] transition-colors",
-                  mode === "empty"
-                    ? "border-[var(--color-ink)] bg-[var(--color-ink)] text-white"
-                    : "border-[var(--color-rule)] bg-white/60 text-[var(--color-ink)] hover:border-[var(--color-ink-soft)]/50",
-                )}
-              >
-                Vierge
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode("copy")}
-                aria-pressed={mode === "copy"}
-                title={
-                  currentCvTitle ? `Copier « ${currentCvTitle} »` : "Copier le CV actuel"
-                }
-                className={cn(
-                  "rounded-lg border px-3 py-2 text-[12px] transition-colors",
-                  mode === "copy"
-                    ? "border-[var(--color-ink)] bg-[var(--color-ink)] text-white"
-                    : "border-[var(--color-rule)] bg-white/60 text-[var(--color-ink)] hover:border-[var(--color-ink-soft)]/50",
-                )}
-              >
-                Copier l’actuel
-              </button>
-            </div>
+        <div className="flex flex-col gap-2">
+          <p className="font-mono-caps text-[10px] tracking-[0.18em] text-[var(--color-ink-soft)]">
+            CONTENU INITIAL
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {(["empty", "copy", "master-manual", "master-jd"] as StartMode[]).map((m) => {
+              const labels: Record<StartMode, string> = {
+                empty: "Vierge",
+                copy: "Copier l'actuel",
+                "master-manual": "Master CV manuel",
+                "master-jd": "Master CV + offre",
+              };
+              const disabled =
+                (m === "copy" && !canCopy) ||
+                ((m === "master-manual" || m === "master-jd") && !hasMaster);
+              const title =
+                m === "copy" && canCopy
+                  ? (currentCvTitle ? `Copier « ${currentCvTitle} »` : undefined)
+                  : disabled && (m === "master-manual" || m === "master-jd")
+                    ? "Créez d'abord votre Master CV"
+                    : undefined;
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMode(m)}
+                  aria-pressed={mode === m}
+                  disabled={disabled}
+                  title={title}
+                  className={cn(
+                    "rounded-lg border px-3 py-2 text-[12px] transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+                    mode === m
+                      ? "border-[var(--color-ink)] bg-[var(--color-ink)] text-white"
+                      : "border-[var(--color-rule)] bg-white/60 text-[var(--color-ink)] hover:border-[var(--color-ink-soft)]/50",
+                  )}
+                >
+                  {labels[m]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        {mode === "master-jd" ? (
+          <div className="mt-3 flex flex-col gap-2">
+            <label className="font-mono-caps text-[10px] tracking-[0.18em] text-[var(--color-ink-soft)]">
+              COLLEZ L'OFFRE D'EMPLOI
+            </label>
+            <textarea
+              value={jd}
+              onChange={(e) => setJd(e.target.value.slice(0, 8000))}
+              className="h-32 w-full rounded-lg border border-[var(--color-rule)] bg-white/60 p-2 text-[12px]"
+              maxLength={8000}
+              placeholder="Collez ici l'offre d'emploi à cibler…"
+            />
+            <ModelPickerPill feature="cvTailor" />
           </div>
         ) : null}
         <div className="flex justify-end gap-2">
@@ -271,7 +299,11 @@ function AuthedSidebar({
       toast.push("Échec de la suppression", { variant: "error" });
     }
   };
-  const createCvWithName = async (title: string, mode: StartMode) => {
+  const createCvWithName = async (
+    title: string,
+    mode: StartMode,
+    _options?: { jd?: string },
+  ) => {
     const templateId = activeTemplateId ?? "classique";
     setCvNameModalOpen(false);
     try {
@@ -324,9 +356,25 @@ function AuthedSidebar({
   );
   const [replierSpin, setReplierSpin] = useState(collapsed ? 180 : 0);
   const [cvNameModalOpen, setCvNameModalOpen] = useState(false);
+  const [hasMaster, setHasMaster] = useState(false);
+  const { fetch: authFetch } = useAuthApi();
+  const checkedMasterRef = useRef(false);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(() =>
     readSelectedFolder(sub),
   );
+
+  useEffect(() => {
+    if (!cvNameModalOpen || checkedMasterRef.current) return;
+    checkedMasterRef.current = true;
+    (async () => {
+      try {
+        const res = await authFetch("/api/v1/master-cv");
+        setHasMaster(res.ok);
+      } catch {
+        setHasMaster(false);
+      }
+    })();
+  }, [cvNameModalOpen, authFetch]);
 
   useEffect(() => {
     writeFolderCollapsed(sub, folderCollapsed);
@@ -817,10 +865,13 @@ function AuthedSidebar({
       {cvNameModalOpen ? (
         <CvNameModal
           canCopy={Boolean(activeCvId)}
+          hasMaster={hasMaster}
           currentCvTitle={
             lib.active.find((c) => c.id === activeCvId)?.title
           }
-          onConfirm={(name, mode) => void createCvWithName(name, mode)}
+          onConfirm={(name, mode, options) =>
+            void createCvWithName(name, mode, options)
+          }
           onCancel={() => setCvNameModalOpen(false)}
         />
       ) : null}
@@ -1079,6 +1130,7 @@ function AnonSidebar({
       {cvNameModalOpen ? (
         <CvNameModal
           canCopy={false}
+          hasMaster={false}
           onConfirm={(name) => createCvWithName(name)}
           onCancel={() => setCvNameModalOpen(false)}
         />
