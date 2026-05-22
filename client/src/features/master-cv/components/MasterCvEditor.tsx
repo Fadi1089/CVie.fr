@@ -5,6 +5,7 @@ import { useMasterCv } from "../hooks/useMasterCv";
 import { useMasterCvDraft } from "../hooks/useMasterCvDraft";
 import { createEmptyMaster, type MasterCvData } from "@cvie/shared";
 import { PersonalInfoSection } from "./sections/PersonalInfoSection";
+import { SummariesSection } from "./sections/SummariesSection";
 
 export function MasterCvEditor() {
   const { isAuthenticated, isLoading } = useAuth0();
@@ -47,6 +48,10 @@ function Editor({
         <PersonalInfoSection
           value={data.personalInfo}
           onChange={(pi) => update({ ...data, personalInfo: pi })}
+        />
+        <SummariesSection
+          value={data.summaries}
+          onChange={(s) => update({ ...data, summaries: s })}
         />
       </div>
     </div>
