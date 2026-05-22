@@ -9,6 +9,8 @@ import { SummariesSection } from "./sections/SummariesSection";
 import { ExperiencesSection } from "./sections/ExperiencesSection";
 import { FormationsSection } from "./sections/FormationsSection";
 import { SkillsSection } from "./sections/SkillsSection";
+import { LanguagesSection } from "./sections/LanguagesSection";
+import { InterestsSection } from "./sections/InterestsSection";
 
 export function MasterCvEditor() {
   const { isAuthenticated, isLoading } = useAuth0();
@@ -67,6 +69,14 @@ function Editor({
         <SkillsSection
           value={data.skills}
           onChange={(skills) => update({ ...data, skills })}
+        />
+        <LanguagesSection
+          value={data.languages}
+          onChange={(languages) => update({ ...data, languages })}
+        />
+        <InterestsSection
+          value={data.interests}
+          onChange={(interests) => update({ ...data, interests })}
         />
       </div>
     </div>
