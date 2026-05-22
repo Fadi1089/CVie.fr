@@ -45,16 +45,24 @@ export function MasterCvEditor() {
         <SeedingPrompt
           cvs={cvs}
           onSeed={async (ids) => {
-            const result = await store.seed(ids);
-            setData(result);
+            try {
+              const result = await store.seed(ids);
+              setData(result);
+            } catch (err) {
+              console.error("seed failed", err);
+            }
           }}
           onSkip={async () => {
-            const empty = createEmptyMaster(
-              user?.given_name ?? "",
-              user?.family_name ?? "",
-            );
-            const saved = await store.save(empty);
-            setData(saved);
+            try {
+              const empty = createEmptyMaster(
+                user?.given_name ?? "",
+                user?.family_name ?? "",
+              );
+              const saved = await store.save(empty);
+              setData(saved);
+            } catch (err) {
+              console.error("skip-save failed", err);
+            }
           }}
           onPdf={() => console.info("import PDF: pending Task 28 wiring")}
         />
