@@ -42,7 +42,7 @@ function assemble(master: MasterCvData, sel: Selection): CvData {
     experiences: master.experiences
       .filter((e) => sel.experiences.has(e.id))
       .map((e) => ({
-        id: `exp_${Math.random().toString(16).slice(2, 10)}`,
+        id: `exp_${crypto.randomUUID()}`,
         jobTitle: e.jobTitle,
         company: e.company,
         city: e.city,
@@ -54,7 +54,7 @@ function assemble(master: MasterCvData, sel: Selection): CvData {
     formations: master.formations
       .filter((f) => sel.formations.has(f.id))
       .map((f) => ({
-        id: `form_${Math.random().toString(16).slice(2, 10)}`,
+        id: `form_${crypto.randomUUID()}`,
         degree: f.degree,
         school: f.school,
         city: f.city,
@@ -65,7 +65,7 @@ function assemble(master: MasterCvData, sel: Selection): CvData {
     skills: master.skills
       .filter((s) => sel.skills.has(s.id))
       .map((s) => ({
-        id: `sk_${Math.random().toString(16).slice(2, 10)}`,
+        id: `sk_${crypto.randomUUID()}`,
         name: s.name,
         level: s.level,
         category: s.category,
@@ -73,14 +73,14 @@ function assemble(master: MasterCvData, sel: Selection): CvData {
     languages: master.languages
       .filter((l) => sel.languages.has(l.id))
       .map((l) => ({
-        id: `lng_${Math.random().toString(16).slice(2, 10)}`,
+        id: `lng_${crypto.randomUUID()}`,
         name: l.name,
         level: l.level,
       })),
     interests: master.interests
       .filter((i) => sel.interests.has(i.id))
       .map((i) => ({
-        id: `int_${Math.random().toString(16).slice(2, 10)}`,
+        id: `int_${crypto.randomUUID()}`,
         name: i.name,
       })),
     themeId: "community-stackoverflow",
@@ -139,7 +139,11 @@ export function MasterCvPicker({
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper)] p-6">
+    <div
+      role="dialog"
+      aria-label="Sélectionner depuis le Master CV"
+      className="flex flex-col gap-4 rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper)] p-6"
+    >
       <h2 className="font-display text-lg text-[var(--color-ink)]">
         Créer un CV depuis le Master
       </h2>
@@ -180,7 +184,7 @@ export function MasterCvPicker({
             Expériences —{" "}
             <span>
               {sel.experiences.size} / {master.experiences.length} sélectionnée
-              {master.experiences.length > 1 ? "s" : ""}
+              {sel.experiences.size > 1 ? "s" : ""}
             </span>
           </summary>
           <ul className="mt-2 flex flex-col gap-3 pl-2">
@@ -232,7 +236,7 @@ export function MasterCvPicker({
             Compétences —{" "}
             <span>
               {sel.skills.size} / {master.skills.length} sélectionnée
-              {master.skills.length > 1 ? "s" : ""}
+              {sel.skills.size > 1 ? "s" : ""}
             </span>
           </summary>
           <ul className="mt-2 flex flex-wrap gap-2 pl-2">
