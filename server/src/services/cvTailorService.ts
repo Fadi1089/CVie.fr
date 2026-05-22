@@ -1,4 +1,18 @@
-import type { MasterCvData } from "@cvie/shared";
+import { streamText, type StreamTextResult, type ToolSet } from "ai";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createOpenAI } from "@ai-sdk/openai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import type { AiProvider, MasterCvData } from "@cvie/shared";
+import { emptyWorkingCv, type WorkingCv } from "./cvTailorTools/index";
+import { buildSetPersonalInfo } from "./cvTailorTools/personalInfo";
+import { buildSelectExperience } from "./cvTailorTools/experiences";
+import { buildSelectFormation } from "./cvTailorTools/formations";
+import { buildSelectSkills } from "./cvTailorTools/skills";
+import { buildSelectLanguages } from "./cvTailorTools/languages";
+import { buildSelectInterests } from "./cvTailorTools/interests";
+import { buildSelectProject } from "./cvTailorTools/projects";
+import { buildSetOrder } from "./cvTailorTools/order";
+import { buildFinalize } from "./cvTailorTools/finalize";
 
 export function summarizeMaster(m: MasterCvData) {
   return {
@@ -49,4 +63,50 @@ OFFRE D'EMPLOI:
 ${jd}
 
 ${RULES_FR}`;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type StreamResult = StreamTextResult<ToolSet, any>;
+
+function buildModel(provider: AiProvider, apiKey: string, model: string) {
+  if (provider === "openai") return createOpenAI({ apiKey })(model);
+  if (provider === "google") return createGoogleGenerativeAI({ apiKey })(model);
+  return createAnthropic({ apiKey })(model);
+}
+
+export type TailorArgs = {
+  master: MasterCvData;
+  jdText: string;
+  userInstructions: string;
+  templateId: string;
+  provider: AiProvider;
+  apiKey: string;
+  model: string;
+  abortSignal?: AbortSignal;
+};
+
+export function startTailor(args: TailorArgs): { result: StreamResult; working: WorkingCv } {
+  const working = emptyWorkingCv(args.templateId);
+  const tools = {
+    setPersonalInfo: buildSetPersonalInfo(args.master, working),
+    selectExperience: buildSelectExperience(args.master, working),
+    selectFormation: buildSelectFormation(args.master, working),
+    selectSkills: buildSelectSkills(args.master, working),
+    selectLanguages: buildSelectLanguages(args.master, working),
+    selectInterests: buildSelectInterests(args.master, working),
+    selectProject: buildSelectProject(args.master, working),
+    setOrder: buildSetOrder(working),
+    finalize: buildFinalize(working),
+  };
+  const system = buildSystemPrompt({ master: args.master, jdText: args.jdText, userInstructions: args.userInstructions });
+  const result = streamText({
+    model: buildModel(args.provider, args.apiKey, args.model),
+    system,
+    messages: [],
+    tools,
+    abortSignal: args.abortSignal,
+    stopWhen: ({ steps }) => steps.length >= 20,
+    maxOutputTokens: 8192,
+  });
+  return { result: result as unknown as StreamResult, working };
 }
