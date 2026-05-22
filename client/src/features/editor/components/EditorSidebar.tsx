@@ -505,6 +505,23 @@ function AuthedSidebar({
         className="editor-sidebar__list min-h-0 flex-1 overflow-y-auto px-2 py-1"
         aria-label="Bibliothèque par dossier"
       >
+        <button
+          type="button"
+          onClick={() => navigate("/master-cv")}
+          className={cn(
+            "mb-2 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors",
+            "hover:bg-[var(--color-ink)]/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink)]/25",
+          )}
+          aria-label="Ouvrir Mon Master CV"
+          title="Mon Master CV"
+        >
+          <span aria-hidden className="text-[14px]">★</span>
+          {collapsed ? null : (
+            <span className="font-display text-[14px] tracking-[-0.01em]">
+              Mon Master CV
+            </span>
+          )}
+        </button>
         {sortedFolders.map((folder) => {
           const isCollapsed = folderCollapsed.has(folder.id);
           const cvs = cvsByFolder.get(folder.id) ?? [];
