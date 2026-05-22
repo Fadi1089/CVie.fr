@@ -7,6 +7,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { cn } from "@/lib/utils";
 import { AuthGate, LoginButton, UserMenu } from "@/features/auth";
 import { useAuthApi } from "@/features/auth/hooks/useAuthApi";
+import { createMasterCvStore } from "@/features/master-cv/store/masterCvStore";
 import { ModelPickerPill } from "./ai-assistant/ModelPickerPill";
 import {
   createCvRecord,
@@ -358,23 +359,26 @@ function AuthedSidebar({
   const [cvNameModalOpen, setCvNameModalOpen] = useState(false);
   const [hasMaster, setHasMaster] = useState(false);
   const { fetch: authFetch } = useAuthApi();
-  const checkedMasterRef = useRef(false);
+  const masterStore = useMemo(() => createMasterCvStore(authFetch), [authFetch]);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(() =>
     readSelectedFolder(sub),
   );
 
   useEffect(() => {
-    if (!cvNameModalOpen || checkedMasterRef.current) return;
-    checkedMasterRef.current = true;
+    if (!cvNameModalOpen) return;
+    let cancelled = false;
     (async () => {
       try {
-        const res = await authFetch("/api/v1/master-cv");
-        setHasMaster(res.ok);
+        const data = await masterStore.load();
+        if (!cancelled) setHasMaster(data !== null);
       } catch {
-        setHasMaster(false);
+        if (!cancelled) setHasMaster(false);
       }
     })();
-  }, [cvNameModalOpen, authFetch]);
+    return () => {
+      cancelled = true;
+    };
+  }, [cvNameModalOpen, masterStore]);
 
   useEffect(() => {
     writeFolderCollapsed(sub, folderCollapsed);
