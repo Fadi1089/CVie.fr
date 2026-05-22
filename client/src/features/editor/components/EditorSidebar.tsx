@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 import { AuthGate, LoginButton, UserMenu } from "@/features/auth";
 import { useAuthApi } from "@/features/auth/hooks/useAuthApi";
 import { createMasterCvStore } from "@/features/master-cv/store/masterCvStore";
+import { MasterCvPicker } from "@/features/master-cv/components/MasterCvPicker";
+import type { MasterCvData, CvData } from "@cvie/shared";
 import { ModelPickerPill } from "./ai-assistant/ModelPickerPill";
 import {
   createCvRecord,
@@ -306,6 +308,27 @@ function AuthedSidebar({
     _options?: { jd?: string },
   ) => {
     const templateId = activeTemplateId ?? "classique";
+    // Compute targetFolderId once so we can stash it for picker / streaming phases
+    const selectedFolder = selectedFolderId
+      ? lib.folders.find((f) => f.id === selectedFolderId)
+      : undefined;
+    const targetFolderId =
+      selectedFolder &&
+      !(selectedFolder.isSystem && selectedFolder.ttlDays !== null)
+        ? selectedFolder.id
+        : undefined;
+    setPendingTitle(title);
+    setPendingTemplate(templateId);
+    setPendingFolder(targetFolderId ?? null);
+    if (mode === "master-manual") {
+      setModalPhase("picker");
+      return;
+    }
+    if (mode === "master-jd") {
+      setModalPhase("streaming");
+      return; // Task 41 will replace this with real streaming
+    }
+    // empty / copy paths
     setCvNameModalOpen(false);
     try {
       let body = createEmptyCv();
@@ -313,16 +336,6 @@ function AuthedSidebar({
         const current = await store.read(activeCvId);
         if (current) body = current;
       }
-      // Drop new CV into the user-selected folder, unless that folder is the
-      // trash (then let the server default to Mes CV).
-      const selectedFolder = selectedFolderId
-        ? lib.folders.find((f) => f.id === selectedFolderId)
-        : undefined;
-      const targetFolderId =
-        selectedFolder &&
-        !(selectedFolder.isSystem && selectedFolder.ttlDays !== null)
-          ? selectedFolder.id
-          : undefined;
       const created = await lib.createCv(
         { title, templateId, folderId: targetFolderId },
         body,
@@ -340,7 +353,7 @@ function AuthedSidebar({
       toast.push("Impossible de créer le CV", { variant: "error" });
     }
   };
-  const onCreateCv = () => setCvNameModalOpen(true);
+  const onCreateCv = () => { setModalPhase("name"); setCvNameModalOpen(true); };
   const [folderCollapsed, setFolderCollapsed] = useState<Set<string>>(() =>
     readFolderCollapsed(sub),
   );
@@ -357,7 +370,12 @@ function AuthedSidebar({
   );
   const [replierSpin, setReplierSpin] = useState(collapsed ? 180 : 0);
   const [cvNameModalOpen, setCvNameModalOpen] = useState(false);
-  const [hasMaster, setHasMaster] = useState(false);
+  const [modalPhase, setModalPhase] = useState<"name" | "picker" | "streaming">("name");
+  const [pendingTitle, setPendingTitle] = useState("");
+  const [pendingTemplate, setPendingTemplate] = useState<string | null>(null);
+  const [pendingFolder, setPendingFolder] = useState<string | null>(null);
+  const [masterData, setMasterData] = useState<MasterCvData | null>(null);
+  const hasMaster = masterData !== null;
   const { fetch: authFetch } = useAuthApi();
   const masterStore = useMemo(() => createMasterCvStore(authFetch), [authFetch]);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(() =>
@@ -370,9 +388,9 @@ function AuthedSidebar({
     (async () => {
       try {
         const data = await masterStore.load();
-        if (!cancelled) setHasMaster(data !== null);
+        if (!cancelled) setMasterData(data);
       } catch {
-        if (!cancelled) setHasMaster(false);
+        if (!cancelled) setMasterData(null);
       }
     })();
     return () => {
@@ -866,7 +884,7 @@ function AuthedSidebar({
         />
       ) : null}
 
-      {cvNameModalOpen ? (
+      {cvNameModalOpen && modalPhase === "name" ? (
         <CvNameModal
           canCopy={Boolean(activeCvId)}
           hasMaster={hasMaster}
@@ -876,7 +894,41 @@ function AuthedSidebar({
           onConfirm={(name, mode, options) =>
             void createCvWithName(name, mode, options)
           }
-          onCancel={() => setCvNameModalOpen(false)}
+          onCancel={() => { setCvNameModalOpen(false); setModalPhase("name"); }}
+        />
+      ) : null}
+      {cvNameModalOpen && modalPhase === "picker" && masterData ? (
+        <MasterCvPicker
+          master={masterData}
+          onCancel={() => setModalPhase("name")}
+          onCreate={async (cvData: CvData) => {
+            try {
+              const created = await lib.createCv(
+                {
+                  title: pendingTitle,
+                  templateId: pendingTemplate ?? "classique",
+                  folderId: pendingFolder ?? undefined,
+                },
+                cvData,
+              );
+              onCvCreated?.(created as unknown as CvLibraryRecord);
+              setCvNameModalOpen(false);
+              setModalPhase("name");
+              try {
+                window.localStorage.setItem(
+                  TEMPLATE_SELECTION_KEY,
+                  pendingTemplate ?? "classique",
+                );
+              } catch {
+                /* ignore */
+              }
+              navigate(
+                `/editor?template=${pendingTemplate}&cv=${encodeURIComponent(created.id)}&new=1`,
+              );
+            } catch {
+              toast.push("Impossible de créer le CV", { variant: "error" });
+            }
+          }}
         />
       ) : null}
     </aside>
