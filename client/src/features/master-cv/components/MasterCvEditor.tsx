@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useMasterCv } from "../hooks/useMasterCv";
@@ -17,12 +17,17 @@ import { CertificationsSection } from "./sections/CertificationsSection";
 import { NotesSection } from "./sections/NotesSection";
 import { MasterCvHeader } from "./MasterCvHeader";
 import { SeedingPrompt, type SeedCv } from "./SeedingPrompt";
+import { PdfImportDialog } from "./PdfImportDialog";
+
+type PreviewPhase = "idle" | "seed-preview" | "pdf-dialog";
 
 export function MasterCvEditor() {
   const { isAuthenticated, isLoading, user } = useAuth0();
   const navigate = useNavigate();
   const { state, setData, store } = useMasterCv();
   const { active } = useCvLibrary();
+  const [previewPhase, setPreviewPhase] = useState<PreviewPhase>("idle");
+  const [previewData, setPreviewData] = useState<MasterCvData | null>(null);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) navigate("/", { replace: true });
@@ -35,6 +40,65 @@ export function MasterCvEditor() {
     return <div className="px-6 py-10 text-sm text-red-600">{state.error}</div>;
   }
   if (state.phase === "needs-seed") {
+    if (previewPhase === "seed-preview" && previewData) {
+      return (
+        <div
+          className="mx-auto mt-20 max-w-md rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper)] p-6"
+        >
+          <h2 className="font-display text-xl">Aperçu de l'import</h2>
+          <p className="mt-2 text-sm">Vous obtiendrez :</p>
+          <ul className="mt-2 list-disc pl-6 text-sm">
+            <li>{previewData.experiences.length} expériences</li>
+            <li>{previewData.formations.length} formations</li>
+            <li>{previewData.skills.length} compétences</li>
+            <li>{previewData.languages.length} langues</li>
+            <li>{previewData.interests.length} intérêts</li>
+          </ul>
+          <div className="mt-6 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setPreviewPhase("idle");
+                setPreviewData(null);
+              }}
+              className="font-mono-caps rounded-full px-4 py-2 text-[10px] tracking-[0.18em] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
+            >
+              ANNULER
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const saved = await store.save(previewData);
+                  setData(saved);
+                } catch (err) {
+                  console.error("preview save failed", err);
+                }
+              }}
+              className="rounded-full bg-[var(--color-ink)] px-4 py-2 text-[12px] font-medium text-white"
+            >
+              Confirmer
+            </button>
+          </div>
+        </div>
+      );
+    }
+    if (previewPhase === "pdf-dialog") {
+      return (
+        <PdfImportDialog
+          onClose={() => setPreviewPhase("idle")}
+          onExtracted={async (cv) => {
+            try {
+              const result = await store.seed([], cv);
+              setPreviewData(result);
+              setPreviewPhase("seed-preview");
+            } catch (err) {
+              console.error("pdf seed failed", err);
+            }
+          }}
+        />
+      );
+    }
     if (active.length >= 1) {
       const cvs: SeedCv[] = active.map((r) => ({
         id: r.id,
@@ -47,7 +111,8 @@ export function MasterCvEditor() {
           onSeed={async (ids) => {
             try {
               const result = await store.seed(ids);
-              setData(result);
+              setPreviewData(result);
+              setPreviewPhase("seed-preview");
             } catch (err) {
               console.error("seed failed", err);
             }
@@ -64,7 +129,7 @@ export function MasterCvEditor() {
               console.error("skip-save failed", err);
             }
           }}
-          onPdf={() => console.info("import PDF: pending Task 28 wiring")}
+          onPdf={() => setPreviewPhase("pdf-dialog")}
         />
       );
     }
