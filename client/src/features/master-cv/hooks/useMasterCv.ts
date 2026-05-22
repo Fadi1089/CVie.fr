@@ -34,5 +34,6 @@ export function useMasterCv() {
   return {
     state,
     setData: (data: MasterCvData) => setState({ phase: "ready", data }),
+    store,
   };
 }

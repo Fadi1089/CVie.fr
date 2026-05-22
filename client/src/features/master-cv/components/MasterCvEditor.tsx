@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useMasterCv } from "../hooks/useMasterCv";
 import { useMasterCvDraft } from "../hooks/useMasterCvDraft";
+import { useCvLibrary } from "@/features/cv-library/hooks/useCvLibrary";
 import { createEmptyMaster, type MasterCvData } from "@cvie/shared";
 import { PersonalInfoSection } from "./sections/PersonalInfoSection";
 import { SummariesSection } from "./sections/SummariesSection";
@@ -15,11 +16,13 @@ import { ProjectsSection } from "./sections/ProjectsSection";
 import { CertificationsSection } from "./sections/CertificationsSection";
 import { NotesSection } from "./sections/NotesSection";
 import { MasterCvHeader } from "./MasterCvHeader";
+import { SeedingPrompt, type SeedCv } from "./SeedingPrompt";
 
 export function MasterCvEditor() {
-  const { isAuthenticated, isLoading } = useAuth0();
+  const { isAuthenticated, isLoading, user } = useAuth0();
   const navigate = useNavigate();
-  const { state, setData } = useMasterCv();
+  const { state, setData, store } = useMasterCv();
+  const { active } = useCvLibrary();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) navigate("/", { replace: true });
@@ -32,6 +35,31 @@ export function MasterCvEditor() {
     return <div className="px-6 py-10 text-sm text-red-600">{state.error}</div>;
   }
   if (state.phase === "needs-seed") {
+    if (active.length >= 1) {
+      const cvs: SeedCv[] = active.map((r) => ({
+        id: r.id,
+        title: r.title,
+        updatedAt: r.updatedAt,
+      }));
+      return (
+        <SeedingPrompt
+          cvs={cvs}
+          onSeed={async (ids) => {
+            const result = await store.seed(ids);
+            setData(result);
+          }}
+          onSkip={async () => {
+            const empty = createEmptyMaster(
+              user?.given_name ?? "",
+              user?.family_name ?? "",
+            );
+            const saved = await store.save(empty);
+            setData(saved);
+          }}
+          onPdf={() => console.info("import PDF: pending Task 28 wiring")}
+        />
+      );
+    }
     return <Editor initial={createEmptyMaster()} onCreate={setData} />;
   }
   return <Editor initial={state.data} onCreate={setData} />;
