@@ -4,6 +4,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { useMasterCv } from "../hooks/useMasterCv";
 import { useMasterCvDraft } from "../hooks/useMasterCvDraft";
 import { createEmptyMaster, type MasterCvData } from "@cvie/shared";
+import { PersonalInfoSection } from "./sections/PersonalInfoSection";
 
 export function MasterCvEditor() {
   const { isAuthenticated, isLoading } = useAuth0();
@@ -28,13 +29,12 @@ export function MasterCvEditor() {
 
 function Editor({
   initial,
-  onCreate: _onCreate, // wired in later tasks
+  onCreate: _onCreate,
 }: {
   initial: MasterCvData;
   onCreate: (d: MasterCvData) => void;
 }) {
   const { data, status, update } = useMasterCvDraft(initial);
-  void update; // update wired in later tasks
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
       <header className="flex items-center justify-between">
@@ -43,7 +43,12 @@ function Editor({
           {status === "saving" ? "Enregistrement…" : status === "offline" ? "Hors-ligne" : "Enregistré"}
         </span>
       </header>
-      <pre className="mt-6 text-xs">{JSON.stringify(data, null, 2)}</pre>
+      <div className="mt-6">
+        <PersonalInfoSection
+          value={data.personalInfo}
+          onChange={(pi) => update({ ...data, personalInfo: pi })}
+        />
+      </div>
     </div>
   );
 }
