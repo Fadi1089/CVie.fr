@@ -7,6 +7,7 @@ import { createEmptyMaster, type MasterCvData } from "@cvie/shared";
 import { PersonalInfoSection } from "./sections/PersonalInfoSection";
 import { SummariesSection } from "./sections/SummariesSection";
 import { ExperiencesSection } from "./sections/ExperiencesSection";
+import { FormationsSection } from "./sections/FormationsSection";
 
 export function MasterCvEditor() {
   const { isAuthenticated, isLoading } = useAuth0();
@@ -57,6 +58,10 @@ function Editor({
         <ExperiencesSection
           value={data.experiences}
           onChange={(experiences) => update({ ...data, experiences })}
+        />
+        <FormationsSection
+          value={data.formations}
+          onChange={(formations) => update({ ...data, formations })}
         />
       </div>
     </div>
